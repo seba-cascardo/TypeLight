@@ -34,7 +34,7 @@ export function curriculumFor(layout: Layout): Curriculum {
 export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): string {
   switch (spec.kind) {
     case 'drill':
-      return drillText(spec.chars, spec.tokens, { rng })
+      return drillText(spec.chars, spec.tokens, { rng, joined: spec.joined })
     case 'review':
       return reviewText(spec.newChars, poolOf(spec.pool), spec.tokens, { rng })
     case 'words':

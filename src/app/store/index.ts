@@ -96,7 +96,7 @@ export const useStore = create<State>()(
             attempts: (prev?.attempts ?? 0) + 1,
             completedAt: new Date().toISOString(),
           }
-          return { lessons: { ...s.lessons, [id]: result } }
+          return { lessons: { ...s.lessons, [id]: result }, streak: bumpStreak(s.streak, dayKey()) }
         }),
 
       markRoutine: (block) => {

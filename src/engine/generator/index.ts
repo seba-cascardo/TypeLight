@@ -34,7 +34,11 @@ function weightedPick(chars: readonly string[], focus: ReadonlySet<string>, rng:
  * "fff jjj fjf jfj" — introduces new keys in isolation.
  * Early tokens repeat one key; later tokens alternate.
  */
-export function drillText(newChars: readonly string[], tokens = 14, opts: GenOpts = {}): string {
+export function drillText(
+  newChars: readonly string[],
+  tokens = 14,
+  opts: GenOpts & { joined?: boolean } = {},
+): string {
   const rng = opts.rng ?? makeRng()
   const chars = newChars.filter((c) => c !== ' ')
   if (chars.length === 0) return ''
@@ -47,7 +51,8 @@ export function drillText(newChars: readonly string[], tokens = 14, opts: GenOpt
     for (let i = 0; i < len; i++) token += rng.pick(chars)
     out.push(token)
   }
-  return out.slice(0, Math.max(tokens, chars.length * 2)).join(' ')
+  // `joined`: before the space bar is taught, the drill is one continuous run.
+  return out.slice(0, Math.max(tokens, chars.length * 2)).join(opts.joined ? '' : ' ')
 }
 
 /**

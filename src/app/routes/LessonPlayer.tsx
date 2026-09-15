@@ -6,6 +6,7 @@ import { starsFor, type Stars as StarCount } from '@/engine/stats'
 import { keySamples, metrics, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
+import { RainGame, type RainResult } from '../components/RainGame'
 import { TypingArea } from '../components/TypingArea'
 import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
@@ -13,7 +14,7 @@ import { useTypingSession } from '../hooks/useTypingSession'
 import { useStore } from '../store'
 import { unitAccentClass } from '../lib/accents'
 
-type Phase = 'intro' | 'exercise' | 'results'
+type Phase = 'intro' | 'exercise' | 'game' | 'results'
 
 interface Totals {
   correct: number
@@ -49,7 +50,8 @@ function Player({ lesson }: { lesson: Lesson }) {
   const unit = curriculum.units.find((u) => u.id === lesson.unitId)!
   const nextLesson = curriculum.lessons[lesson.index + 1]
 
-  const [phase, setPhase] = useState<Phase>(lesson.intro.length ? 'intro' : 'exercise')
+  const [phase, setPhase] = useState<Phase>(lesson.kind === 'game' ? 'game' : lesson.intro.length ? 'intro' : 'exercise')
+  const [gameResult, setGameResult] = useState<RainResult | null>(null)
   const [card, setCard] = useState(0)
   const [texts, setTexts] = useState(() => generateTexts(lesson))
   const [step, setStep] = useState(0)
@@ -133,7 +135,26 @@ function Player({ lesson }: { lesson: Lesson }) {
     else navigate('/ruta')
   }
 
+  const onGameFinish = useCallback(
+    (r: RainResult) => {
+      const total = r.hits + r.misses + r.wrong
+      const acc = total ? r.hits / total : 0
+      const s: StarCount = r.hits === 0 ? 1 : acc >= 0.95 ? 3 : acc >= 0.85 ? 2 : 1
+      setGameResult(r)
+      setStars(s)
+      completeLesson(lesson.id, s, 0, acc)
+      markRoutine('lesson')
+      setPhase('results')
+    },
+    [lesson.id, completeLesson, markRoutine],
+  )
+
   const retry = () => {
+    if (lesson.kind === 'game') {
+      setGameResult(null)
+      setPhase('game')
+      return
+    }
     setTexts(generateTexts(lesson))
     stepRef.current = 0
     totalsRef.current = emptyTotals()
@@ -213,6 +234,63 @@ function Player({ lesson }: { lesson: Lesson }) {
           </div>
           <div className="card flex flex-col justify-center p-4 md:p-5">
             <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} arrange="stack" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'game') {
+    return (
+      <div className="animate-rise">
+        {header}
+        <RainGame
+          key={String(gameResult === null)}
+          layout={layout}
+          pool={lesson.pool}
+          sound={sound}
+          onFinish={onGameFinish}
+          durationMs={Number(new URLSearchParams(window.location.search).get('dur')) || undefined}
+        />
+      </div>
+    )
+  }
+
+  if (phase === 'results' && gameResult) {
+    const g = gameResult
+    const total = g.hits + g.misses + g.wrong
+    const acc = total ? g.hits / total : 0
+    return (
+      <div className="animate-rise">
+        {header}
+        <div className="card p-8 text-center">
+          <div className="eyebrow mb-3">Juego terminado</div>
+          <div className="animate-pop inline-block">
+            <Stars count={stars} size="lg" />
+          </div>
+          <h2 className="mt-3 text-3xl">
+            {stars === 3 ? 'Ni una gota al piso.' : stars === 2 ? 'Buen reflejo. Un poco más de calma y son tres.' : 'Terminado. Con más práctica, la lluvia se vuelve lenta.'}
+          </h2>
+          <div className="mx-auto mt-6 flex max-w-lg justify-around">
+            <Stat label="Puntos" value={g.score} tone="enter" />
+            <Stat label="Atrapadas" value={g.hits} />
+            <Stat label="Al piso" value={g.misses} tone={g.misses === 0 ? 'enter' : 'esc'} />
+            <Stat label="Precisión" value={`${Math.round(acc * 100)} %`} tone={acc >= 0.95 ? 'enter' : acc >= 0.85 ? 'ink' : 'esc'} />
+          </div>
+          <p className="mt-4 text-sm text-ink-mute">Mejor racha: {g.bestCombo} seguidas. Tres estrellas con 95 % de precisión.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Keycap variant="ghost" onClick={retry}>
+              Jugar de nuevo
+            </Keycap>
+            {nextLesson ? (
+              <Keycap to={`/leccion/${nextLesson.id}`} variant="primary" size="lg">
+                Siguiente: {nextLesson.title} <span className="opacity-70">(Enter)</span> →
+              </Keycap>
+            ) : (
+              <Keycap to="/ruta" variant="primary" size="lg">
+                Volver a la ruta
+              </Keycap>
+            )}
           </div>
         </div>
       </div>

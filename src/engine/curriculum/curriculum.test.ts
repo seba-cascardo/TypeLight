@@ -15,6 +15,21 @@ describe('curriculum', () => {
     }
   })
 
+  it('teaches f and j without spaces, then the space bar, then everything else', () => {
+    const c = buildCurriculum(LATAM)
+    const first = c.lessons.find((l) => l.kind === 'keys')!
+    expect(first.newChars).toEqual(['f', 'j'])
+    expect(first.pool).not.toContain(' ')
+    for (let i = 0; i < 5; i++) {
+      for (const spec of first.exercises) expect(generateExercise(spec, makeRng(i))).not.toMatch(/ /)
+    }
+    const space = c.lessons[first.index + 1]
+    expect(space.newChars).toEqual([' '])
+    expect(space.pool).toContain(' ')
+    expect(generateExercise(space.exercises[0], makeRng(1))).toMatch(/ /)
+    for (const l of c.lessons.slice(space.index + 1)) expect(l.pool).toContain(' ')
+  })
+
   it('introduces ñ on Spanish layouts and ; on US', () => {
     expect(buildCurriculum(LATAM).lessons.some((l) => l.newChars.includes('ñ'))).toBe(true)
     expect(buildCurriculum(US).lessons.some((l) => l.newChars.includes(';'))).toBe(true)

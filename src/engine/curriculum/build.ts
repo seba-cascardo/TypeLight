@@ -65,6 +65,12 @@ function tip(b: Builder, u: Unit, t: Tip) {
   add(b, u, `tip-${t.id}`, t.title, 'tip', [], t.cards, [])
 }
 
+/** A playable break: the rain game with everything learned so far. */
+function game(b: Builder, u: Unit, slug: string, title: string) {
+  const l = add(b, u, `juego-${slug}`, title, 'game', [], [], [])
+  l.game = 'rain'
+}
+
 function slugOf(chars: string[]): string {
   return chars.map((c) => c.codePointAt(0)!.toString(16)).join('-')
 }
@@ -123,13 +129,44 @@ export function buildCurriculum(layout: Layout): Curriculum {
   // ───────── Fila guía ─────────
   const guia = unit(b, 'guia', 'Fila guía', 'Las ocho teclas donde descansan los dedos. Todo empieza acá.', 10, 'green')
   tip(b, guia, TIP_INTRO)
-  keyTrio(b, layout, guia, ['f', 'j'])
-  add(b, guia, 'space', 'La barra espaciadora', 'keys', [' '], [explainChar(layout, ' ')], [
+  // The very first keys come before the space bar, so their drills are continuous runs.
+  b.pool.push('f', 'j')
+  add(b, guia, `${slugOf(['f', 'j'])}-keys`, 'Teclas f y j', 'keys', ['f', 'j'], [
+    explainChar(layout, 'f'),
+    explainChar(layout, 'j'),
+    {
+      title: 'A practicar',
+      body: 'Tipeá las letras sin mirar el teclado. Todavía no hay espacios: solo f y j, seguidas. Si te equivocás, la letra se marca en rojo y esperás hasta acertar.',
+      highlight: ['f', 'j'],
+    },
+  ], [
+    { kind: 'drill', chars: ['f', 'j'], tokens: 8, joined: true },
+    { kind: 'drill', chars: ['f', 'j'], tokens: 9, joined: true },
+  ])
+  b.pool.push(' ')
+  add(b, guia, 'space', 'La barra espaciadora', 'keys', [' '], [
+    explainChar(layout, ' '),
+    {
+      title: 'Ahora sí, con espacios',
+      body: 'Cada grupo de letras termina con un espacio. Tocá la barra con el pulgar derecho sin mover el resto de la mano, y seguí con la siguiente letra.',
+      highlight: [' '],
+    },
+  ], [
+    { kind: 'drill', chars: ['f', 'j'], tokens: 12 },
     { kind: 'drill', chars: ['f', 'j'], tokens: 16 },
+  ])
+  add(b, guia, `${slugOf(['f', 'j'])}-review`, 'Repaso: f y j', 'review', [], [], [
+    { kind: 'review', newChars: ['f', 'j'], pool: [...b.pool] },
+    { kind: 'words', pool: [...b.pool], focus: ['f', 'j'] },
+  ])
+  add(b, guia, `${slugOf(['f', 'j'])}-practice`, 'Práctica: f y j', 'practice', [], [], [
+    { kind: 'words', pool: [...b.pool], focus: ['f', 'j'] },
+    { kind: 'words', pool: [...b.pool], focus: ['f', 'j'], count: 16 },
   ])
   keyTrio(b, layout, guia, ['d', 'k'])
   keyTrio(b, layout, guia, ['s', 'l'])
   keyTrio(b, layout, guia, ['a', homePinky])
+  game(b, guia, 'primeras-8', 'Juego: las primeras 8')
   tip(b, guia, TIP_POSTURE)
   keyTrio(b, layout, guia, ['g', 'h'])
   unitReview(b, guia, 'Repaso: fila guía', (pool) => [
@@ -137,11 +174,13 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 16 },
     { kind: 'words', pool, count: 16 },
   ])
+  game(b, guia, 'fila-guia', 'Juego: fila guía')
 
   // ───────── Fila superior ─────────
   const sup = unit(b, 'superior', 'Fila superior', 'Los dedos suben una fila y vuelven. Aparecen las vocales que faltaban.', 12, 'blue')
   keyTrio(b, layout, sup, ['r', 'u'])
   keyTrio(b, layout, sup, ['e', 'i'])
+  game(b, sup, 'ruei', 'Juego: r u e i')
   tip(b, sup, TIP_IDEAS)
   keyTrio(b, layout, sup, ['w', 'o'])
   keyTrio(b, layout, sup, ['q', 'y'])
@@ -151,12 +190,14 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 18 },
     { kind: 'words', pool, count: 20 },
   ])
+  game(b, sup, 'fila-superior', 'Juego: fila superior')
 
   // ───────── Fila inferior ─────────
   const inf = unit(b, 'inferior', 'Fila inferior', 'Los dedos bajan. Con esta fila completás el alfabeto.', 15, 'coral')
   keyTrio(b, layout, inf, ['v', 'm'])
   keyTrio(b, layout, inf, ['c', ','])
   keyTrio(b, layout, inf, ['x', '.'])
+  game(b, inf, 'vmcx', 'Juego: v m c x')
   keyTrio(b, layout, inf, ['z', bottomPinky])
   tip(b, inf, TIP_BREAK)
   keyTrio(b, layout, inf, ['b', 'n'])
@@ -165,6 +206,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 20 },
     { kind: 'words', pool, count: 22 },
   ])
+  game(b, inf, 'alfabeto', 'Juego: todo el alfabeto')
 
   // ───────── Patrones comunes ─────────
   const pat = unit(b, 'patrones', 'Patrones del español', 'Las combinaciones que más se repiten. Dominarlas es la mitad de la velocidad.', 18, 'mint')
@@ -200,6 +242,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'sentences', pool, count: 2 },
     { kind: 'sentences', pool, count: 2 },
   ])
+  game(b, may, 'mayusculas', 'Juego: mayúsculas')
 
   // ───────── Acentos (solo teclados en español) ─────────
   if (isSpanish) {
@@ -237,6 +280,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'sentences', pool, corpus: 'numbers', count: 2 },
     { kind: 'sentences', pool, corpus: 'numbers', count: 3 },
   ])
+  game(b, num, 'numeros', 'Juego: números')
 
   // ───────── Signos ─────────
   const sig = unit(b, 'signos', 'Signos y símbolos', 'Puntuación, paréntesis, comillas y los símbolos que usás todos los días.', 15, 'coral')
@@ -254,6 +298,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'sentences', pool, corpus: 'symbols', count: 2 },
     { kind: 'sentences', pool, corpus: 'symbols', count: 3 },
   ])
+  game(b, sig, 'signos', 'Juego: signos')
 
   // ───────── Velocidad ─────────
   const goals = [25, 28, 31, 34, 37, 40, 45, 50]

@@ -75,14 +75,17 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const text = useMemo(() => {
     const rng = makeRng()
     void round
+    // Until the space bar has been taught, drills are continuous runs.
+    const joined = !learned.includes(' ')
     if (kind === 'calentamiento') {
-      if (learned.length < 6) return drillText(learned.filter((c) => c !== ' '), 16, { rng })
+      if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
       return wordsText(pool, 16, { rng })
     }
     if (kind === 'repaso') {
-      if (learned.length < 4) return drillText(learned.filter((c) => c !== ' '), 16, { rng })
+      if (learned.length < 5) return drillText(learned, joined ? 8 : 16, { rng, joined })
       return adaptiveText(pool, weak, 18, { rng })
     }
+    if (joined) return drillText(learned, 12, { rng, joined })
     // Reto: enough text for a full minute at 60 wpm.
     const parts: string[] = []
     let total = 0

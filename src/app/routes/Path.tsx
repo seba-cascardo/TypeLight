@@ -19,6 +19,8 @@ function legend(l: Lesson): { main: string; sub: string } {
       return { main: '★', sub: 'repaso' }
     case 'text':
       return { main: 'Aa', sub: `${l.goalWpm} ppm` }
+    case 'game':
+      return { main: '▼', sub: 'juego' }
   }
 }
 

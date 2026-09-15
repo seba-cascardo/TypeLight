@@ -11,7 +11,9 @@ export interface Unit {
   lessons: Lesson[]
 }
 
-export type LessonKind = 'keys' | 'review' | 'practice' | 'tip' | 'text' | 'unit-review'
+export type LessonKind = 'keys' | 'review' | 'practice' | 'tip' | 'text' | 'unit-review' | 'game'
+
+export type GameId = 'rain'
 
 export interface IntroCard {
   title: string
@@ -21,7 +23,7 @@ export interface IntroCard {
 }
 
 export type ExerciseSpec =
-  | { kind: 'drill'; chars: string[]; tokens?: number }
+  | { kind: 'drill'; chars: string[]; tokens?: number; joined?: boolean }
   | { kind: 'review'; newChars: string[]; pool: string[]; tokens?: number }
   | { kind: 'words'; pool: string[]; focus?: string[]; count?: number; capitals?: string[] }
   | { kind: 'sentences'; pool: string[]; corpus?: SentenceCorpus; count?: number }
@@ -44,6 +46,8 @@ export interface Lesson {
   intro: IntroCard[]
   exercises: ExerciseSpec[]
   goalWpm: number
+  /** Set on 'game' lessons. */
+  game?: GameId
 }
 
 export interface Curriculum {
