@@ -1,0 +1,294 @@
+import { ONE_LETTER, WORDS } from '../corpus/words'
+import { NUMBER_SENTENCES, SENTENCES, SYMBOL_SENTENCES } from '../corpus/sentences'
+import { makeRng, weightedIndex, type Rng } from './rng'
+
+export { makeRng } from './rng'
+export type { Rng } from './rng'
+
+const VOWELS = new Set('aeiouáéíóúü')
+const LOWER_LETTER = /^[a-zñáéíóúü]$/
+const UPPER_LETTER = /^[A-ZÑÁÉÍÓÚÜ]$/
+
+/** Letters usable inside pseudo-words: lower-case letters plus any non-letter new chars. */
+function pseudoLetters(pool: ReadonlySet<string>, extra: Iterable<string> = []): string[] {
+  const out = [...pool].filter((c) => LOWER_LETTER.test(c))
+  for (const c of extra) if (!LOWER_LETTER.test(c) && !UPPER_LETTER.test(c) && c !== ' ' && !out.includes(c)) out.push(c)
+  return out
+}
+
+export interface GenOpts {
+  rng?: Rng
+}
+
+function usesOnly(text: string, pool: ReadonlySet<string>): boolean {
+  for (const ch of text) if (!pool.has(ch)) return false
+  return true
+}
+
+function weightedPick(chars: readonly string[], focus: ReadonlySet<string>, rng: Rng): string {
+  const weights = chars.map((c) => (focus.has(c) ? 3 : 1))
+  return chars[weightedIndex(weights, rng)]
+}
+
+/**
+ * "fff jjj fjf jfj" — introduces new keys in isolation.
+ * Early tokens repeat one key; later tokens alternate.
+ */
+export function drillText(newChars: readonly string[], tokens = 14, opts: GenOpts = {}): string {
+  const rng = opts.rng ?? makeRng()
+  const chars = newChars.filter((c) => c !== ' ')
+  if (chars.length === 0) return ''
+  const out: string[] = []
+  // First: each key repeated on its own, twice.
+  for (let round = 0; round < 2; round++) for (const c of chars) out.push(c.repeat(3))
+  while (out.length < tokens) {
+    const len = 2 + rng.int(3)
+    let token = ''
+    for (let i = 0; i < len; i++) token += rng.pick(chars)
+    out.push(token)
+  }
+  return out.slice(0, Math.max(tokens, chars.length * 2)).join(' ')
+}
+
+/**
+ * Mixed sequences drawn from every learned key, biased towards the new ones.
+ * Uses real words when enough exist, otherwise pronounceable pseudo-words.
+ */
+export function reviewText(
+  newChars: readonly string[],
+  pool: ReadonlySet<string>,
+  tokens = 14,
+  opts: GenOpts = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const focus = new Set(newChars)
+  const caps = newChars.filter((c) => UPPER_LETTER.test(c))
+  if (caps.length && caps.length === newChars.length) {
+    return wordsText(new Set(pseudoLetters(pool).concat(' ')), tokens, { rng, focus: caps, capitals: caps })
+  }
+  const letters = pseudoLetters(pool, newChars)
+  const real = candidateWords(pool, 400).filter((w) => [...w].some((c) => focus.has(c)))
+  const out: string[] = []
+  for (let i = 0; i < tokens; i++) {
+    if (real.length >= 8 && rng.chance(0.6)) {
+      out.push(rng.pick(real))
+    } else {
+      out.push(pseudoWord(letters, focus, rng))
+    }
+  }
+  return out.join(' ')
+}
+
+function candidateWords(pool: ReadonlySet<string>, limit: number): string[] {
+  const res: string[] = []
+  for (const w of ONE_LETTER) if (usesOnly(w, pool)) res.push(w)
+  for (const w of WORDS) {
+    if (usesOnly(w, pool)) {
+      res.push(w)
+      if (res.length >= limit) break
+    }
+  }
+  return res
+}
+
+/** A pronounceable-ish made-up word from the available letters. */
+export function pseudoWord(letters: readonly string[], focus: ReadonlySet<string>, rng: Rng): string {
+  const vowels = letters.filter((c) => VOWELS.has(c))
+  const consonants = letters.filter((c) => !VOWELS.has(c))
+  if (vowels.length === 0 || consonants.length === 0) {
+    const len = 2 + rng.int(3)
+    let w = ''
+    for (let i = 0; i < len; i++) w += weightedPick(letters, focus, rng)
+    return w
+  }
+  const syllables = 1 + rng.int(3)
+  let w = ''
+  for (let s = 0; s < syllables; s++) {
+    const shape = rng.pick(['CV', 'CV', 'CVC', 'VC', 'V'])
+    for (const part of shape) {
+      w += part === 'C' ? weightedPick(consonants, focus, rng) : weightedPick(vowels, focus, rng)
+    }
+  }
+  return w
+}
+
+/**
+ * Real words typable with the pool, weighted by frequency and biased to `focus`.
+ * Falls back to pseudo-words when fewer than 12 real words are available.
+ */
+export function wordsText(
+  pool: ReadonlySet<string>,
+  count = 14,
+  opts: GenOpts & { focus?: readonly string[]; capitals?: readonly string[] } = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const capitals = new Set(opts.capitals ?? [])
+  // Upper-case focus letters mean "words that start with this letter, capitalized".
+  const focusLower = (opts.focus ?? []).map((c) => c.toLowerCase())
+  const focus = new Set(focusLower)
+  const capitalFocus = new Set((opts.focus ?? []).filter((c) => capitals.has(c)).map((c) => c.toLowerCase()))
+  const capitalizeMaybe = (w: string) => {
+    const first = w[0].toUpperCase()
+    if (!capitals.has(first)) return w
+    const p = capitalFocus.size ? (capitalFocus.has(w[0]) ? 0.85 : 0.15) : 0.4
+    return rng.chance(p) ? first + w.slice(1) : w
+  }
+  const words = candidateWords(pool, 1500)
+  const letters = pseudoLetters(pool)
+  const out: string[] = []
+  if (words.length < 12) {
+    for (let i = 0; i < count; i++) {
+      if (words.length > 0 && rng.chance(0.4)) out.push(capitalizeMaybe(rng.pick(words)))
+      else out.push(pseudoWord(letters, focus, rng))
+    }
+    return out.join(' ')
+  }
+  const rankWeight = (i: number) => 1 / Math.sqrt(i + 20)
+  const focusWords: string[] = []
+  const focusWeights: number[] = []
+  const otherWords: string[] = []
+  const otherWeights: number[] = []
+  words.forEach((w, i) => {
+    const wt = rankWeight(i) * (w.length === 1 ? 0.3 : 1)
+    const hit = capitalFocus.size ? capitalFocus.has(w[0]) : [...w].some((c) => focus.has(c))
+    if (focus.size && hit) {
+      focusWords.push(w)
+      focusWeights.push(wt)
+    } else {
+      otherWords.push(w)
+      otherWeights.push(wt)
+    }
+  })
+  const useFocus = focusWords.length >= 4
+  let last = ''
+  for (let i = 0; i < count; i++) {
+    const fromFocus = useFocus && rng.chance(0.7)
+    const list = fromFocus ? focusWords : otherWords.length ? otherWords : focusWords
+    const wts = fromFocus ? focusWeights : otherWords.length ? otherWeights : focusWeights
+    let w = list[weightedIndex(wts, rng)]
+    if (w === last && list.length > 1) w = list[weightedIndex(wts, rng)]
+    out.push(capitalizeMaybe(w))
+    last = w
+  }
+  return out.join(' ')
+}
+
+export type SentenceCorpus = 'general' | 'numbers' | 'symbols'
+
+const CORPORA: Record<SentenceCorpus, string[]> = {
+  general: SENTENCES,
+  numbers: NUMBER_SENTENCES,
+  symbols: SYMBOL_SENTENCES,
+}
+
+/**
+ * Real sentences typable with the pool. Returns '' if none fit, so callers can fall back.
+ */
+export function sentencesText(
+  pool: ReadonlySet<string>,
+  count = 2,
+  opts: GenOpts & { corpus?: SentenceCorpus } = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const source = CORPORA[opts.corpus ?? 'general']
+  const fits = source.filter((s) => usesOnly(s, pool))
+  if (fits.length === 0) return ''
+  const chosen = rng.shuffle([...fits]).slice(0, count)
+  return chosen.join(' ')
+}
+
+/** Text for the adaptive review: words heavy on the weakest keys. */
+export function adaptiveText(
+  pool: ReadonlySet<string>,
+  weak: readonly string[],
+  count = 16,
+  opts: GenOpts = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const focus = new Set(weak)
+  const letters = pseudoLetters(pool, weak)
+  const words = candidateWords(pool, 1500).filter((w) => [...w].some((c) => focus.has(c)))
+  const out: string[] = []
+  for (let i = 0; i < count; i++) {
+    if (words.length >= 6 && rng.chance(0.7)) out.push(rng.pick(words))
+    else out.push(pseudoWord(letters, focus, rng))
+  }
+  return out.join(' ')
+}
+
+/** Lower-case letter pool → also allow the space bar. */
+export function poolOf(chars: Iterable<string>, withSpace = true): Set<string> {
+  const s = new Set(chars)
+  if (withSpace) s.add(' ')
+  return s
+}
+
+/** Numbers built from the learned digits, mixed with a few words. */
+export function numbersText(
+  pool: ReadonlySet<string>,
+  digits: readonly string[],
+  tokens = 14,
+  opts: GenOpts = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const letters = new Set([...pool].filter((c) => !/[0-9]/.test(c)))
+  const words = candidateWords(letters, 300)
+  const out: string[] = []
+  for (let i = 0; i < tokens; i++) {
+    if (words.length > 10 && rng.chance(0.35)) {
+      out.push(rng.pick(words))
+      continue
+    }
+    const len = 1 + rng.int(4)
+    let n = ''
+    for (let j = 0; j < len; j++) n += rng.pick(digits)
+    out.push(n)
+  }
+  return out.join(' ')
+}
+
+const OPENERS: Record<string, string> = { '(': ')', '[': ']', '{': '}', '¿': '?', '¡': '!', '<': '>', '"': '"', "'": "'" }
+const CLOSERS = new Set([')', ']', '}', '?', '!', '>'])
+const TRAILING = new Set([',', ';', ':', '.'])
+
+/** Words dressed with the given symbols using natural-ish templates. */
+export function symbolsText(
+  pool: ReadonlySet<string>,
+  symbols: readonly string[],
+  tokens = 14,
+  opts: GenOpts = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const letters = new Set([...pool].filter((c) => /[a-zñáéíóúü]/i.test(c) || c === ' '))
+  const words = candidateWords(letters, 400)
+  const digits = [...pool].filter((c) => /[0-9]/.test(c))
+  const word = () => (words.length ? rng.pick(words) : 'ala')
+  const number = () => {
+    if (!digits.length) return word()
+    let n = ''
+    const len = 1 + rng.int(3)
+    for (let j = 0; j < len; j++) n += rng.pick(digits)
+    return n
+  }
+  const out: string[] = []
+  const usable = symbols.filter((s) => pool.has(s))
+  if (!usable.length) return wordsText(pool, tokens, { rng })
+  for (let i = 0; i < tokens; i++) {
+    if (rng.chance(0.3)) {
+      out.push(word())
+      continue
+    }
+    const s = rng.pick(usable)
+    const close = OPENERS[s]
+    if (close && pool.has(close)) out.push(`${s}${word()}${close}`)
+    else if (CLOSERS.has(s)) {
+      const open = Object.entries(OPENERS).find(([, c]) => c === s)?.[0]
+      out.push(open && pool.has(open) ? `${open}${word()}${s}` : `${word()}${s}`)
+    } else if (TRAILING.has(s)) out.push(`${word()}${s}`)
+    else if (s === '-' || s === '_' || s === '/' || s === '@' || s === '.') out.push(`${word()}${s}${word()}`)
+    else if (s === '$' || s === '#' || s === '%') out.push(s === '%' ? `${number()}%` : `${s}${number()}`)
+    else if ('=+*&<>|\\'.includes(s)) out.push(`${number()} ${s} ${number()}`)
+    else out.push(`${word()}${s}`)
+  }
+  return out.join(' ')
+}
