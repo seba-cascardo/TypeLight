@@ -22,11 +22,11 @@ type FingerId = 'P' | 'R' | 'M' | 'I' | 'T'
 
 /** Finger axes on the same grid: tip → base, plus the tint width. */
 const FINGERS: Record<FingerId, { tip: [number, number]; base: [number, number]; w: number }> = {
-  T: { tip: [48, 132], base: [76, 206], w: 30 },
-  I: { tip: [104, 30], base: [94, 152], w: 30 },
-  M: { tip: [150, 18], base: [147, 152], w: 30 },
-  R: { tip: [195, 32], base: [186, 158], w: 28 },
-  P: { tip: [236, 76], base: [223, 172], w: 26 },
+  T: { tip: [48, 132], base: [74, 198], w: 30 },
+  I: { tip: [104, 30], base: [95, 144], w: 30 },
+  M: { tip: [150, 18], base: [147, 144], w: 30 },
+  R: { tip: [195, 32], base: [187, 150], w: 28 },
+  P: { tip: [236, 76], base: [224, 164], w: 26 },
 }
 
 function fingerId(id: FingerId, side: 'L' | 'R'): Finger {
