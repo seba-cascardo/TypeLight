@@ -36,6 +36,11 @@
   --color-finger-index: #9ccbf5;
   --color-finger-thumb: #c9c2f7;
 
+  --color-skin: #f0d2b4;
+  --color-skin-shade: #d9b08d;
+  --color-skin-line: #b5855f;
+  --color-skin-nail: #f9e7d9;
+
   --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
 
@@ -59,9 +64,64 @@
     0% { transform: translateY(10px); opacity: 0; }
     100% { transform: translateY(0); opacity: 1; }
   }
+  @keyframes keypress {
+    0% { transform: translateY(0); }
+    35% { transform: translateY(3px); border-bottom-width: 1px; }
+    70% { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
 }
 
 @layer base {
+  :root {
+    --skin: var(--color-skin);
+    --skin-shade: var(--color-skin-shade);
+    --skin-line: var(--color-skin-line);
+    --skin-nail: var(--color-skin-nail);
+    --grain-opacity: 0.06;
+    --grain-blend: multiply;
+  }
+
+  /* "Noche de teclado": tinta profunda, teclas grafito, leyendas que brillan. No es una inversión. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --color-paper: #16181b;
+      --color-paper-deep: #23262b;
+      --color-keycap: #1f2226;
+      --color-ink: #f1ecdf;
+      --color-ink-soft: #b8b3a4;
+      --color-ink-mute: #7d7a70;
+      --color-line: #33373c;
+      --color-line-soft: #2a2e33;
+      --color-enter-soft: #1f3a27;
+      --color-mod-soft: #1e2a44;
+      --color-esc-soft: #3d2420;
+      --color-sun-soft: #3a3417;
+      --color-lav-soft: #2a2542;
+      --color-mint-soft: #1c3530;
+      --grain-opacity: 0.08;
+      --grain-blend: overlay;
+    }
+  }
+  :root[data-theme='dark'] {
+      --color-paper: #16181b;
+      --color-paper-deep: #23262b;
+      --color-keycap: #1f2226;
+      --color-ink: #f1ecdf;
+      --color-ink-soft: #b8b3a4;
+      --color-ink-mute: #7d7a70;
+      --color-line: #33373c;
+      --color-line-soft: #2a2e33;
+      --color-enter-soft: #1f3a27;
+      --color-mod-soft: #1e2a44;
+      --color-esc-soft: #3d2420;
+      --color-sun-soft: #3a3417;
+      --color-lav-soft: #2a2542;
+      --color-mint-soft: #1c3530;
+      --grain-opacity: 0.08;
+      --grain-blend: overlay;
+  }
+
   html {
     background: var(--color-paper);
     color: var(--color-ink);
@@ -73,6 +133,18 @@
   body {
     margin: 0;
     min-height: 100dvh;
+  }
+  /* Grano de papel: una capa fija de ruido, muy tenue. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
   }
   h1, h2, h3 {
     font-family: var(--font-display);
@@ -98,7 +170,7 @@
 }
 
 @layer components {
-  /* Todo botón es una tecla: borde inferior grueso, se hunde al presionar. */
+  /* Todo botón es una tecla: sin borde lateral, un canto inferior del mismo tono y un brillo arriba. */
   .keycap {
     --fill: var(--color-keycap);
     --edge: var(--color-line);
@@ -110,24 +182,25 @@
     gap: 0.5rem;
     background: var(--fill);
     color: var(--text);
-    border: 2px solid var(--edge);
-    border-bottom-width: 5px;
+    border: 0;
+    border-bottom: 4px solid var(--edge);
     border-radius: var(--radius-key);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
     font-family: var(--font-body);
     font-weight: 800;
     letter-spacing: 0.01em;
-    padding: 0.7rem 1.25rem;
+    padding: 0.75rem 1.3rem;
     cursor: pointer;
     user-select: none;
     text-decoration: none;
     transition: transform 70ms ease, border-bottom-width 70ms ease, background 120ms ease, filter 120ms ease;
   }
   .keycap:hover:not(:disabled) {
-    filter: brightness(1.03);
+    filter: brightness(1.04);
   }
   .keycap:active:not(:disabled),
   .keycap.is-pressed {
-    transform: translateY(3px);
+    transform: translateY(2px);
     border-bottom-width: 2px;
   }
   .keycap:disabled {
@@ -137,17 +210,29 @@
   .keycap-primary { --fill: var(--color-enter); --edge: var(--color-enter-edge); --text: #fff; }
   .keycap-secondary { --fill: var(--color-mod); --edge: var(--color-mod-edge); --text: #fff; }
   .keycap-coral { --fill: var(--color-esc); --edge: var(--color-esc-edge); --text: #fff; }
-  .keycap-sun { --fill: var(--color-sun); --edge: var(--color-sun-edge); --text: var(--color-ink); }
+  .keycap-sun { --fill: var(--color-sun); --edge: var(--color-sun-edge); --text: #1e2124; }
   .keycap-lav { --fill: var(--color-lav); --edge: var(--color-lav-edge); --text: #fff; }
   .keycap-mint { --fill: var(--color-mint); --edge: var(--color-mint-edge); --text: #fff; }
-  .keycap-ghost { --fill: transparent; --edge: var(--color-line); --text: var(--color-ink); }
+  /* Ghost: un contorno fino y plano, sin canto. */
+  .keycap-ghost {
+    --fill: transparent;
+    --edge: var(--color-line);
+    --text: var(--color-ink);
+    border: 2px solid var(--edge);
+    box-shadow: none;
+  }
+  .keycap-ghost:active:not(:disabled) {
+    transform: translateY(1px);
+    border-bottom-width: 2px;
+  }
   .keycap-lg { padding: 1rem 1.75rem; font-size: 1.125rem; border-radius: 16px; }
-  .keycap-sm { padding: 0.4rem 0.8rem; font-size: 0.875rem; border-bottom-width: 4px; }
+  .keycap-sm { padding: 0.45rem 0.85rem; font-size: 0.875rem; border-bottom-width: 3px; }
+  .keycap-sm:active:not(:disabled) { border-bottom-width: 1px; }
 
   .card {
     background: var(--color-keycap);
-    border: 2px solid var(--color-line);
-    border-bottom-width: 4px;
+    border: 1.5px solid var(--color-line);
+    border-bottom-width: 3px;
     border-radius: var(--radius-card);
   }
 
@@ -172,6 +257,7 @@
     border: 2px solid rgb(0 0 0 / 0.08);
     border-bottom-width: 4px;
     background: var(--color-keycap);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55);
     color: var(--color-ink-soft);
     font-family: var(--font-body);
     font-weight: 700;
@@ -179,18 +265,34 @@
     padding: 0 0 3px 6px;
     transition: transform 60ms ease, border-bottom-width 60ms ease, background 140ms ease, box-shadow 140ms ease;
   }
+  .kb-key.has-finger {
+    background: var(--finger);
+  }
   .kb-key.is-pressed {
-    transform: translateY(2px);
-    border-bottom-width: 2px;
+    animation: keypress 240ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
   }
   .kb-key.is-next {
     background: var(--color-ink);
     color: var(--color-keycap);
     border-color: var(--color-ink);
-    box-shadow: 0 0 0 3px var(--color-sun);
+    box-shadow: 0 0 0 3px var(--color-sun), inset 0 1px 0 rgb(255 255 255 / 0.2);
+    text-shadow: none;
   }
   .kb-key.is-next-2 {
-    box-shadow: 0 0 0 3px var(--color-mod);
+    box-shadow: 0 0 0 3px var(--color-mod), inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+  /* De noche las teclas son grafito y la leyenda brilla con el color del dedo. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      .kb-key { border-color: rgb(0 0 0 / 0.35); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08); }
+      .kb-key.has-finger { background: #2a2e33; color: var(--finger); text-shadow: 0 0 10px var(--finger); }
+      .kb-key.is-next { background: var(--color-sun); color: #16181b; border-color: var(--color-sun-edge); box-shadow: 0 0 0 3px rgb(245 195 59 / 0.35), 0 0 18px rgb(245 195 59 / 0.45); }
+    }
+  }
+  :root[data-theme='dark'] {
+    .kb-key { border-color: rgb(0 0 0 / 0.35); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08); }
+    .kb-key.has-finger { background: #2a2e33; color: var(--finger); text-shadow: 0 0 10px var(--finger); }
+    .kb-key.is-next { background: var(--color-sun); color: #16181b; border-color: var(--color-sun-edge); box-shadow: 0 0 0 3px rgb(245 195 59 / 0.35), 0 0 18px rgb(245 195 59 / 0.45); }
   }
   .kb-key.is-home::after {
     content: '';
@@ -219,3 +321,45 @@
 .type-char.is-current { background: var(--color-sun-soft); box-shadow: inset 0 -3px 0 var(--color-ink); }
 .type-char.is-current.is-wrong { background: var(--color-esc-soft); box-shadow: inset 0 -3px 0 var(--color-esc); animation: var(--animate-shake); }
 .type-char.is-space.is-current::before { content: '␣'; color: var(--color-ink-mute); }
+
+/* Lluvia de teclas */
+.rain-water {
+  background:
+    radial-gradient(circle at 12px -6px, transparent 14px, var(--color-mod-soft) 15px) 0 0 / 28px 100% repeat-x,
+    var(--color-mod-soft);
+  border-top: 2px solid var(--color-mod);
+  opacity: 0.9;
+  animation: water-drift 3s linear infinite;
+}
+@keyframes water-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 28px 0, 0 0; }
+}
+.rain-particle {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgb(0 0 0 / 0.15);
+  animation: particle 620ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes particle {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+}
+.rain-ripple {
+  position: absolute;
+  left: -18px;
+  top: -8px;
+  width: 36px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-mod);
+  animation: ripple 640ms ease-out forwards;
+}
+@keyframes ripple {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}

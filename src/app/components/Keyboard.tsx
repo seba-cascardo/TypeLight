@@ -107,20 +107,22 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
               const h = heatOf(key)
               const group = fingerGroup(key.finger)
               let background: string | undefined
+              let finger: string | undefined
               if (h !== undefined) {
                 // cool (slow) → warm (fast): coral → sun → mint
                 const hue = 10 + h * 150
                 background = `hsl(${hue} 75% ${78 - h * 10}%)`
               } else if (fingerColors && (key.base || key.code === 'Space')) {
-                background = FINGER_COLOR[group]
+                finger = FINGER_COLOR[group]
               }
               return (
                 <div
                   key={key.code}
-                  className={`kb-key ${isNext ? 'is-next' : ''} ${isNext && n.step === 2 ? 'is-next-2' : ''} ${isPressed ? 'is-pressed' : ''} ${key.home ? 'is-home' : ''}`}
+                  className={`kb-key ${isNext ? 'is-next' : ''} ${isNext && n.step === 2 ? 'is-next-2' : ''} ${isPressed ? 'is-pressed' : ''} ${key.home ? 'is-home' : ''} ${finger && !isNext ? 'has-finger' : ''}`}
                   style={{
                     flexGrow: key.width ?? 1,
                     flexBasis: 0,
+                    ['--finger' as string]: finger,
                     background: isNext ? undefined : background,
                     boxShadow: isSoft && !isNext ? '0 0 0 3px var(--color-sun)' : undefined,
                     fontSize: size === 'sm' ? '0.65rem' : undefined,

@@ -13,7 +13,7 @@ const letters = (codes: string) =>
   codes.split(' ').map((c) => k({ code: `Key${c}`, base: c.toLowerCase(), shift: c }))
 
 const TAB = k({ code: 'Tab', base: '', label: 'Tab', width: 1.5 })
-const CAPS = k({ code: 'CapsLock', base: '', label: 'Bloq Mayús', width: 1.75 })
+const CAPS = k({ code: 'CapsLock', base: '', label: 'Mayús', width: 1.75 })
 const BACKSPACE = k({ code: 'Backspace', base: '', label: '⌫', width: 2 })
 const ENTER_ANSI = k({ code: 'Enter', base: '', label: 'Enter', width: 2.25 })
 const ENTER_ISO = k({ code: 'Enter', base: '', label: 'Enter', width: 1.25 })

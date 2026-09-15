@@ -42,7 +42,24 @@ export function Settings() {
             />
           </label>
           <Toggle checked={settings.sound} onChange={(v) => setSettings({ sound: v })} label="Sonido" hint="Un clic suave por tecla y un golpe seco por error." />
-          <Toggle checked={settings.showHands} onChange={(v) => setSettings({ showHands: v })} label="Manos guía" hint="Las manos al lado del teclado, con el dedo que toca." />
+          <Toggle checked={settings.showHands} onChange={(v) => setSettings({ showHands: v })} label="Manos guía" hint="Las manos debajo del teclado, con el dedo que toca." />
+          <div className="rounded-xl bg-paper px-4 py-3">
+            <span className="block font-bold">Tema</span>
+            <span className="block text-sm text-ink-soft">"Automático" sigue al sistema: papel de día, noche de teclado cuando oscurece.</span>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(
+                [
+                  ['auto', 'Automático'],
+                  ['light', 'Papel'],
+                  ['dark', 'Noche'],
+                ] as const
+              ).map(([id, label]) => (
+                <Keycap key={id} size="sm" variant={(settings.theme ?? 'auto') === id ? 'secondary' : 'ghost'} onClick={() => setSettings({ theme: id })}>
+                  {label}
+                </Keycap>
+              ))}
+            </div>
+          </div>
           <div className="rounded-xl border-2 border-esc-soft bg-esc-soft/40 px-4 py-3">
             <span className="block font-bold">Reiniciar progreso</span>
             <span className="block text-sm text-ink-soft">Borra lecciones, estadísticas y racha. No se puede deshacer.</span>

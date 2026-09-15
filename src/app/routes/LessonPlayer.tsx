@@ -233,7 +233,7 @@ function Player({ lesson }: { lesson: Lesson }) {
             </div>
           </div>
           <div className="card flex flex-col justify-center p-4 md:p-5">
-            <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} arrange="stack" />
+            <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} />
           </div>
         </div>
       </div>

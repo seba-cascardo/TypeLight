@@ -19,6 +19,7 @@ Otros comandos:
 | `npm run e2e`      | Flujo completo en Chromium con Playwright            |
 | `npm run build`    | Build estático en `dist/` (se sirve desde cualquier host) |
 | `npm run lint`     | oxlint                                               |
+| `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]` | Captura de pantalla contra el dev server con progreso sembrado |
 
 ## Cómo está armado
 
@@ -44,6 +45,8 @@ Detalles de diseño y decisiones: [`docs/superpowers/specs/2026-09-15-typelight-
 3. **Parar en el error**: la letra se marca en rojo y no avanzás hasta acertar. Cada ejercicio terminado es una repetición correcta.
 4. **Precisión antes que velocidad**: ★ terminar · ★★ ≥ 95 % · ★★★ ≥ 97 % y la meta de PPM de la unidad.
 5. **Rutina diaria**: Calentamiento (1 min) → Lección (5 min) → Repaso adaptativo con tus 3 teclas más lentas (2 min) → Reto de un minuto. Racha por días consecutivos.
+6. **Juego "Lluvia de teclas"** cada pocas lecciones: caen keycaps con las letras aprendidas, en el color del dedo que las presiona.
+7. **Tema**: papel de día, "noche de teclado" cuando el sistema está en oscuro (o fijo desde Ajustes).
 
 ## Regenerar el corpus de palabras
 

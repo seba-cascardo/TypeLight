@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import './index.css'
@@ -11,6 +11,19 @@ import { Settings } from './app/routes/Settings'
 import { Stats } from './app/routes/Stats'
 import { Welcome } from './app/routes/Welcome'
 import { useStore } from './app/store'
+
+/** Mirrors the theme setting onto <html data-theme>; 'auto' follows the system. */
+function ThemeSync() {
+  const theme = useStore((s) => s.settings.theme ?? 'auto')
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme === 'auto') delete root.dataset.theme
+    else root.dataset.theme = theme
+    const dark = theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#F1ECDF')
+  }, [theme])
+  return null
+}
 
 function RequireOnboarding() {
   const onboarded = useStore((s) => s.settings.onboarded)
@@ -41,6 +54,7 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeSync />
     <RouterProvider router={router} />
   </StrictMode>,
 )

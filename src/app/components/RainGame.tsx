@@ -33,9 +33,22 @@ interface Drop {
   color: string
 }
 
+interface Effect {
+  id: number
+  kind: 'pop' | 'splash'
+  x: number
+  y: number
+  color: string
+  at: number
+}
+
+type Mood = 'idle' | 'happy' | 'sad'
+
 const KEY = 56
 const LANES = 8
 const POP_MS = 260
+const EFFECT_MS = 650
+const WATER = 22
 
 function pickLetters(layout: Layout, pool: string[]): string[] {
   return pool.filter((c) => {
@@ -43,6 +56,50 @@ function pickLetters(layout: Layout, pool: string[]): string[] {
     const seq = resolveChar(layout, c)
     return seq !== null && seq.length === 1
   })
+}
+
+/** A keycap with a face that cheers catches and winces at misses. */
+function Mascot({ mood, combo }: { mood: Mood; combo: number }) {
+  const happy = mood === 'happy'
+  const sad = mood === 'sad'
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className={`h-16 w-16 ${happy ? 'animate-pop' : ''} ${sad ? 'animate-shake' : ''}`}
+      aria-hidden="true"
+    >
+      <rect x="6" y="10" width="52" height="48" rx="12" fill="var(--color-enter-edge)" />
+      <rect x="6" y="6" width="52" height="46" rx="12" fill="var(--color-enter)" />
+      <rect x="10" y="8" width="44" height="2" rx="1" fill="rgb(255 255 255 / 0.35)" />
+      {/* eyes */}
+      {happy ? (
+        <>
+          <path d="M18 30 q5 -7 10 0" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M36 30 q5 -7 10 0" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <circle cx="23" cy={sad ? 30 : 28} r="4" fill="#fff" />
+          <circle cx="41" cy={sad ? 30 : 28} r="4" fill="#fff" />
+          <circle cx={sad ? 22 : 24} cy={sad ? 31 : 29} r="1.8" fill="#1e2124" />
+          <circle cx={sad ? 40 : 42} cy={sad ? 31 : 29} r="1.8" fill="#1e2124" />
+        </>
+      )}
+      {/* mouth */}
+      {happy ? (
+        <path d="M22 38 q10 10 20 0" fill="#1e2124" />
+      ) : sad ? (
+        <path d="M24 42 q8 -6 16 0" fill="none" stroke="#1e2124" strokeWidth="3" strokeLinecap="round" />
+      ) : (
+        <path d="M25 39 q7 4 14 0" fill="none" stroke="#1e2124" strokeWidth="3" strokeLinecap="round" />
+      )}
+      {combo >= 5 && (
+        <text x="32" y="62" textAnchor="middle" fontSize="9" fontWeight="900" fill="var(--color-sun-edge)" fontFamily="var(--font-body)">
+          ×{combo}
+        </text>
+      )}
+    </svg>
+  )
 }
 
 /**
@@ -57,7 +114,9 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
   const [, setFrame] = useState(0)
 
   const drops = useRef<Drop[]>([])
+  const effects = useRef<Effect[]>([])
   const stats = useRef({ hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: lives })
+  const mood = useRef<{ mood: Mood; at: number }>({ mood: 'idle', at: 0 })
   const startedAt = useRef(0)
   const lastSpawn = useRef(0)
   const nextId = useRef(1)
@@ -75,7 +134,12 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
   }, [])
 
   const laneX = useCallback((lane: number) => (size.w - KEY) * (lane / (LANES - 1)), [size.w])
-  const ground = size.h - KEY - 8
+  const ground = size.h - KEY - WATER
+  const dropY = (d: Drop, now: number) => Math.min(ground, ((now - d.bornAt) * d.speed) / 1000)
+
+  const setMood = (m: Mood, now: number) => {
+    mood.current = { mood: m, at: now }
+  }
 
   const finish = useCallback(() => {
     if (finished.current) return
@@ -123,16 +187,17 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
       }
       const interval = Math.max(620, 1500 - (elapsed / 1000) * 16)
       if (now - lastSpawn.current > interval) spawn(now)
-      // Misses: drops that reached the ground.
+      // Misses: drops that reached the water.
       for (const d of drops.current) {
         if (d.poppedAt) continue
-        const y = ((now - d.bornAt) * d.speed) / 1000
-        if (y >= ground) {
+        if (dropY(d, now) >= ground) {
           d.poppedAt = now
           stats.current.misses++
           stats.current.combo = 0
           stats.current.livesLeft--
           shake.current = now
+          setMood('sad', now)
+          effects.current.push({ id: nextId.current++, kind: 'splash', x: laneX(d.lane) + KEY / 2, y: ground + KEY, color: d.color, at: now })
           if (sound) thud()
           if (stats.current.livesLeft <= 0) {
             finish()
@@ -141,12 +206,15 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
         }
       }
       drops.current = drops.current.filter((d) => !d.poppedAt || now - d.poppedAt < POP_MS)
+      effects.current = effects.current.filter((e) => now - e.at < EFFECT_MS)
+      if (mood.current.mood !== 'idle' && now - mood.current.at > 700) mood.current = { mood: 'idle', at: now }
       setFrame((f) => f + 1)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [phase, durationMs, ground, spawn, finish, sound])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, durationMs, ground, spawn, finish, sound, laneX])
 
   // Keyboard input.
   useEffect(() => {
@@ -160,26 +228,32 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
         stats.current.wrong++
         stats.current.combo = 0
         shake.current = now
+        setMood('sad', now)
         if (sound) thud()
         return
       }
       // Pop the lowest one.
-      const target = candidates.reduce((a, b) => ((now - a.bornAt) * a.speed > (now - b.bornAt) * b.speed ? a : b))
+      const target = candidates.reduce((a, b) => (dropY(a, now) > dropY(b, now) ? a : b))
       target.poppedAt = now
       const s = stats.current
       s.hits++
       s.combo++
       s.bestCombo = Math.max(s.bestCombo, s.combo)
       s.score += 10 * Math.min(5, 1 + Math.floor(s.combo / 5))
+      setMood('happy', now)
+      effects.current.push({ id: nextId.current++, kind: 'pop', x: laneX(target.lane) + KEY / 2, y: dropY(target, now) + KEY / 2, color: target.color, at: now })
       if (sound) click()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, sound])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, sound, laneX])
 
   const start = () => {
     drops.current = []
+    effects.current = []
     stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: lives }
+    mood.current = { mood: 'idle', at: 0 }
     finished.current = false
     startedAt.current = performance.now()
     lastSpawn.current = startedAt.current - 900
@@ -233,10 +307,19 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
         className={`card relative h-[420px] overflow-hidden ${shaking ? 'animate-shake' : ''}`}
         style={{ background: 'linear-gradient(var(--color-keycap), var(--color-paper))' }}
       >
-        {/* ground */}
-        <div className="absolute inset-x-0 bottom-0 h-2 bg-line" />
+        {/* lanes */}
+        {Array.from({ length: LANES }, (_, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-line-soft"
+            style={{ left: laneX(i) + KEY / 2, opacity: 0.7 }}
+          />
+        ))}
+        {/* water */}
+        <div className="rain-water absolute inset-x-0 bottom-0" style={{ height: WATER + 6 }} />
+
         {drops.current.map((d) => {
-          const y = Math.min(ground, ((now - d.bornAt) * d.speed) / 1000)
+          const y = dropY(d, now)
           const popped = d.poppedAt !== null
           return (
             <div
@@ -259,12 +342,42 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
           )
         })}
 
+        {effects.current.map((e) =>
+          e.kind === 'pop' ? (
+            <div key={e.id} className="pointer-events-none absolute" style={{ left: e.x, top: e.y }}>
+              {Array.from({ length: 7 }, (_, i) => {
+                const a = (i / 7) * Math.PI * 2
+                return (
+                  <span
+                    key={i}
+                    className="rain-particle"
+                    style={{
+                      ['--dx' as string]: `${Math.cos(a) * 46}px`,
+                      ['--dy' as string]: `${Math.sin(a) * 46 - 10}px`,
+                      background: e.color,
+                    }}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div key={e.id} className="pointer-events-none absolute" style={{ left: e.x, top: e.y }}>
+              <span className="rain-ripple" />
+              <span className="rain-ripple" style={{ animationDelay: '120ms' }} />
+            </div>
+          ),
+        )}
+
+        <div className="absolute bottom-6 right-4">
+          <Mascot mood={mood.current.mood} combo={s.combo} />
+        </div>
+
         {phase === 'ready' && (
           <div className="absolute inset-0 grid place-items-center bg-paper/70 backdrop-blur-[2px]">
             <div className="max-w-md text-center">
               <h2 className="text-3xl">Lluvia de teclas</h2>
               <p className="mt-2 text-ink-soft">
-                Caen teclas con las letras que ya conocés. Tipeá cada una antes de que toque el piso. Tres vidas, {Math.round(durationMs / 1000)} segundos, y las manos en la fila guía.
+                Caen teclas con las letras que ya conocés. Tipeá cada una antes de que caiga al agua. Tres vidas, {Math.round(durationMs / 1000)} segundos, y las manos en la fila guía.
               </p>
               <Keycap variant="primary" size="lg" className="mt-5" onClick={start} autoFocus>
                 Empezar (Enter) →

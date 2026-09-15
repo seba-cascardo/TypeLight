@@ -4,12 +4,15 @@ import type { LayoutId } from '@/engine/layouts'
 import { bumpStreak, dayKey, updateKeyStats, type KeyStats, type Stars, type Streak } from '@/engine/stats'
 import type { KeySample } from '@/engine/typing'
 
+export type Theme = 'auto' | 'light' | 'dark'
+
 export interface Settings {
   name: string
   layoutId: LayoutId
   sound: boolean
   showHands: boolean
   onboarded: boolean
+  theme: Theme
 }
 
 export interface LessonResult {
@@ -70,7 +73,7 @@ const initialProgress = () => ({
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false },
+      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto' },
       ...initialProgress(),
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
