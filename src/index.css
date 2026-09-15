@@ -38,7 +38,6 @@
 
   --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
 
   --radius-key: 12px;
   --radius-card: 18px;
@@ -209,6 +208,9 @@
 
 /* Área de tipeo */
 .type-char {
+  display: inline-block;
+  min-width: 0.55em;
+  text-align: center;
   border-radius: 4px;
   transition: background 80ms ease, color 80ms ease;
 }

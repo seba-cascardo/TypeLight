@@ -75,7 +75,7 @@ Tokens:
 - Papel `#F1ECDF`, keycap `#FFFDF7`, tinta `#1E2124`, tinta suave `#5B6068`, línea `#D9D1BC`.
 - Enter-verde `#3FAE5A` (borde `#2E8A45`) = acción primaria. Mod-azul `#3D7BF7` (borde `#2B5FD0`) = secundaria/info. Esc-coral `#F26B4E` = error/racha. Sol `#F5C33B` = estrellas.
 - Dedos (espejados): meñique coral-rosa `#F6A5B0`, anular sol `#F8D66B`, medio menta `#9EDDB1`, índice cielo `#9CCBF5`, pulgar lavanda `#C9C2F7`.
-- Tipografías: display **Bricolage Grotesque** (800, tracking −0.02em), cuerpo **Nunito Sans**, tipeo **IBM Plex Mono**.
+- Tipografías: display **Bricolage Grotesque** (800, tracking −0.02em), cuerpo y texto a tipear **Nunito Sans** (sin monospace: Seba lo pidió unificado).
 - Radio 12 px botones / 16 px tarjetas; sombras: ninguna, profundidad con borde inferior 3–4 px (keycap). Presión = translateY(3px).
 
 Firma: **todo botón es una tecla**; la rutina de hoy es una fila de 4 keycaps grandes; la ruta es un teclado de lecciones; el teclado en pantalla con manos es el héroe de la lección.

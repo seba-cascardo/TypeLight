@@ -4,7 +4,7 @@ import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useRoutine, useStore, type RoutineBlock } from '../store'
-import { unitAccentClass } from './Path'
+import { unitAccentClass } from '../lib/accents'
 
 const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral'; to: string }[] = [
   { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '1 min', variant: 'sun', to: '/practica/calentamiento' },

@@ -1,28 +1,9 @@
 import { Link } from 'react-router'
-import type { Lesson, UnitAccent } from '@/engine/curriculum'
+import type { Lesson } from '@/engine/curriculum'
 import { PageTitle, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
+import { accentVars, unitAccentClass } from '../lib/accents'
 import { useStore } from '../store'
-
-export function unitAccentClass(accent: UnitAccent): string {
-  return {
-    green: 'bg-enter',
-    blue: 'bg-mod',
-    coral: 'bg-esc',
-    sun: 'bg-sun text-ink!',
-    lavender: 'bg-lav',
-    mint: 'bg-mint',
-  }[accent]
-}
-
-const accentVars: Record<UnitAccent, { fill: string; edge: string; soft: string }> = {
-  green: { fill: 'var(--color-enter)', edge: 'var(--color-enter-edge)', soft: 'var(--color-enter-soft)' },
-  blue: { fill: 'var(--color-mod)', edge: 'var(--color-mod-edge)', soft: 'var(--color-mod-soft)' },
-  coral: { fill: 'var(--color-esc)', edge: 'var(--color-esc-edge)', soft: 'var(--color-esc-soft)' },
-  sun: { fill: 'var(--color-sun)', edge: 'var(--color-sun-edge)', soft: 'var(--color-sun-soft)' },
-  lavender: { fill: 'var(--color-lav)', edge: 'var(--color-lav-edge)', soft: 'var(--color-lav-soft)' },
-  mint: { fill: 'var(--color-mint)', edge: 'var(--color-mint-edge)', soft: 'var(--color-mint-soft)' },
-}
 
 function legend(l: Lesson): { main: string; sub: string } {
   switch (l.kind) {
@@ -84,7 +65,7 @@ export function Path() {
                   const inner = (
                     <>
                       <span
-                        className={`font-display font-extrabold leading-none ${l.kind === 'keys' ? 'font-mono tracking-tight' : ''} ${lg.main.length > 3 ? 'text-sm' : 'text-xl'}`}
+                        className={`font-display font-extrabold leading-none ${l.kind === 'keys' ? 'tracking-tight' : ''} ${lg.main.length > 3 ? 'text-sm' : 'text-xl'}`}
                       >
                         {lg.main}
                       </span>

@@ -111,3 +111,37 @@ test('dead keys compose accented letters through the hidden input', async ({ pag
   })
   await expect(page.locator('.type-char.is-done')).toHaveCount(1)
 })
+
+test('practice lesson (no intro) completes after both exercises with Enter and click', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => {
+    const done = { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }
+    localStorage.setItem(
+      'typelight.v1',
+      JSON.stringify({ state: { settings: { name: 'Seba', layoutId: 'latam', sound: true, showHands: true, onboarded: true }, lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-66-6a-review': done }, keys: {}, sessions: [], streak: { count: 0, lastDay: null }, routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false } }, version: 1 }),
+    )
+  })
+  await page.goto('/leccion/guia-66-6a-practice')
+  await expect(page.getByRole('heading', { name: 'Práctica: f y j' })).toBeVisible()
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  const first = await remaining(page)
+  await page.keyboard.type(first, { delay: 40 })
+  await expect(page.getByRole('button', { name: /Siguiente ejercicio/ })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: /Siguiente ejercicio/ })).toBeHidden()
+  const second = await remaining(page)
+  expect(second).not.toBe(first)
+  await page.keyboard.type(second, { delay: 40 })
+  await expect(page.getByText('Lección terminada')).toBeVisible()
+  const lessons = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('typelight.v1')!).state.lessons))
+  expect(lessons).toContain('guia-66-6a-practice')
+
+  // Repetir: fresh texts, and the click path for the middle button.
+  await page.getByRole('button', { name: 'Repetir' }).click()
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  await page.keyboard.type(await remaining(page), { delay: 20 })
+  await page.getByRole('button', { name: /Siguiente ejercicio/ }).click()
+  await expect(page.getByRole('button', { name: /Siguiente ejercicio/ })).toBeHidden()
+  await page.keyboard.type(await remaining(page), { delay: 20 })
+  await expect(page.getByText('Lección terminada')).toBeVisible()
+})

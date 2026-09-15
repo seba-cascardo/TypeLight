@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
@@ -11,7 +11,7 @@ import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { useStore } from '../store'
-import { unitAccentClass } from './Path'
+import { unitAccentClass } from '../lib/accents'
 
 type Phase = 'intro' | 'exercise' | 'results'
 
@@ -56,6 +56,9 @@ function Player({ lesson }: { lesson: Lesson }) {
   const [totals, setTotals] = useState<Totals>(emptyTotals)
   const [stars, setStars] = useState<StarCount>(0)
   const [stepDone, setStepDone] = useState(false)
+  // Mirrors of step/totals that callbacks can trust regardless of render timing.
+  const stepRef = useRef(0)
+  const totalsRef = useRef<Totals>(totals)
 
   const finishLesson = useCallback(
     (t: Totals) => {
@@ -79,27 +82,33 @@ function Player({ lesson }: { lesson: Lesson }) {
   const onExerciseFinish = useCallback(
     (state: TypingState) => {
       const m = metrics(state)
+      if (m.chars === 0) return
       const samples = keySamples(state)
       recordSession({ kind: 'lesson', lessonId: lesson.id, wpm: m.wpm, acc: m.accuracy, chars: m.chars, errors: m.errors, seconds: m.seconds }, samples.values())
-      const errorsByKey = { ...totals.errorsByKey }
+      const prev = totalsRef.current
+      const errorsByKey = { ...prev.errorsByKey }
       for (const s of samples.values()) if (s.errors) errorsByKey[s.char] = (errorsByKey[s.char] ?? 0) + s.errors
       const t: Totals = {
-        correct: totals.correct + m.correct,
-        errors: totals.errors + m.errors,
-        seconds: totals.seconds + m.seconds,
-        chars: totals.chars + m.chars,
+        correct: prev.correct + m.correct,
+        errors: prev.errors + m.errors,
+        seconds: prev.seconds + m.seconds,
+        chars: prev.chars + m.chars,
         errorsByKey,
       }
+      totalsRef.current = t
       setTotals(t)
       setStepDone(true)
-      if (step + 1 >= texts.length) finishLesson(t)
+      if (stepRef.current + 1 >= texts.length) finishLesson(t)
     },
-    [lesson.id, recordSession, totals, step, texts.length, finishLesson],
+    [lesson.id, recordSession, texts.length, finishLesson],
   )
 
   const nextStep = useCallback(() => {
+    const next = Math.min(stepRef.current + 1, texts.length - 1)
+    if (next === stepRef.current) return
+    stepRef.current = next
     setStepDone(false)
-    setStep((s) => Math.min(s + 1, texts.length - 1))
+    setStep(next)
   }, [texts.length])
 
   // Enter advances: between exercises, and from the results to the next lesson.
@@ -126,8 +135,10 @@ function Player({ lesson }: { lesson: Lesson }) {
 
   const retry = () => {
     setTexts(generateTexts(lesson))
+    stepRef.current = 0
+    totalsRef.current = emptyTotals()
     setStep(0)
-    setTotals(emptyTotals())
+    setTotals(totalsRef.current)
     setStepDone(false)
     setPhase('exercise')
   }
@@ -171,7 +182,7 @@ function Player({ lesson }: { lesson: Lesson }) {
               {card + 1} de {lesson.intro.length}
             </div>
             {c.highlight.length === 1 && c.highlight[0] !== ' ' ? (
-              <div className="keycap keycap-sun mb-4 h-20 w-20 font-mono text-4xl" style={{ borderRadius: 16 }}>
+              <div className="keycap keycap-sun mb-4 h-20 w-20 font-display text-4xl" style={{ borderRadius: 16 }}>
                 {c.highlight[0]}
               </div>
             ) : null}
@@ -237,7 +248,7 @@ function Player({ lesson }: { lesson: Lesson }) {
             <div className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-ink-soft">
               <span>Teclas que se resistieron:</span>
               {worst.map(([k, n]) => (
-                <span key={k} className="keycap keycap-sm font-mono">
+                <span key={k} className="keycap keycap-sm">
                   {k === ' ' ? '␣' : k} <span className="text-ink-mute">×{n}</span>
                 </span>
               ))}

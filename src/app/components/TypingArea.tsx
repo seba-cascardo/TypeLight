@@ -90,7 +90,7 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
         onBlur={() => setFocused(false)}
       />
       <p
-        className="font-mono text-[1.35rem] leading-[2.1] tracking-[0.02em] whitespace-pre-wrap wrap-break-word md:text-[1.55rem]"
+        className="font-body text-[1.5rem] font-semibold leading-[2] tracking-[0.03em] whitespace-pre-wrap wrap-break-word md:text-[1.75rem]"
         aria-live="off"
       >
         {[...state.target].map((ch, i) => {

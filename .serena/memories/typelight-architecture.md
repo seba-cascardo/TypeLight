@@ -11,7 +11,7 @@ App web local (Vite + React 19 + TS + Tailwind v4 + zustand persist) para aprend
 - **Captura de teclado por `<input>` oculto** (`TypingArea`): se escucha `input`/`compositionend`, no `keydown`, para que las teclas muertas y los IME compongan como en cualquier campo de texto. `keydown` solo para Escape (reiniciar) y bloquear Enter/Backspace.
 - **Corpus**: `engine/corpus/words.ts` es generado por `scripts/build-corpus.py` (OpenSubtitles es_50k filtrado contra un diccionario + blocklist de vulgaridades, violencia, nombres en inglés y formas de vosotros). No editar a mano. Las frases (`sentences.ts`) sí son a mano, rioplatenses.
 - **Generadores con RNG con semilla** (`makeRng(seed)`) para tests deterministas; en producción se usa semilla aleatoria por intento.
-- **Diseño "keycaps retro"**: tokens en `src/index.css` (`@theme`). Todo botón es `.keycap` con borde inferior grueso; sin sombras. Fuentes: Bricolage Grotesque (display), Nunito Sans (cuerpo), IBM Plex Mono (texto a tipear). Las animaciones no usan `fill-mode: both` a propósito (las capturas de pantalla las congelaban en frame 0).
+- **Diseño "keycaps retro"**: tokens en `src/index.css` (`@theme`). Todo botón es `.keycap` con borde inferior grueso; sin sombras. Fuentes: Bricolage Grotesque (display), Nunito Sans (cuerpo y texto a tipear; Seba pidió explícitamente NO usar monospace en los ejercicios). Las animaciones no usan `fill-mode: both` a propósito (las capturas de pantalla las congelaban en frame 0).
 - **Teclado en pantalla** (`Keyboard.tsx`): mide su ancho con ResizeObserver y fija la altura de tecla = 1 unidad de ancho (tope 48 px), para que se vea proporcional en cualquier ancho. Intenté `aspect-ratio` y `cqw` y ambos fallaron dentro de flex.
 
 ## Trampas

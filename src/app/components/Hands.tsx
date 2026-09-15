@@ -1,5 +1,5 @@
 import type { Finger } from '@/engine/layouts'
-import { FINGER_COLOR, fingerGroup } from './Keyboard'
+import { FINGER_COLOR, fingerGroup } from '../lib/fingers'
 
 interface Props {
   /** Fingers to light up. */

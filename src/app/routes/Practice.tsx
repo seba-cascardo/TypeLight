@@ -129,14 +129,14 @@ function PracticeRun({ kind }: { kind: Kind }) {
           <div className="flex items-center gap-2 text-sm font-bold text-ink-soft">
             Hoy insistimos con
             {weak.map((k) => (
-              <span key={k} className="keycap keycap-secondary keycap-sm font-mono">
+              <span key={k} className="keycap keycap-secondary keycap-sm">
                 {k}
               </span>
             ))}
           </div>
         )}
         {remaining !== null && (
-          <div className={`keycap keycap-sm font-mono text-2xl ${remaining <= 10 && session.state.startedAt ? 'keycap-coral' : ''}`}>
+          <div className={`keycap keycap-sm font-display text-2xl tabular-nums ${remaining <= 10 && session.state.startedAt ? 'keycap-coral' : ''}`}>
             {String(Math.floor(remaining / 60)).padStart(1, '0')}:{String(remaining % 60).padStart(2, '0')}
           </div>
         )}

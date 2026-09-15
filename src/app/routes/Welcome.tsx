@@ -7,6 +7,37 @@ import { useStore } from '../store'
 
 type Step = 'name' | 'detect-l' | 'detect-enie' | 'confirm'
 
+interface Pressed {
+  key: string
+  code: string
+}
+
+const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'CapsLock', 'Tab', 'Escape', 'Enter'])
+const DEAD = new Set(['Dead', 'Process', 'Unidentified', '´', '¨', '`', '^'])
+
+function pressedLabel(p: Pressed | null): string {
+  if (!p) return ''
+  if (DEAD.has(p.key)) return 'tecla muerta (´)'
+  if (p.key === ' ') return 'espacio'
+  return p.key
+}
+
+/** Best guess after the key right of L. */
+function afterL(p: Pressed): { step: Step; layout: LayoutId | null } {
+  if (p.key === 'ñ' || p.key === 'Ñ') return { step: 'detect-enie', layout: 'latam' }
+  if (p.key === ';' || p.key === ':') return { step: 'confirm', layout: 'us' }
+  // The physical key right of L produced something unexpected: still a Spanish keyboard, most likely.
+  if (p.code === 'Semicolon') return { step: 'detect-enie', layout: 'latam' }
+  return { step: 'confirm', layout: null }
+}
+
+/** Best guess after the key right of Ñ: { on Latin America, a dead ´ on Spain. */
+function afterEnie(p: Pressed): LayoutId {
+  if (p.key === '{' || p.key === '[' || p.key === '^') return 'latam'
+  if (DEAD.has(p.key)) return 'es'
+  return 'latam'
+}
+
 export function Welcome() {
   const navigate = useNavigate()
   const setSettings = useStore((s) => s.setSettings)
@@ -14,33 +45,46 @@ export function Welcome() {
   const [name, setName] = useState(saved.name)
   const [step, setStep] = useState<Step>('name')
   const [layoutId, setLayoutId] = useState<LayoutId | null>(null)
-  const [lastKey, setLastKey] = useState<string>('')
+  const [pressed, setPressed] = useState<Pressed | null>(null)
+
+  const detecting = step === 'detect-l' || step === 'detect-enie'
 
   useEffect(() => {
-    if (step !== 'detect-l' && step !== 'detect-enie') return
+    if (!detecting) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt') return
+      if (MODIFIERS.has(e.key)) return
       e.preventDefault()
-      setLastKey(e.key === 'Dead' ? '´' : e.key)
-      if (step === 'detect-l') {
-        if (e.key === 'ñ' || e.key === 'Ñ' || e.code === 'Semicolon' && e.key !== ';') setStep('detect-enie')
-        else if (e.key === ';') {
-          setLayoutId('us')
-          setStep('confirm')
-        } else {
-          setLayoutId(null)
-          setStep('confirm')
-        }
-      } else {
-        if (e.key === '{' || e.key === '[') setLayoutId('latam')
-        else if (e.key === 'Dead' || e.key === '´' || e.key === '¨') setLayoutId('es')
-        else setLayoutId(null)
-        setStep('confirm')
-      }
+      setPressed({ key: e.key, code: e.code })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step])
+  }, [detecting])
+
+  const goDetect = (s: 'detect-l' | 'detect-enie') => {
+    setPressed(null)
+    setStep(s)
+  }
+
+  const advance = () => {
+    if (step === 'detect-l') {
+      if (!pressed) return
+      const r = afterL(pressed)
+      setLayoutId(r.layout)
+      if (r.step === 'detect-enie') goDetect('detect-enie')
+      else setStep('confirm')
+    } else if (step === 'detect-enie') {
+      setLayoutId(pressed ? afterEnie(pressed) : 'latam')
+      setStep('confirm')
+    }
+  }
+
+  // Auto-advance shortly after a key is recognized; the button is the fallback.
+  useEffect(() => {
+    if (!pressed || !detecting) return
+    const id = window.setTimeout(advance, 600)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pressed, step])
 
   const finish = () => {
     if (!layoutId) return
@@ -58,7 +102,11 @@ export function Welcome() {
 
         {step === 'name' && (
           <section className="animate-rise">
-            <h1 className="mb-3 text-5xl md:text-6xl">Diez dedos,<br />cero miradas al teclado.</h1>
+            <h1 className="mb-3 text-5xl md:text-6xl">
+              Diez dedos,
+              <br />
+              cero miradas al teclado.
+            </h1>
             <p className="mb-8 max-w-xl text-lg text-ink-soft">
               Vas a aprender tecla por tecla, con explicaciones visuales y una rutina corta por día. Empecemos por lo fácil.
             </p>
@@ -66,7 +114,7 @@ export function Welcome() {
               className="flex flex-wrap items-end gap-3"
               onSubmit={(e) => {
                 e.preventDefault()
-                setStep('detect-l')
+                goDetect('detect-l')
               }}
             >
               <label className="flex flex-col gap-1.5">
@@ -86,17 +134,28 @@ export function Welcome() {
           </section>
         )}
 
-        {(step === 'detect-l' || step === 'detect-enie') && (
+        {detecting && (
           <section className="animate-rise" key={step}>
-            <div className="eyebrow mb-2">Tu teclado</div>
+            <div className="eyebrow mb-2">Tu teclado · paso {step === 'detect-l' ? 1 : 2} de 2</div>
             <h1 className="mb-3 text-4xl md:text-5xl">
-              {step === 'detect-l' ? 'Apretá la tecla que está justo a la derecha de la L.' : 'Ahora la que está a la derecha de la Ñ.'}
+              {step === 'detect-l' ? 'Apretá la tecla que está justo a la derecha de la L.' : 'Ahora la que está justo a la derecha de la Ñ.'}
             </h1>
             <p className="mb-8 max-w-xl text-lg text-ink-soft">
-              Así sé qué distribución tenés y te enseño exactamente tus teclas, incluidas la ñ y las tildes.
+              {step === 'detect-l'
+                ? 'Así sé qué distribución tenés y te enseño exactamente tus teclas, incluidas la ñ y las tildes.'
+                : 'Con esta distingo el teclado de España del latinoamericano.'}
             </p>
-            <div className="card inline-flex min-w-40 items-center justify-center px-8 py-6 font-mono text-4xl">
-              {lastKey || <span className="text-ink-mute">…</span>}
+            <div className="flex flex-wrap items-center gap-4">
+              <div
+                className={`card inline-flex min-w-44 items-center justify-center px-8 py-6 font-display text-4xl ${pressed ? 'border-enter-edge bg-enter-soft' : ''}`}
+              >
+                {pressed ? pressedLabel(pressed) : <span className="text-ink-mute">…</span>}
+              </div>
+              {pressed && (
+                <Keycap variant="primary" size="lg" onClick={advance}>
+                  Seguir →
+                </Keycap>
+              )}
             </div>
             <div className="mt-6">
               <button type="button" className="text-sm font-bold text-ink-soft underline" onClick={() => setStep('confirm')}>
@@ -126,11 +185,11 @@ export function Welcome() {
                 <p className="mt-3 text-sm text-ink-soft">{LAYOUTS[layoutId].hint}.</p>
               </div>
             )}
-            <div className="flex gap-3">
-              <Keycap variant="ghost" onClick={() => setStep('detect-l')}>
+            <div className="flex flex-wrap gap-3">
+              <Keycap variant="ghost" onClick={() => goDetect('detect-l')}>
                 Detectar de nuevo
               </Keycap>
-              <Keycap variant="primary" size="lg" disabled={!layoutId} onClick={finish}>
+              <Keycap variant="primary" size="lg" disabled={!layoutId} onClick={finish} autoFocus>
                 Empezar a practicar →
               </Keycap>
             </div>

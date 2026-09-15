@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { resolveChar, shiftCodeFor, type Finger, type Layout } from '@/engine/layouts'
+import type { Finger, Layout } from '@/engine/layouts'
+import { fingersFor } from '../lib/fingers'
 import { Hands } from './Hands'
 import { Keyboard } from './Keyboard'
 import { usePressedKeys } from '../hooks/usePressedKeys'
@@ -12,20 +13,6 @@ interface Props {
   size?: 'sm' | 'md' | 'lg'
   /** 'row' puts the hands beside the keyboard; 'stack' puts them underneath. */
   arrange?: 'row' | 'stack'
-}
-
-/** Fingers involved in typing `ch`: the typing finger, plus shift pinky / AltGr thumb. */
-export function fingersFor(layout: Layout, ch: string | null | undefined): Finger[] {
-  if (!ch) return []
-  const seq = resolveChar(layout, ch)
-  if (!seq) return []
-  const out = new Set<Finger>()
-  for (const p of seq) {
-    out.add(p.finger)
-    if (p.shift) out.add(shiftCodeFor(p.finger) === 'ShiftLeft' ? 'LP' : 'RP')
-    if (p.altGr) out.add('RT')
-  }
-  return [...out]
 }
 
 /** On-screen keyboard + hands, lit up for the next character. */

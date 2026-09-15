@@ -139,7 +139,7 @@ export function Stats() {
             <ul className="space-y-2">
               {weakest.map(({ c, stat }) => (
                 <li key={c} className="flex items-center gap-3">
-                  <span className="keycap keycap-sm w-10 font-mono text-lg">{c}</span>
+                  <span className="keycap keycap-sm w-10 text-lg">{c}</span>
                   <span className="text-sm text-ink-soft">
                     {keySpeed(stat)} teclas/min · {Math.round(stat.errorEma * 100)} % de error
                   </span>

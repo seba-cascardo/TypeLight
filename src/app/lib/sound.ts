@@ -1,16 +1,31 @@
 let ctx: AudioContext | null = null
 
 function audio(): AudioContext | null {
-  if (typeof window === 'undefined' || !('AudioContext' in window)) return null
-  if (!ctx) ctx = new AudioContext()
-  if (ctx.state === 'suspended') void ctx.resume()
-  return ctx
+  try {
+    if (typeof window === 'undefined' || !('AudioContext' in window)) return null
+    if (!ctx) ctx = new AudioContext()
+    if (ctx.state === 'suspended') void ctx.resume()
+    return ctx
+  } catch {
+    // Audio must never break the typing flow.
+    return null
+  }
+}
+
+/** Run a sound routine, swallowing any audio error. */
+function safely(fn: (c: AudioContext) => void) {
+  const c = audio()
+  if (!c) return
+  try {
+    fn(c)
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Short, soft keycap click. */
 export function click() {
-  const c = audio()
-  if (!c) return
+  safely((c) => {
   const t = c.currentTime
   const buffer = c.createBuffer(1, c.sampleRate * 0.03, c.sampleRate)
   const data = buffer.getChannelData(0)
@@ -26,12 +41,12 @@ export function click() {
   gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05)
   src.connect(filter).connect(gain).connect(c.destination)
   src.start(t)
+  })
 }
 
 /** Low, dull thud for a wrong key. */
 export function thud() {
-  const c = audio()
-  if (!c) return
+  safely((c) => {
   const t = c.currentTime
   const osc = c.createOscillator()
   osc.type = 'triangle'
@@ -43,12 +58,12 @@ export function thud() {
   osc.connect(gain).connect(c.destination)
   osc.start(t)
   osc.stop(t + 0.15)
+  })
 }
 
 /** Little ascending chime when an exercise is done. */
 export function chime() {
-  const c = audio()
-  if (!c) return
+  safely((c) => {
   const t = c.currentTime
   ;[523.25, 659.25, 783.99].forEach((freq, i) => {
     const osc = c.createOscillator()
@@ -61,5 +76,6 @@ export function chime() {
     osc.connect(gain).connect(c.destination)
     osc.start(t + i * 0.09)
     osc.stop(t + i * 0.09 + 0.4)
+  })
   })
 }

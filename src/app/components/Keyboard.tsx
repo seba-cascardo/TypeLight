@@ -1,34 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { resolveChar, shiftCodeFor, type Finger, type KeyDef, type Layout } from '@/engine/layouts'
-
-export type FingerGroup = 'pinky' | 'ring' | 'middle' | 'index' | 'thumb'
-
-export function fingerGroup(f: Finger): FingerGroup {
-  switch (f) {
-    case 'LP':
-    case 'RP':
-      return 'pinky'
-    case 'LR':
-    case 'RR':
-      return 'ring'
-    case 'LM':
-    case 'RM':
-      return 'middle'
-    case 'LI':
-    case 'RI':
-      return 'index'
-    default:
-      return 'thumb'
-  }
-}
-
-export const FINGER_COLOR: Record<FingerGroup, string> = {
-  pinky: 'var(--color-finger-pinky)',
-  ring: 'var(--color-finger-ring)',
-  middle: 'var(--color-finger-middle)',
-  index: 'var(--color-finger-index)',
-  thumb: 'var(--color-finger-thumb)',
-}
+import { resolveChar, shiftCodeFor, type KeyDef, type Layout } from '@/engine/layouts'
+import { FINGER_COLOR, fingerGroup, type FingerGroup } from '../lib/fingers'
 
 interface Props {
   layout: Layout
