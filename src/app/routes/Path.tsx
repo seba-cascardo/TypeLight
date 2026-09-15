@@ -76,10 +76,10 @@ export function Path() {
                     </>
                   )
                   const style = completed.has(l.id)
-                    ? { ['--fill' as string]: vars.soft, ['--edge' as string]: vars.edge, ['--text' as string]: 'var(--color-ink)' }
+                    ? { ['--fill' as string]: vars.soft, ['--text' as string]: 'var(--color-ink)' }
                     : isNext
-                      ? { ['--fill' as string]: vars.fill, ['--edge' as string]: vars.edge, ['--text' as string]: u.accent === 'sun' ? 'var(--color-ink)' : '#fff' }
-                      : undefined
+                      ? { ['--fill' as string]: vars.fill, ['--text' as string]: u.accent === 'sun' ? 'var(--color-ink)' : '#fff' }
+                      : { ['--fill' as string]: 'var(--color-keycap)', border: '1.5px solid var(--color-line)' }
                   const cls = `keycap h-24 w-[5.5rem] flex-col items-center justify-center px-1 ${isNext ? 'ring-4 ring-sun ring-offset-2 ring-offset-paper' : ''}`
                   if (!unlocked) {
                     return (

@@ -170,7 +170,7 @@
 }
 
 @layer components {
-  /* Todo botón es una tecla: sin borde lateral, un canto inferior del mismo tono y un brillo arriba. */
+  /* Botones planos: relleno sólido, sin cantos ni sombras. Al presionar se hunden apenas. */
   .keycap {
     --fill: var(--color-keycap);
     --edge: var(--color-line);
@@ -183,25 +183,23 @@
     background: var(--fill);
     color: var(--text);
     border: 0;
-    border-bottom: 4px solid var(--edge);
     border-radius: var(--radius-key);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35);
     font-family: var(--font-body);
     font-weight: 800;
     letter-spacing: 0.01em;
-    padding: 0.75rem 1.3rem;
+    padding: 0.8rem 1.3rem;
     cursor: pointer;
     user-select: none;
     text-decoration: none;
-    transition: transform 70ms ease, border-bottom-width 70ms ease, background 120ms ease, filter 120ms ease;
+    transition: transform 70ms ease, background 120ms ease, filter 120ms ease;
   }
   .keycap:hover:not(:disabled) {
-    filter: brightness(1.04);
+    filter: brightness(1.05);
   }
   .keycap:active:not(:disabled),
   .keycap.is-pressed {
-    transform: translateY(2px);
-    border-bottom-width: 2px;
+    transform: translateY(1px) scale(0.99);
+    filter: brightness(0.96);
   }
   .keycap:disabled {
     cursor: not-allowed;
@@ -213,26 +211,23 @@
   .keycap-sun { --fill: var(--color-sun); --edge: var(--color-sun-edge); --text: #1e2124; }
   .keycap-lav { --fill: var(--color-lav); --edge: var(--color-lav-edge); --text: #fff; }
   .keycap-mint { --fill: var(--color-mint); --edge: var(--color-mint-edge); --text: #fff; }
-  /* Ghost: un contorno fino y plano, sin canto. */
+  /* Ghost: un contorno fino. */
   .keycap-ghost {
     --fill: transparent;
     --edge: var(--color-line);
     --text: var(--color-ink);
     border: 2px solid var(--edge);
-    box-shadow: none;
   }
-  .keycap-ghost:active:not(:disabled) {
-    transform: translateY(1px);
-    border-bottom-width: 2px;
+  .keycap-ghost:hover:not(:disabled) {
+    background: var(--color-keycap);
+    filter: none;
   }
-  .keycap-lg { padding: 1rem 1.75rem; font-size: 1.125rem; border-radius: 16px; }
-  .keycap-sm { padding: 0.45rem 0.85rem; font-size: 0.875rem; border-bottom-width: 3px; }
-  .keycap-sm:active:not(:disabled) { border-bottom-width: 1px; }
+  .keycap-lg { padding: 1.05rem 1.75rem; font-size: 1.125rem; border-radius: 16px; }
+  .keycap-sm { padding: 0.5rem 0.85rem; font-size: 0.875rem; }
 
   .card {
     background: var(--color-keycap);
     border: 1.5px solid var(--color-line);
-    border-bottom-width: 3px;
     border-radius: var(--radius-card);
   }
 
