@@ -18,6 +18,8 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
   const inputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(false)
   const composing = useRef(false)
+  // Some browsers fire compositionend and then an input event for the same text.
+  const lastComposed = useRef<{ data: string; at: number } | null>(null)
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus()
@@ -30,7 +32,8 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
       if (composing.current || native.inputType === 'insertCompositionText') return
       if (native.inputType === 'insertText' || native.inputType === 'insertFromPaste' || native.inputType === undefined) {
         const data = native.data ?? el.value
-        if (native.inputType !== 'insertFromPaste') onInput(data)
+        const dup = lastComposed.current && lastComposed.current.data === data && performance.now() - lastComposed.current.at < 60
+        if (native.inputType !== 'insertFromPaste' && !dup) onInput(data)
       }
       el.value = ''
     },
@@ -40,7 +43,10 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
   const handleCompositionEnd = useCallback(
     (e: CompositionEvent<HTMLInputElement>) => {
       composing.current = false
-      if (e.data) onInput(e.data)
+      if (e.data) {
+        lastComposed.current = { data: e.data, at: performance.now() }
+        onInput(e.data)
+      }
       e.currentTarget.value = ''
     },
     [onInput],
