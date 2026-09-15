@@ -15,7 +15,7 @@ export function AppShell() {
   const alive = streakAlive(streak, dayKey())
   return (
     <div className="min-h-dvh px-4 pb-16 md:px-8">
-      <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 py-4 md:py-5">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 py-4 md:py-5">
         <NavLink to="/" className="flex items-center gap-2.5" aria-label="TypeLight, inicio">
           <span className="keycap keycap-primary keycap-sm px-2.5 font-display text-lg leading-none">T</span>
           <span className="font-display text-xl font-extrabold tracking-tight">TypeLight</span>
@@ -38,7 +38,7 @@ export function AppShell() {
         </div>
         <Flame count={alive ? streak.count : 0} alive={alive} />
       </nav>
-      <main className="mx-auto max-w-5xl">
+      <main className="mx-auto max-w-6xl">
         <Outlet />
       </main>
     </div>

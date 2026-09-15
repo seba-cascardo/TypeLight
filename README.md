@@ -48,6 +48,11 @@ Detalles de diseño y decisiones: [`docs/superpowers/specs/2026-09-15-typelight-
 6. **Juego "Lluvia de teclas"** cada pocas lecciones: caen keycaps con las letras aprendidas, en el color del dedo que las presiona.
 7. **Tema**: papel de día, "noche de teclado" cuando el sistema está en oscuro (o fijo desde Ajustes).
 
+## Créditos
+
+- Manos guía: dibujo anatómico del dorso de la mano de [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hand_external_anatomy,_dorsum.svg) (dominio público), coloreado y con tintes por dedo en `src/app/components/Hands.tsx`.
+- Palabras: ver abajo.
+
 ## Regenerar el corpus de palabras
 
 ```bash

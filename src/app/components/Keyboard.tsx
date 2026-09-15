@@ -26,7 +26,7 @@ const MODS_RIGHT: KeyDef[] = [
   { code: 'ControlRight', base: '', label: 'Ctrl', finger: 'RP', width: 1.25 },
 ]
 
-const MAX_KEY_HEIGHT = { sm: 34, md: 48, lg: 56 }
+const MAX_KEY_HEIGHT = { sm: 36, md: 60, lg: 68 }
 
 function legendOf(key: KeyDef): { main: string; top?: string; alt?: string } {
   if (key.label) return { main: key.label }

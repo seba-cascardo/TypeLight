@@ -94,7 +94,7 @@ export function Welcome() {
 
   return (
     <div className="min-h-dvh px-4 py-10 md:px-8">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-10 flex items-center gap-2.5">
           <span className="keycap keycap-primary keycap-sm px-2.5 font-display text-lg leading-none">T</span>
           <span className="font-display text-xl font-extrabold tracking-tight">TypeLight</span>

@@ -28,7 +28,7 @@ export function KeyGuide({ layout, nextChar, highlight, showHands = true, size =
       <div className="w-full min-w-0 flex-1">
         <Keyboard layout={layout} nextChar={nextChar} highlight={highlight} pressed={pressed} size={size} />
       </div>
-      {showHands && <Hands active={fingers} className={arrange === 'row' ? 'w-52 shrink-0 self-center md:w-64' : 'w-full max-w-md'} />}
+      {showHands && <Hands active={fingers} className={arrange === 'row' ? 'w-52 shrink-0 self-center md:w-64' : 'w-full max-w-lg'} />}
     </div>
   )
 }

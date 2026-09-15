@@ -1,4 +1,5 @@
 import type { Finger } from '@/engine/layouts'
+import { DORSUM_H, DORSUM_INK, DORSUM_W } from '../assets/handDorsum'
 import { FINGER_COLOR, fingerGroup } from '../lib/fingers'
 
 interface Props {
@@ -8,132 +9,101 @@ interface Props {
 }
 
 /**
- * Two hands seen from above, fingers up, in flat illustration.
- *
- * Method: every part (palm, thumb mound, four fingers, thumb) is drawn twice —
- * first as one "outline pass" in the line colour with a thick stroke, then as a
- * "fill pass" in skin colour on top. The union of the parts reads as a single
- * silhouette with one continuous edge, so fingers never look detached from the
- * palm. Details (creases, nails, palm lines) go on last. The left hand is
- * authored in a 190×210 box; the right hand is its mirror.
+ * Two hands seen from above, built on a public-domain anatomical ink drawing
+ * of the back of a right hand (see assets/handDorsum.ts). Under the ink goes a
+ * hand-traced silhouette filled with skin, so the drawing reads as a coloured
+ * illustration; the active finger gets a colour tint clipped to that
+ * silhouette and a glowing fingertip. The left hand is the mirror image.
  */
-
-const SKIN = 'var(--skin)'
-const LINE = 'var(--skin-line)'
-const NAIL = 'var(--skin-nail)'
-const OUTLINE = 3.2
 
 type FingerId = 'P' | 'R' | 'M' | 'I' | 'T'
 
-interface FingerSpec {
-  id: FingerId
-  /** Base (knuckle) centre. */
-  x: number
-  y: number
-  len: number
-  /** Width at the base and at the tip. */
-  wb: number
-  wt: number
-  /** Degrees from vertical; positive leans towards the thumb. */
-  angle: number
-}
-
-// Proportions of a relaxed adult hand: palm ≈ 100 wide at the knuckles,
-// middle finger ≈ 0.9 of the palm length, pinky ≈ 0.7 of the middle finger.
-const FINGERS: FingerSpec[] = [
-  { id: 'P', x: 50, y: 122, len: 60, wb: 23, wt: 19, angle: -9 },
-  { id: 'R', x: 75, y: 110, len: 80, wb: 25, wt: 20, angle: -3 },
-  { id: 'M', x: 101, y: 106, len: 86, wb: 26, wt: 21, angle: 0 },
-  { id: 'I', x: 127, y: 111, len: 78, wb: 25, wt: 20, angle: 4 },
+/** Silhouette traced on the drawing's 257×349 grid, clockwise from the wrist. */
+const OUTLINE: [number, number][] = [
+  [97, 349], [96, 322], [92, 302], [84, 284], [72, 264], [60, 242], [50, 220], [42, 202], [38, 182], [36, 162],
+  [36, 144], [38, 130], [42, 122], [49, 118], [57, 121], [63, 132], [68, 150], [72, 170], [76, 190], [80, 204],
+  [84, 192], [86, 160], [88, 122], [90, 82], [92, 52], [94, 32], [98, 22], [106, 18], [113, 22], [117, 32],
+  [118, 60], [120, 100], [124, 134], [127, 142], [130, 122], [134, 82], [138, 42], [141, 18], [146, 9], [153, 8],
+  [160, 14], [163, 30], [165, 62], [167, 102], [169, 140], [172, 146], [175, 122], [179, 82], [183, 46], [187, 28],
+  [193, 20], [200, 22], [206, 32], [208, 60], [210, 100], [213, 140], [216, 156], [219, 138], [223, 108], [226, 86],
+  [230, 70], [236, 64], [243, 68], [247, 80], [246, 104], [240, 132], [232, 160], [228, 180], [226, 202], [222, 232],
+  [218, 262], [212, 292], [206, 322], [204, 349],
 ]
-const THUMB: FingerSpec = { id: 'T', x: 152, y: 150, len: 64, wb: 28, wt: 23, angle: 42 }
 
-/** Palm: wrist at the bottom, knuckle arch on top, thumb mound bulging on the right. */
-const PALM =
-  'M42 208 C34 180 30 156 32 136 C33 124 38 114 46 108 C64 96 86 92 104 94 C116 95 126 99 134 106 ' +
-  'C138 112 140 122 141 134 C150 140 160 152 164 168 C167 182 160 196 150 204 C146 207 140 208 134 208 Z'
-
-/** Tapered finger pointing up (−y), base centred at the origin, rounded tip, base sunk into the palm. */
-function fingerPath(f: FingerSpec): string {
-  const rb = f.wb / 2
-  const rt = f.wt / 2
-  const top = -(f.len - rt)
-  return `M ${-rb} 10 L ${-rb} -4 L ${-rt} ${top} A ${rt} ${rt} 0 0 1 ${rt} ${top} L ${rb} -4 L ${rb} 10 Z`
+/** Finger axes on the same grid: tip → base, plus the tint width. */
+const FINGERS: Record<FingerId, { tip: [number, number]; base: [number, number]; w: number }> = {
+  T: { tip: [48, 132], base: [76, 206], w: 30 },
+  I: { tip: [104, 30], base: [94, 152], w: 30 },
+  M: { tip: [150, 18], base: [147, 152], w: 30 },
+  R: { tip: [195, 32], base: [186, 158], w: 28 },
+  P: { tip: [236, 76], base: [223, 172], w: 26 },
 }
 
-/** The part of the finger that shows above the palm, as an open path (for the active outline). */
-function fingerOutline(f: FingerSpec): string {
-  const rb = f.wb / 2
-  const rt = f.wt / 2
-  const top = -(f.len - rt)
-  return `M ${-rb} -2 L ${-rt} ${top} A ${rt} ${rt} 0 0 1 ${rt} ${top} L ${rb} -2`
+/** Catmull-Rom → cubic Bézier, closed. */
+function smoothPath(pts: [number, number][]): string {
+  const n = pts.length
+  let d = `M ${pts[0][0]} ${pts[0][1]}`
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n]
+    const p1 = pts[i]
+    const p2 = pts[(i + 1) % n]
+    const p3 = pts[(i + 2) % n]
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2[0]} ${p2[1]}`
+  }
+  return d + ' Z'
 }
 
-function creasePath(f: FingerSpec, at: number): string {
-  const w = f.wb + (f.wt - f.wb) * at
-  const y = -f.len * at
-  return `M ${-w * 0.3} ${y} Q 0 ${y - 2.5} ${w * 0.3} ${y}`
-}
+const SILHOUETTE = smoothPath(OUTLINE)
 
 function fingerId(id: FingerId, side: 'L' | 'R'): Finger {
   return `${side}${id}` as Finger
 }
 
-function transformOf(f: FingerSpec, on: boolean): string {
-  return `translate(${f.x} ${f.y}) rotate(${f.angle})${on ? ' translate(0 -6)' : ''}`
-}
-
 function Hand({ side, active }: { side: 'L' | 'R'; active: Set<Finger> }) {
-  const on = (id: FingerId) => active.has(fingerId(id, side))
-  const parts = [THUMB, ...FINGERS]
-  const style = { transition: 'transform 140ms ease' }
+  const clip = `hand-clip-${side}`
+  const lit = (Object.keys(FINGERS) as FingerId[]).filter((id) => active.has(fingerId(id, side)))
   return (
-    <g transform={side === 'R' ? 'translate(440 0) scale(-1 1)' : undefined}>
-      {/* 1 · outline pass: everything in line colour, fattened by the stroke */}
-      <g fill={LINE} stroke={LINE} strokeWidth={OUTLINE} strokeLinejoin="round">
-        {parts.map((f) => (
-          <path key={f.id} d={fingerPath(f)} transform={transformOf(f, on(f.id))} style={style} />
-        ))}
-        <path d={PALM} />
+    <g transform={side === 'L' ? `translate(${DORSUM_W} 0) scale(-1 1)` : undefined}>
+      <defs>
+        <clipPath id={clip}>
+          <path d={SILHOUETTE} />
+        </clipPath>
+      </defs>
+      {/* skin under the ink */}
+      <path d={SILHOUETTE} fill="url(#skinGrad)" />
+      {/* active finger tint, clipped to the hand */}
+      <g clipPath={`url(#${clip})`}>
+        {lit.map((id) => {
+          const f = FINGERS[id]
+          return (
+            <line
+              key={id}
+              x1={f.tip[0]}
+              y1={f.tip[1]}
+              x2={f.base[0]}
+              y2={f.base[1]}
+              stroke={FINGER_COLOR[fingerGroup(fingerId(id, side))]}
+              strokeWidth={f.w}
+              strokeLinecap="round"
+              opacity="0.75"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          )
+        })}
       </g>
-      {/* 2 · fill pass: same shapes in skin, no stroke — the union becomes one silhouette */}
-      <g fill="url(#skinGrad)">
-        <path d={fingerPath(THUMB)} transform={transformOf(THUMB, on('T'))} style={style} />
-        <path d={PALM} />
-        {FINGERS.map((f) => (
-          <path key={f.id} d={fingerPath(f)} transform={transformOf(f, on(f.id))} style={style} />
-        ))}
-      </g>
-      {/* 3 · details */}
-      <g fill="none" stroke={LINE} strokeLinecap="round">
-        {/* knuckle line: a soft arc where each finger meets the palm */}
-        {FINGERS.map((f) => (
-          <path key={f.id} d={`M ${f.x - 8} ${f.y + 3} Q ${f.x} ${f.y - 3} ${f.x + 8} ${f.y + 3}`} strokeWidth="1.3" opacity="0.5" />
-        ))}
-        {/* thumb crease where it meets the mound */}
-        <path d="M144 146 Q152 150 156 160" strokeWidth="1.3" opacity="0.4" />
-        {/* palm lines */}
-        <path d="M60 158 Q98 138 136 136" strokeWidth="1.3" opacity="0.4" />
-        <path d="M52 176 Q86 158 118 156" strokeWidth="1.3" opacity="0.3" />
-      </g>
-      {parts.map((f) => {
-        const rt = f.wt / 2
-        const nailW = f.wt * 0.52
-        const nailH = f.len * 0.15
-        const nailY = -(f.len - rt * 0.15) + 1
-        const lit = on(f.id)
+      {/* the drawing itself */}
+      <path d={DORSUM_INK} fill="var(--skin-line)" />
+      {/* glowing fingertip on the active finger */}
+      {lit.map((id) => {
+        const f = FINGERS[id]
         return (
-          <g key={f.id} transform={transformOf(f, lit)} style={style}>
-            {(f.id === 'T' ? [0.52] : [0.42, 0.72]).map((at) => (
-              <path key={at} d={creasePath(f, at)} fill="none" stroke={LINE} strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-            ))}
-            <rect x={-nailW / 2} y={nailY} width={nailW} height={nailH} rx={nailW * 0.4} fill={NAIL} stroke={LINE} strokeWidth="0.8" opacity="0.8" />
-            {lit && (
-              <>
-                <path d={fingerPath(f)} fill={FINGER_COLOR[fingerGroup(fingerId(f.id, side))]} opacity="0.55" />
-                <path d={fingerOutline(f)} fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-              </>
-            )}
+          <g key={id} className="hand-tip">
+            <circle cx={f.tip[0]} cy={f.tip[1]} r="9" fill="var(--color-keycap)" stroke="var(--color-ink)" strokeWidth="2.5" />
+            <circle cx={f.tip[0]} cy={f.tip[1]} r="4" fill={FINGER_COLOR[fingerGroup(fingerId(id, side))]} />
           </g>
         )
       })}
@@ -143,18 +113,19 @@ function Hand({ side, active }: { side: 'L' | 'R'; active: Set<Finger> }) {
 
 export function Hands({ active = [], className = '' }: Props) {
   const set = new Set(active)
+  const gap = 40
   return (
-    <svg viewBox="0 0 440 214" className={className} aria-hidden="true">
+    <svg viewBox={`0 0 ${DORSUM_W * 2 + gap} ${DORSUM_H}`} className={className} aria-hidden="true">
       <defs>
-        {/* userSpaceOnUse so the palm and the fingers share one continuous shading */}
-        <linearGradient id="skinGrad" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="180" y2="0">
-          <stop offset="0" stopColor="var(--skin-shade)" />
-          <stop offset="0.3" stopColor={SKIN} />
-          <stop offset="1" stopColor={SKIN} />
+        <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="var(--skin)" />
+          <stop offset="1" stopColor="var(--skin-shade)" />
         </linearGradient>
       </defs>
       <Hand side="L" active={set} />
-      <Hand side="R" active={set} />
+      <g transform={`translate(${DORSUM_W + gap} 0)`}>
+        <Hand side="R" active={set} />
+      </g>
     </svg>
   )
 }
