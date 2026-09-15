@@ -123,3 +123,9 @@ export function keySamples(s: TypingState): Map<string, KeySample> {
   }
   return map
 }
+
+/** End the session now (time limit reached) even if the target is incomplete. */
+export function endSession(s: TypingState, t: number): TypingState {
+  if (s.finishedAt !== null) return s
+  return { ...s, finishedAt: t, startedAt: s.startedAt ?? t }
+}
