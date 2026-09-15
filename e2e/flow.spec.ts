@@ -63,7 +63,7 @@ test('onboarding → first lessons → routine → stats', async ({ page }) => {
   await expect(page.getByText(/de precisión|Precisión/i).first()).toBeVisible()
   await page.screenshot({ path: 'e2e/screens/results.png' })
   await page.getByRole('link', { name: /Siguiente: La barra espaciadora/ }).click()
-  await expect(page.getByRole('heading', { name: 'La barra espaciadora' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'La barra espaciadora' })).toBeVisible()
 
   // Path shows progress
   await page.goto('/ruta')
