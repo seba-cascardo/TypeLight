@@ -99,8 +99,8 @@ function Player({ lesson }: { lesson: Lesson }) {
 
   const nextStep = useCallback(() => {
     setStepDone(false)
-    setStep((s) => s + 1)
-  }, [])
+    setStep((s) => Math.min(s + 1, texts.length - 1))
+  }, [texts.length])
 
   // Enter advances between exercises.
   useEffect(() => {
@@ -198,8 +198,8 @@ function Player({ lesson }: { lesson: Lesson }) {
               )}
             </div>
           </div>
-          <div className="card p-4 md:p-5">
-            <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} />
+          <div className="card flex flex-col justify-center p-4 md:p-5">
+            <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} arrange="stack" />
           </div>
         </div>
       </div>

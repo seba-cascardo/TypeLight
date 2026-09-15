@@ -71,7 +71,7 @@ export function explainChar(layout: Layout, ch: string): IntroCard {
       `La ${ch} se escribe en dos pasos. Primero presioná la tecla de tilde${dead.shift ? ' con Shift (¨)' : ' (´)'} con el ${deadFinger}: no aparece nada todavía, es una tecla “muerta” que espera la letra.`,
     )
     lines.push(`Después presioná la ${last.produces} con el ${fingerName} y aparece la ${ch}.`)
-    return { title: ch, body: lines.join(' '), highlight: [ch] }
+    return { title: `La ${ch}, en dos toques`, body: lines.join(' '), highlight: [ch] }
   }
 
   if (last.shift) {
@@ -80,19 +80,19 @@ export function explainChar(layout: Layout, ch: string): IntroCard {
       `La ${ch} lleva Shift. Mantené apretado el Shift ${shiftSide} con el meñique ${shiftSide} (siempre la mano contraria a la que escribe la letra) y presioná la ${last.produces.toLowerCase()} con el ${fingerName}.`,
     )
     lines.push('Soltá Shift antes de la siguiente tecla.')
-    return { title: ch, body: lines.join(' '), highlight: [ch] }
+    return { title: `${ch} mayúscula`, body: lines.join(' '), highlight: [ch] }
   }
 
   if (last.altGr) {
     lines.push(
       `La ${ch} está en la tercera posición de su tecla. Mantené apretado Alt Gr (a la derecha de la barra) con el pulgar derecho y presioná la tecla con el ${fingerName}.`,
     )
-    return { title: ch, body: lines.join(' '), highlight: [ch] }
+    return { title: `${ch} con Alt Gr`, body: lines.join(' '), highlight: [ch] }
   }
 
   lines.push(`${capitalize(keyName(ch))} se presiona con el ${fingerName}.`)
   lines.push(movement(layout, last))
-  return { title: ch === ' ' ? 'espacio' : ch, body: lines.join(' '), highlight: [ch] }
+  return { title: ch === ' ' ? 'La barra espaciadora' : `La tecla ${ch}`, body: lines.join(' '), highlight: [ch] }
 }
 
 function capitalize(s: string): string {

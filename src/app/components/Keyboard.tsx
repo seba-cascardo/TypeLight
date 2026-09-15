@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { resolveChar, shiftCodeFor, type Finger, type KeyDef, type Layout } from '@/engine/layouts'
 
 export type FingerGroup = 'pinky' | 'ring' | 'middle' | 'index' | 'thumb'
@@ -54,7 +54,7 @@ const MODS_RIGHT: KeyDef[] = [
   { code: 'ControlRight', base: '', label: 'Ctrl', finger: 'RP', width: 1.25 },
 ]
 
-const KEY_HEIGHT = { sm: 34, md: 44, lg: 52 }
+const MAX_KEY_HEIGHT = { sm: 34, md: 48, lg: 56 }
 
 function legendOf(key: KeyDef): { main: string; top?: string; alt?: string } {
   if (key.label) return { main: key.label }
@@ -72,6 +72,20 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
   }, [layout])
 
   const maxUnits = useMemo(() => Math.max(...rows.map((r) => r.reduce((a, k) => a + (k.width ?? 1), 0))), [rows])
+
+  // Keys are as tall as one unit of width (capped), so the keyboard keeps its proportions at any size.
+  const wrapper = useRef<HTMLDivElement>(null)
+  const [unit, setUnit] = useState(48)
+  useLayoutEffect(() => {
+    const el = wrapper.current
+    if (!el) return
+    const update = () => setUnit(el.getBoundingClientRect().width / maxUnits)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [maxUnits])
+  const keyHeight = Math.max(18, Math.min(MAX_KEY_HEIGHT[size], unit - 4))
 
   const next = useMemo(() => {
     const map = new Map<string, { step: number; shift: boolean; altGr: boolean }>()
@@ -103,8 +117,9 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
 
   return (
     <div
+      ref={wrapper}
       className={`select-none ${className}`}
-      style={{ ['--kb-h' as string]: `${KEY_HEIGHT[size]}px` }}
+      style={{ ['--kb-h' as string]: `${keyHeight}px` }}
       aria-hidden="true"
     >
       {rows.map((row, ri) => {
@@ -139,9 +154,9 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
                     fontSize: size === 'sm' ? '0.65rem' : undefined,
                   }}
                 >
-                  {legend.top && <span className="absolute left-1.5 top-0.5 text-[0.65em] opacity-70">{legend.top}</span>}
+                  {legend.top && size !== 'sm' && <span className="absolute left-1.5 top-0.5 text-[0.65em] opacity-70">{legend.top}</span>}
                   <span className={key.label ? 'text-[0.72em] font-bold' : ''}>{legend.main}</span>
-                  {legend.alt && <span className="absolute right-1.5 bottom-0.5 text-[0.6em] opacity-60">{legend.alt}</span>}
+                  {legend.alt && size !== 'sm' && <span className="absolute right-1.5 bottom-0.5 text-[0.6em] opacity-60">{legend.alt}</span>}
                   {isNext && n.step > 0 && (
                     <span className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-sun text-[0.65rem] font-black text-ink">
                       {n.step}

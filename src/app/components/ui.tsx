@@ -9,8 +9,8 @@ export function Stars({ count, size = 'md', className = '' }: { count: StarCount
         <svg key={i} width={px} height={px} viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="M12 2.5l2.9 6.1 6.7.8-4.9 4.6 1.3 6.6L12 17.4 6 20.6l1.3-6.6L2.4 9.4l6.7-.8z"
-            fill={i < count ? 'var(--color-sun)' : 'var(--color-paper-deep)'}
-            stroke={i < count ? 'var(--color-sun-edge)' : 'var(--color-line)'}
+            fill={i < count ? 'var(--color-sun)' : 'rgb(0 0 0 / 0.10)'}
+            stroke={i < count ? 'var(--color-sun-edge)' : 'rgb(0 0 0 / 0.18)'}
             strokeWidth="1.5"
             strokeLinejoin="round"
           />

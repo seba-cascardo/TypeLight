@@ -96,14 +96,14 @@ export function Stats() {
           <h2 className="text-2xl">Velocidad, ejercicio por ejercicio</h2>
           <span className="text-xs font-bold text-ink-mute">últimos {recent.length} · verde = precisión ≥ 97 %</span>
         </div>
-        <svg viewBox={`0 0 ${recent.length * 14} 120`} className="h-40 w-full" preserveAspectRatio="none" role="img" aria-label="Velocidad por ejercicio">
+        <svg viewBox="0 0 560 120" className="h-40 w-full" preserveAspectRatio="none" role="img" aria-label="Velocidad por ejercicio">
           {[0.25, 0.5, 0.75, 1].map((f) => (
-            <line key={f} x1="0" x2={recent.length * 14} y1={120 - f * 110} y2={120 - f * 110} stroke="var(--color-line-soft)" strokeWidth="1" />
+            <line key={f} x1="0" x2="560" y1={120 - f * 110} y2={120 - f * 110} stroke="var(--color-line-soft)" strokeWidth="1" />
           ))}
           {recent.map((s, i) => {
             const h = (s.wpm / maxWpm) * 110
             const fill = s.acc >= 0.97 ? 'var(--color-enter)' : s.acc >= 0.95 ? 'var(--color-sun)' : 'var(--color-esc)'
-            return <rect key={i} x={i * 14 + 3} y={120 - h} width="8" height={h} rx="3" fill={fill} />
+            return <rect key={i} x={i * 14 + 3} y={120 - h} width="8" height={h} rx="2" fill={fill} />
           })}
         </svg>
         <div className="mt-1 flex justify-between text-xs font-bold text-ink-mute">
@@ -118,11 +118,14 @@ export function Stats() {
           <h2 className="mb-3 text-2xl">Por día</h2>
           <ul className="space-y-1.5">
             {byDay.map((d) => (
-              <li key={d.day} className="flex items-center gap-3 text-sm">
+              <li key={d.day} className="flex items-center gap-3 text-sm whitespace-nowrap">
                 <span className="w-16 shrink-0 font-bold text-ink-mute">{dayLabel(d.day)}</span>
-                <span className="h-3 rounded-full bg-mod" style={{ width: `${Math.min(100, (d.wpm / Math.max(1, maxWpm)) * 100)}%` }} />
-                <span className="font-bold">{d.wpm} PPM</span>
-                <span className="text-ink-mute">· {Math.round(d.acc * 100)} % · {d.n} {d.n === 1 ? 'ejercicio' : 'ejercicios'}</span>
+                <span className="h-3 flex-1 overflow-hidden rounded-full bg-paper-deep">
+                  <span className="block h-full rounded-full bg-mod" style={{ width: `${Math.min(100, (d.wpm / Math.max(1, maxWpm)) * 100)}%` }} />
+                </span>
+                <span className="w-32 shrink-0 text-right">
+                  <span className="font-bold">{d.wpm} PPM</span> <span className="text-ink-mute">· {Math.round(d.acc * 100)} %</span>
+                </span>
               </li>
             ))}
           </ul>

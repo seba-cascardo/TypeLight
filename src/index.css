@@ -167,6 +167,8 @@
     align-items: flex-end;
     justify-content: flex-start;
     height: var(--kb-h, 44px);
+    min-width: 0;
+    overflow: hidden;
     border-radius: 8px;
     border: 2px solid rgb(0 0 0 / 0.08);
     border-bottom-width: 4px;

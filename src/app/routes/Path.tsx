@@ -27,13 +27,13 @@ const accentVars: Record<UnitAccent, { fill: string; edge: string; soft: string 
 function legend(l: Lesson): { main: string; sub: string } {
   switch (l.kind) {
     case 'keys':
-      return { main: l.newChars.map((c) => (c === ' ' ? '␣' : c)).join(' '), sub: 'teclas' }
+      return { main: l.newChars.map((c) => (c === ' ' ? 'esp' : c)).join(l.newChars.length > 2 ? '' : ' '), sub: 'teclas' }
     case 'review':
       return { main: '↻', sub: 'repaso' }
     case 'practice':
       return { main: '✎', sub: 'práctica' }
     case 'tip':
-      return { main: '¡', sub: 'consejo' }
+      return { main: 'tip', sub: 'consejo' }
     case 'unit-review':
       return { main: '★', sub: 'repaso' }
     case 'text':
@@ -84,7 +84,7 @@ export function Path() {
                   const inner = (
                     <>
                       <span
-                        className={`font-display text-xl font-extrabold leading-none ${l.kind === 'keys' ? 'font-mono tracking-tight' : ''}`}
+                        className={`font-display font-extrabold leading-none ${l.kind === 'keys' ? 'font-mono tracking-tight' : ''} ${lg.main.length > 3 ? 'text-sm' : 'text-xl'}`}
                       >
                         {lg.main}
                       </span>

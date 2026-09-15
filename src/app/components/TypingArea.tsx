@@ -84,7 +84,7 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
         onBlur={() => setFocused(false)}
       />
       <p
-        className="font-mono text-[1.55rem] leading-[2.1] tracking-[0.02em] wrap-break-word"
+        className="font-mono text-[1.35rem] leading-[2.1] tracking-[0.02em] whitespace-pre-wrap wrap-break-word md:text-[1.55rem]"
         aria-live="off"
       >
         {[...state.target].map((ch, i) => {
@@ -102,7 +102,7 @@ export function TypingArea({ state, onInput, onRestart, autoFocus = true, classN
             .join(' ')
           return (
             <span key={i} className={cls}>
-              {ch === ' ' && current ? '' : ch === ' ' ? ' ' : ch}
+              {ch === ' ' && current ? '' : ch}
             </span>
           )
         })}

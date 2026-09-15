@@ -52,6 +52,7 @@ describe('curriculum', () => {
 
   it('explains keys in terms of fingers and movement', () => {
     expect(explainChar(LATAM, 'f').body).toMatch(/índice izquierdo/)
+    expect(explainChar(LATAM, 'f').title).toBe('La tecla f')
     expect(explainChar(LATAM, 'f').body).toMatch(/fila guía/)
     expect(explainChar(LATAM, 'r').body).toMatch(/sube una fila/)
     expect(explainChar(LATAM, 'v').body).toMatch(/baja una fila/)

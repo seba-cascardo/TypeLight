@@ -15,7 +15,7 @@ const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string
 
 function greeting(name: string): string {
   const h = new Date().getHours()
-  const when = h < 12 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
+  const when = h < 5 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
   return name ? `${when}, ${name}.` : `${when}.`
 }
 
@@ -66,7 +66,7 @@ export function Home() {
                   <span className="text-[0.7rem] font-black uppercase tracking-widest opacity-80">{b.minutes}</span>
                   <Check done={done} />
                 </div>
-                <span className="font-display text-2xl font-extrabold leading-tight">{b.title}</span>
+                <span className="font-display text-xl font-extrabold leading-tight md:text-2xl">{b.title}</span>
                 <span className="text-sm font-semibold leading-snug opacity-90">
                   {b.id === 'lesson' && next ? next.title : b.detail}
                 </span>

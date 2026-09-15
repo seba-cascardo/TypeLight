@@ -15,12 +15,12 @@ export function AppShell() {
   const alive = streakAlive(streak, dayKey())
   return (
     <div className="min-h-dvh px-4 pb-16 md:px-8">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 py-5">
+      <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 py-4 md:py-5">
         <NavLink to="/" className="flex items-center gap-2.5" aria-label="TypeLight, inicio">
           <span className="keycap keycap-primary keycap-sm px-2.5 font-display text-lg leading-none">T</span>
           <span className="font-display text-xl font-extrabold tracking-tight">TypeLight</span>
         </NavLink>
-        <div className="flex items-center gap-1 rounded-full border-2 border-line bg-keycap p-1">
+        <div className="order-last flex w-full items-center justify-center gap-1 rounded-full border-2 border-line bg-keycap p-1 md:order-none md:w-auto">
           {links.map((l) => (
             <NavLink
               key={l.to}
