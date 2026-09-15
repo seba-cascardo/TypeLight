@@ -3,6 +3,7 @@ import {
   drillText,
   makeRng,
   numbersText,
+  patternText,
   poolOf,
   reviewText,
   sentencesText,
@@ -48,6 +49,8 @@ export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): stri
       return numbersText(poolOf(spec.pool), spec.digits, spec.tokens, { rng })
     case 'symbols':
       return symbolsText(poolOf(spec.pool), spec.symbols, spec.tokens, { rng })
+    case 'pattern':
+      return patternText(poolOf(spec.pool), spec.pattern, spec.count, { rng })
     case 'adaptive':
       return adaptiveText(poolOf(spec.pool), [], spec.count, { rng })
   }

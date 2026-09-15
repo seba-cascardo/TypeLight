@@ -102,18 +102,20 @@ function Player({ lesson }: { lesson: Lesson }) {
     setStep((s) => Math.min(s + 1, texts.length - 1))
   }, [texts.length])
 
-  // Enter advances between exercises.
+  // Enter advances: between exercises, and from the results to the next lesson.
   useEffect(() => {
-    if (phase !== 'exercise' || !stepDone) return
+    const advanceExercise = phase === 'exercise' && stepDone
+    const advanceLesson = phase === 'results'
+    if (!advanceExercise && !advanceLesson) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        nextStep()
-      }
+      if (e.key !== 'Enter') return
+      e.preventDefault()
+      if (advanceExercise) nextStep()
+      else navigate(nextLesson ? `/leccion/${nextLesson.id}` : '/ruta')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, stepDone, nextStep])
+  }, [phase, stepDone, nextStep, navigate, nextLesson])
 
   const completeTip = () => {
     completeLesson(lesson.id, 3, 0, 1)
@@ -247,7 +249,7 @@ function Player({ lesson }: { lesson: Lesson }) {
             </Keycap>
             {nextLesson ? (
               <Keycap to={`/leccion/${nextLesson.id}`} variant="primary" size="lg">
-                Siguiente: {nextLesson.title} →
+                Siguiente: {nextLesson.title} <span className="opacity-70">(Enter)</span> →
               </Keycap>
             ) : (
               <Keycap to="/ruta" variant="primary" size="lg">

@@ -31,7 +31,7 @@ function legend(l: Lesson): { main: string; sub: string } {
     case 'review':
       return { main: '↻', sub: 'repaso' }
     case 'practice':
-      return { main: '✎', sub: 'práctica' }
+      return l.id.includes('-patron-') ? { main: l.title.replace('Patrón: ', ''), sub: 'patrón' } : { main: '✎', sub: 'práctica' }
     case 'tip':
       return { main: 'tip', sub: 'consejo' }
     case 'unit-review':

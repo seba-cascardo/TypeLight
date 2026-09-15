@@ -223,6 +223,23 @@ export function poolOf(chars: Iterable<string>, withSpace = true): Set<string> {
   return s
 }
 
+/** Real words containing an n-gram (que, ción, ent…), weighted by frequency. */
+export function patternText(pool: ReadonlySet<string>, pattern: string, count = 14, opts: GenOpts = {}): string {
+  const rng = opts.rng ?? makeRng()
+  const words = candidateWords(pool, 3000).filter((w) => w.includes(pattern))
+  if (words.length < 6) return wordsText(pool, count, { rng })
+  const weights = words.map((_, i) => 1 / Math.sqrt(i + 10))
+  const out: string[] = []
+  let last = ''
+  for (let i = 0; i < count; i++) {
+    let w = words[weightedIndex(weights, rng)]
+    if (w === last && words.length > 1) w = words[weightedIndex(weights, rng)]
+    out.push(w)
+    last = w
+  }
+  return out.join(' ')
+}
+
 /** Numbers built from the learned digits, mixed with a few words. */
 export function numbersText(
   pool: ReadonlySet<string>,

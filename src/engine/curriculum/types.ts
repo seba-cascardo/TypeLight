@@ -27,6 +27,7 @@ export type ExerciseSpec =
   | { kind: 'sentences'; pool: string[]; corpus?: SentenceCorpus; count?: number }
   | { kind: 'numbers'; pool: string[]; digits: string[]; tokens?: number }
   | { kind: 'symbols'; pool: string[]; symbols: string[]; tokens?: number }
+  | { kind: 'pattern'; pool: string[]; pattern: string; count?: number }
   | { kind: 'adaptive'; pool: string[]; count?: number }
 
 export interface Lesson {

@@ -166,6 +166,17 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 22 },
   ])
 
+  // ───────── Patrones comunes ─────────
+  const pat = unit(b, 'patrones', 'Patrones del español', 'Las combinaciones que más se repiten. Dominarlas es la mitad de la velocidad.', 18, 'mint')
+  for (const pattern of ['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente', 'nte', 'los', 'para']) {
+    const pool = [...b.pool]
+    add(b, pat, `patron-${slugOf([...pattern])}`, `Patrón: ${pattern}`, 'practice', [], [], [
+      { kind: 'pattern', pool, pattern, count: 12 },
+      { kind: 'pattern', pool, pattern, count: 14 },
+      { kind: 'words', pool, count: 16 },
+    ])
+  }
+
   // ───────── Mayúsculas ─────────
   const may = unit(b, 'mayusculas', 'Mayúsculas', 'Shift con la mano contraria. Empiezan las frases de verdad.', 18, 'sun')
   tip(b, may, TIP_SHIFT)

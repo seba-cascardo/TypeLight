@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { adaptiveText, drillText, makeRng, poolOf, sentencesText, wordsText } from '@/engine/generator'
 import { weakestKeys } from '@/engine/stats'
 import { keySamples, metrics, type TypingState } from '@/engine/typing'
@@ -54,6 +54,20 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const markRoutine = useStore((s) => s.markRoutine)
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<ReturnType<typeof metrics> | null>(null)
+  const navigate = useNavigate()
+
+  // Enter on the result card goes back to the routine.
+  useEffect(() => {
+    if (!result) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        navigate('/')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [result, navigate])
 
   const pool = useMemo(() => poolOf(learned.length >= 2 ? learned : ['f', 'j']), [learned])
   const weak = useMemo(() => weakestKeys(keyStats, learned, 3), [keyStats, learned])
@@ -141,7 +155,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
               Otra vez
             </Keycap>
             <Keycap to="/" variant="primary" size="lg">
-              Volver a la rutina →
+              Volver a la rutina <span className="opacity-70">(Enter)</span> →
             </Keycap>
           </div>
         </div>
