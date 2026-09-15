@@ -20,6 +20,9 @@ App web local (Vite + React 19 + TS + Tailwind v4 + zustand persist) para aprend
 - **Orden fila guía**: `Teclas f y j` se enseña SIN espacios (drill `joined`), después `La barra espaciadora` (mete ' ' en el pool), y recién ahí repaso/práctica. Los generadores/práctica miran `pool.includes(' ')`.
 - **Teclado en pantalla** (`Keyboard.tsx`): mide su ancho con ResizeObserver y fija la altura de tecla = 1 unidad de ancho (tope 48 px), para que se vea proporcional en cualquier ancho. Intenté `aspect-ratio` y `cqw` y ambos fallaron dentro de flex.
 
+## Backlog
+- Vive en `docs/backlog.md`. Primer ítem: repensar la tipografía (Seba no está conforme con Bricolage Grotesque + Nunito Sans); hacerlo como exploración con muestras antes de tocar nada.
+
 ## Trampas
 - En este entorno Bash, los heredocs con backticks en el contenido rompen el parser del tool: para archivos con template strings usar el Write tool o un script Python.
 - Playwright: el key name es `Enter`, no `Return`.
