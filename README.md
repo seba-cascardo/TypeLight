@@ -50,7 +50,7 @@ Detalles de diseño y decisiones: [`docs/superpowers/specs/2026-09-15-typelight-
 
 ## Créditos
 
-- Manos guía: dibujo anatómico del dorso de la mano de [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hand_external_anatomy,_dorsum.svg) (dominio público), coloreado y con tintes por dedo en `src/app/components/Hands.tsx`.
+- Manos guía: dibujo anatómico del dorso de la mano de [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hand_external_anatomy,_dorsum.svg) (dominio público). La silueta de piel (`src/app/assets/hand-mask.png`) se deriva del dibujo con `scripts/build-hand-mask.py` (necesita `e2e/screens/hand-raster.png`: el SVG rasterizado a 1028×1396 sobre blanco).
 - Palabras: ver abajo.
 
 ## Regenerar el corpus de palabras
