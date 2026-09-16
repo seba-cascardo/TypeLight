@@ -84,7 +84,8 @@ export function reviewText(
   return out.join(' ')
 }
 
-function candidateWords(pool: ReadonlySet<string>, limit: number): string[] {
+/** Real words (plus the one-letter ones) typable with the pool, most frequent first, up to `limit`. */
+export function candidateWords(pool: ReadonlySet<string>, limit: number): string[] {
   const res: string[] = []
   for (const w of ONE_LETTER) if (usesOnly(w, pool)) res.push(w)
   for (const w of WORDS) {

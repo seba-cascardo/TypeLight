@@ -28,4 +28,17 @@ describe('starsForGame', () => {
     expect(starsForGame(result({ gameId: 'rhythm', accuracy: 1, detail: { onTime: 0.7 } }))).toBe(2)
     expect(starsForGame(result({ gameId: 'rhythm', accuracy: 1, detail: { onTime: 0.5 } }))).toBe(1)
   })
+
+  it('balloons: accuracy, three stars only with nothing escaped', () => {
+    expect(starsForGame(result({ gameId: 'balloons', accuracy: 0.98, detail: { escaped: 0 } }))).toBe(3)
+    expect(starsForGame(result({ gameId: 'balloons', accuracy: 0.98, detail: { escaped: 1 } }))).toBe(2)
+    expect(starsForGame(result({ gameId: 'balloons', accuracy: 0.95, detail: { escaped: 0 } }))).toBe(2)
+    expect(starsForGame(result({ gameId: 'balloons', accuracy: 0.9, detail: { escaped: 0 } }))).toBe(1)
+  })
+
+  it('race: accuracy, three stars only when the ghost lost', () => {
+    expect(starsForGame(result({ gameId: 'race', accuracy: 0.98, detail: { won: 1 } }))).toBe(3)
+    expect(starsForGame(result({ gameId: 'race', accuracy: 0.98, detail: { won: 0 } }))).toBe(2)
+    expect(starsForGame(result({ gameId: 'race', accuracy: 0.9, detail: { won: 1 } }))).toBe(1)
+  })
 })
