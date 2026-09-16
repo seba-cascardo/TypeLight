@@ -20,12 +20,13 @@ App web local (Vite + React 19 + TS + Tailwind v4 + zustand persist) para aprend
 - **Orden fila guía**: `Teclas f y j` se enseña SIN espacios (drill `joined`), después `La barra espaciadora` (mete ' ' en el pool), y recién ahí repaso/práctica. Los generadores/práctica miran `pool.includes(' ')`.
 - **Escala para monitores grandes**: `html { font-size: clamp(16px, 0.55vw + 9px, 21px) }` y contenedor `max-w-[86rem]` en `AppShell` (antes `max-w-6xl`; Seba a 125 % de zoom pidió que los objetos ocuparan más ancho). El tamaño de letra ya le pareció bien; no subir más.
 - **Teclado en pantalla** (`Keyboard.tsx`): mide su ancho con ResizeObserver y fija la altura de tecla = 1 unidad de ancho (tope 48 px), para que se vea proporcional en cualquier ancho. Intenté `aspect-ratio` y `cqw` y ambos fallaron dentro de flex.
+- **Progreso (2026-09-16)**: motor puro en `engine/stats/progress.ts` + `days.ts`; store v2 (`reference`, `rhythm`, `gameId` en sesiones; `days` por día escrito por el store y por `useDaySnapshot` en `AppShell`). Velocidad de referencia = solo sesiones `reference` (Reto, textos de Velocidad, Carrera), mediana por día, delta contra 7–10 días atrás. Dominio por tecla con umbrales sobre latencia/errores EMA y `goalWpm` de la unidad. Precisión 7 días ponderada por caracteres. Regla que Seba fijó: ninguna métrica se mueve con un ejercicio fácil suelto; "Mejor velocidad" no vuelve.
 
 ## Backlog
 - Vive en `docs/backlog.md`. Para cambios visuales grandes, mostrarle a Seba 2-3 opciones renderizadas con contenido real antes de tocar la app (funcionó dos veces: opciones de diseño y tipografía).
 - El traspaso entre ventanas vive en docs/superpowers/handoffs/HANDOFF.md (canónico, sobrescrito; lo commitea Seba con el commit siguiente).
 
 ## Trampas
-- En este entorno Bash, los heredocs con backticks en el contenido rompen el parser del tool: para archivos con template strings usar el Write tool o un script Python.
+- Heredocs con backticks en el tool Bash: fallaban el 2026-09-15, corren bien desde el 2026-09-16. Si vuelve a pasar ("unexpected EOF while looking for matching"), la salida es el tool Write o un script Python.
 - Playwright: el key name es `Enter`, no `Return`.
 - `tsconfig.app.json` usa `paths` sin `baseUrl` (TS 6 deprecó `baseUrl`).

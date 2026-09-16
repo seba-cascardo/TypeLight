@@ -78,9 +78,17 @@ test('onboarding → first lessons → routine → stats', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByText('2 de 4. Seguimos.')).toBeVisible()
 
-  // Stats
+  // Stats: no Reto yet → no reference point; the lesson's second exercise (9 keys) carries a rhythm
   await page.goto('/estadisticas')
-  await expect(page.getByRole('heading', { name: /Lo que dicen tus dedos/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Cómo vas avanzando.' })).toBeVisible()
+  await expect(page.getByTestId('tile-reference')).toContainText('—')
+  await expect(page.getByTestId('tile-mastery')).toBeVisible()
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
+  expect(stored.version).toBe(2)
+  expect(typeof stored.state.sessions[1].rhythm).toBe('number')
+  const todayRow = stored.state.days[Object.keys(stored.state.days)[0]]
+  expect(todayRow.blocks).toBe(2)
+  expect(todayRow.learned).toBeGreaterThan(0)
   await page.screenshot({ path: 'e2e/screens/stats.png', fullPage: true })
 
   // Settings
