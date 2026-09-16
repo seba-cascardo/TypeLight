@@ -9,6 +9,7 @@ import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { GameResults } from '../components/games/GameResults'
 import { RainGame } from '../components/games/RainGame'
+import { RhythmGame } from '../components/games/RhythmGame'
 import { TypingArea } from '../components/TypingArea'
 import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
@@ -277,7 +278,7 @@ function Player({ lesson }: { lesson: Lesson }) {
     return (
       <div className="animate-rise">
         {header}
-        <RainGame key={String(gameResult === null)} {...gameProps} />
+        {lesson.game === 'rhythm' ? <RhythmGame key={String(gameResult === null)} {...gameProps} /> : <RainGame key={String(gameResult === null)} {...gameProps} />}
       </div>
     )
   }
