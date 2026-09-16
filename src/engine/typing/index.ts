@@ -129,3 +129,20 @@ export function endSession(s: TypingState, t: number): TypingState {
   if (s.finishedAt !== null) return s
   return { ...s, finishedAt: t, startedAt: s.startedAt ?? t }
 }
+
+/**
+ * How even the gaps between correct keystrokes were: 1 − coefficient of variation,
+ * clamped to 0..1 (1 = metronome). Undefined with fewer than 8 usable gaps.
+ * Gaps at MAX_LATENCY are pauses, not typing, and are left out.
+ */
+export function rhythm(s: TypingState): number | undefined {
+  const gaps: number[] = []
+  for (const k of s.keystrokes) {
+    if (k.correct && k.latency !== undefined && k.latency < MAX_LATENCY) gaps.push(k.latency)
+  }
+  if (gaps.length < 8) return undefined
+  const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length
+  if (mean <= 0) return undefined
+  const variance = gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length
+  return Math.max(0, Math.min(1, 1 - Math.sqrt(variance) / mean))
+}

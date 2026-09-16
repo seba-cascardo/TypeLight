@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSession, isFinished, keySamples, metrics, typeChar, typeText } from './index'
+import { createSession, isFinished, keySamples, metrics, rhythm, typeChar, typeText } from './index'
 
 describe('typing session', () => {
   it('advances on correct keys and finishes at the end', () => {
@@ -63,5 +63,34 @@ describe('typing session', () => {
     const samples = keySamples(s)
     expect(samples.get('a')).toMatchObject({ occurrences: 1, errors: 0, latencies: [] })
     expect(samples.get('b')).toMatchObject({ occurrences: 1, errors: 1, latencies: [2000] })
+  })
+})
+
+describe('rhythm', () => {
+  /** A session of `gaps.length + 1` correct keystrokes separated by the given gaps (ms). */
+  const session = (gaps: number[]) => {
+    let s = createSession('a'.repeat(gaps.length + 1))
+    let t = 1000
+    s = typeChar(s, 'a', t)
+    for (const g of gaps) {
+      t += g
+      s = typeChar(s, 'a', t)
+    }
+    return s
+  }
+
+  it('is 1 for perfectly even gaps and lower for uneven ones', () => {
+    expect(rhythm(session(Array(8).fill(300)))).toBe(1)
+    const uneven = rhythm(session([100, 500, 100, 500, 100, 500, 100, 500]))
+    expect(uneven).toBeGreaterThan(0)
+    expect(uneven).toBeLessThan(0.5)
+  })
+
+  it('needs at least 8 gaps', () => {
+    expect(rhythm(session(Array(7).fill(300)))).toBeUndefined()
+  })
+
+  it('ignores pauses that hit the latency cap', () => {
+    expect(rhythm(session([...Array(8).fill(300), 5000]))).toBe(1)
   })
 })
