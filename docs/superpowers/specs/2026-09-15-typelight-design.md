@@ -94,3 +94,14 @@ Firma: **todo botón es una tecla**; la rutina de hoy es una fila de 4 keycaps g
 
 - Vitest: layouts (char→tecla, dead keys, dedos), generadores (solo teclas permitidas, longitudes), reducer de tipeo (correcto/incorrecto/backspace/métricas), estrellas, racha, rutina.
 - Playwright: flujo completo bienvenida → lección 1 → tipear → resultado.
+
+## 8. Estado al cierre del 2026-09-15 (posterior a la spec)
+
+Todo lo de las secciones 1-7 está implementado, con estas desviaciones decididas con Seba durante el día:
+
+- **Tipografía**: se sacó IBM Plex Mono. Bricolage Grotesque + Nunito Sans no convencieron a Seba; el 2026-09-16 eligió, entre tres parejas mostradas con contenido real, **Gabarito (títulos) + Lexend (cuerpo y texto a tipear)**.
+- **Botones**: planos (sin borde inferior ni sombra). El relieve queda solo en el teclado en pantalla.
+- **Manos guía**: no son dibujo procedural; son un dibujo anatómico de dominio público (Wikimedia) con silueta derivada del trazo (`scripts/build-hand-mask.py`). Van debajo del teclado a ancho completo.
+- **Orden de la fila guía**: `f j` sin espacios → barra espaciadora → repaso/práctica.
+- **Agregados**: unidad de patrones del español, juego "Lluvia de teclas" (11 lecciones `game`), tema oscuro automático, grano de papel, rebote al tipear, escala fluida de fuente para monitores grandes.
+- Conocimiento durable del proyecto: `.serena/memories/typelight-architecture.md`.
