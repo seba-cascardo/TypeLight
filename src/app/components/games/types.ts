@@ -11,5 +11,9 @@ export interface GameProps {
   weak?: string[]
   sound?: boolean
   durationMs?: number
+  /** Carrera: what the ghost runs at (best recent Reto, or the goal). */
+  ghostWpm?: number
+  /** Globos: only words containing one of these (Patrones). */
+  patterns?: string[]
   onFinish: (r: GameResult) => void
 }

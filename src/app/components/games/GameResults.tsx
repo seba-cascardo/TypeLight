@@ -42,6 +42,37 @@ function view(r: GameResult): View {
         footnote: `Mejor racha: ${r.bestCombo} seguidas. Tres estrellas con 85 % a tiempo y 97 % de precisión.`,
       }
     }
+    case 'balloons': {
+      const escaped = r.detail.escaped ?? 0
+      return {
+        headline: ['Terminado. Palabra por palabra, mañana salen más.', 'Buen ojo. Un poco más de calma y son tres.', 'Ni un globo se escapó.'],
+        stats: [
+          { label: 'Puntos', value: r.score, tone: 'enter' },
+          { label: 'Globos', value: r.detail.popped ?? 0 },
+          { label: 'Escapados', value: escaped, tone: escaped === 0 ? 'enter' : 'esc' },
+          { label: 'Precisión', value: pct(r.accuracy), tone: r.accuracy >= 0.97 ? 'enter' : r.accuracy >= 0.95 ? 'ink' : 'esc' },
+        ],
+        footnote: `Mejor racha: ${r.bestCombo} palabras seguidas. Tres estrellas con 97 % de precisión y ningún globo escapado.`,
+      }
+    }
+    case 'race': {
+      const won = r.detail.won === 1
+      const margin = Math.abs(r.detail.marginSeconds ?? 0)
+      return {
+        headline: [
+          'Llegaste. La precisión primero: el fantasma espera.',
+          won ? 'Le ganaste, pero con errores. Limpio y son tres.' : `Te faltaron ${margin} s. Mañana lo alcanzás.`,
+          `Le ganaste por ${margin} s.`,
+        ],
+        stats: [
+          { label: 'Vos', value: r.detail.wpm ?? 0, tone: won ? 'enter' : 'ink' },
+          { label: 'Fantasma', value: r.detail.ghostWpm ?? 0 },
+          { label: 'Precisión', value: pct(r.accuracy), tone: r.accuracy >= 0.97 ? 'enter' : r.accuracy >= 0.95 ? 'ink' : 'esc' },
+          { label: 'Errores', value: r.wrong, tone: r.wrong === 0 ? 'enter' : 'ink' },
+        ],
+        footnote: won ? 'El fantasma corre a tu mejor Reto de la semana: la próxima va más rápido.' : 'El fantasma corre a tu mejor Reto de la semana (o a la meta de la unidad).',
+      }
+    }
   }
 }
 
