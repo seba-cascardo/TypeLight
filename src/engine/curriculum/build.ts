@@ -66,9 +66,10 @@ function tip(b: Builder, u: Unit, t: Tip) {
 }
 
 /** A playable break with everything learned so far. */
-function game(b: Builder, u: Unit, slug: string, title: string, id: GameId = 'rain') {
+function game(b: Builder, u: Unit, slug: string, title: string, id: GameId = 'rain'): Lesson {
   const l = add(b, u, `juego-${slug}`, title, 'game', [], [], [])
   l.game = id
+  return l
 }
 
 function slugOf(chars: string[]): string {
@@ -190,7 +191,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 18 },
     { kind: 'words', pool, count: 20 },
   ])
-  game(b, sup, 'fila-superior', 'Juego: fila superior')
+  game(b, sup, 'fila-superior', 'Juego: globos de palabras', 'balloons')
 
   // ───────── Fila inferior ─────────
   const inf = unit(b, 'inferior', 'Fila inferior', 'Los dedos bajan. Con esta fila completás el alfabeto.', 15, 'coral')
@@ -206,18 +207,23 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 20 },
     { kind: 'words', pool, count: 22 },
   ])
-  game(b, inf, 'alfabeto', 'Juego: todo el alfabeto')
+  game(b, inf, 'alfabeto', 'Juego: globos de palabras', 'balloons')
 
   // ───────── Patrones comunes ─────────
   const pat = unit(b, 'patrones', 'Patrones del español', 'Las combinaciones que más se repiten. Dominarlas es la mitad de la velocidad.', 18, 'mint')
-  for (const pattern of ['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente', 'nte', 'los', 'para']) {
+  const patterns = ['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente', 'nte', 'los', 'para']
+  patterns.forEach((pattern, i) => {
     const pool = [...b.pool]
     add(b, pat, `patron-${slugOf([...pattern])}`, `Patrón: ${pattern}`, 'practice', [], [], [
       { kind: 'pattern', pool, pattern, count: 12 },
       { kind: 'pattern', pool, pattern, count: 14 },
       { kind: 'words', pool, count: 16 },
     ])
-  }
+    if (pattern === 'mente') {
+      const l = game(b, pat, 'patrones', 'Juego: globos con patrones', 'balloons')
+      l.patterns = patterns.slice(0, i + 1)
+    }
+  })
 
   // ───────── Mayúsculas ─────────
   const may = unit(b, 'mayusculas', 'Mayúsculas', 'Shift con la mano contraria. Empiezan las frases de verdad.', 18, 'sun')
@@ -242,7 +248,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'sentences', pool, count: 2 },
     { kind: 'sentences', pool, count: 2 },
   ])
-  game(b, may, 'mayusculas', 'Juego: mayúsculas')
+  game(b, may, 'mayusculas', 'Juego: carrera contra tu fantasma', 'race')
 
   // ───────── Acentos (solo teclados en español) ─────────
   if (isSpanish) {
@@ -312,6 +318,10 @@ export function buildCurriculum(layout: Layout): Curriculum {
       { kind: 'sentences', pool, count: 3 },
     ])
     l.goalWpm = goal
+    if (i === 3 || i === 7) {
+      const race = game(b, vel, `carrera-${i === 3 ? 1 : 2}`, `Juego: carrera a ${goal} PPM`, 'race')
+      race.goalWpm = goal
+    }
   })
 
   const byId = new Map(b.lessons.map((l) => [l.id, l]))

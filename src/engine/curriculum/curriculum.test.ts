@@ -85,12 +85,20 @@ describe('curriculum', () => {
       ['guia-juego-primeras-8', 'rain'],
       ['guia-juego-fila-guia', 'rhythm'],
       ['superior-juego-ruei', 'rain'],
-      ['superior-juego-fila-superior', 'rain'],
+      ['superior-juego-fila-superior', 'balloons'],
       ['inferior-juego-vmcx', 'rhythm'],
-      ['inferior-juego-alfabeto', 'rain'],
-      ['mayusculas-juego-mayusculas', 'rain'],
+      ['inferior-juego-alfabeto', 'balloons'],
+      ['patrones-juego-patrones', 'balloons'],
+      ['mayusculas-juego-mayusculas', 'race'],
       ['numeros-juego-numeros', 'rhythm'],
       ['signos-juego-signos', 'rain'],
+      ['velocidad-juego-carrera-1', 'race'],
+      ['velocidad-juego-carrera-2', 'race'],
     ])
+    const patrones = c.byId.get('patrones-juego-patrones')!
+    expect(patrones.patterns).toEqual(['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente'])
+    expect(c.byId.get('velocidad-juego-carrera-1')!.goalWpm).toBe(34)
+    expect(c.byId.get('velocidad-juego-carrera-2')!.goalWpm).toBe(50)
+    expect(c.lessons.indexOf(c.byId.get('velocidad-juego-carrera-1')!)).toBe(c.lessons.indexOf(c.byId.get('velocidad-texto-4')!) + 1)
   })
 })

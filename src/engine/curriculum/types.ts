@@ -13,7 +13,7 @@ export interface Unit {
 
 export type LessonKind = 'keys' | 'review' | 'practice' | 'tip' | 'text' | 'unit-review' | 'game'
 
-export type GameId = 'rain' | 'rhythm'
+export type GameId = 'rain' | 'rhythm' | 'balloons' | 'race'
 
 export interface IntroCard {
   title: string
@@ -48,6 +48,8 @@ export interface Lesson {
   goalWpm: number
   /** Set on 'game' lessons. */
   game?: GameId
+  /** Set on the Patrones game: only words containing one of these count. */
+  patterns?: string[]
 }
 
 export interface Curriculum {
