@@ -106,3 +106,5 @@ export function streakAlive(streak: Streak, today: string): boolean {
 export function formatAccuracy(acc: number): string {
   return `${Math.round(acc * 100)} %`
 }
+
+export * from './days'
