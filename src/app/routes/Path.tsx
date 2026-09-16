@@ -1,9 +1,11 @@
 import { Link } from 'react-router'
-import type { Lesson } from '@/engine/curriculum'
+import type { GameId, Lesson } from '@/engine/curriculum'
 import { PageTitle, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { accentVars, unitAccentClass } from '../lib/accents'
 import { useStore } from '../store'
+
+const GAME_GLYPH: Record<GameId, string> = { rain: '▼', rhythm: '♪' }
 
 function legend(l: Lesson): { main: string; sub: string } {
   switch (l.kind) {
@@ -20,7 +22,7 @@ function legend(l: Lesson): { main: string; sub: string } {
     case 'text':
       return { main: 'Aa', sub: `${l.goalWpm} ppm` }
     case 'game':
-      return { main: '▼', sub: 'juego' }
+      return { main: GAME_GLYPH[l.game ?? 'rain'], sub: 'juego' }
   }
 }
 

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
-import { starsFor, type Stars as StarCount } from '@/engine/stats'
+import { starsForGame, type GameResult } from '@/engine/games'
+import { starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
-import { RainGame, type RainResult } from '../components/RainGame'
+import { GameResults } from '../components/games/GameResults'
+import { RainGame } from '../components/games/RainGame'
 import { TypingArea } from '../components/TypingArea'
 import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
@@ -47,11 +49,12 @@ function Player({ lesson }: { lesson: Lesson }) {
   const recordSession = useStore((s) => s.recordSession)
   const completeLesson = useStore((s) => s.completeLesson)
   const markRoutine = useStore((s) => s.markRoutine)
+  const keyStats = useStore((s) => s.keys)
   const unit = curriculum.units.find((u) => u.id === lesson.unitId)!
   const nextLesson = curriculum.lessons[lesson.index + 1]
 
   const [phase, setPhase] = useState<Phase>(lesson.kind === 'game' ? 'game' : lesson.intro.length ? 'intro' : 'exercise')
-  const [gameResult, setGameResult] = useState<RainResult | null>(null)
+  const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [card, setCard] = useState(0)
   const [texts, setTexts] = useState(() => generateTexts(lesson))
   const [step, setStep] = useState(0)
@@ -149,17 +152,25 @@ function Player({ lesson }: { lesson: Lesson }) {
   }
 
   const onGameFinish = useCallback(
-    (r: RainResult) => {
-      const total = r.hits + r.misses + r.wrong
-      const acc = total ? r.hits / total : 0
-      const s: StarCount = r.hits === 0 ? 1 : acc >= 0.95 ? 3 : acc >= 0.85 ? 2 : 1
+    (r: GameResult) => {
+      const s = starsForGame(r)
       setGameResult(r)
       setStars(s)
-      completeLesson(lesson.id, s, 0, acc)
+      recordSession({
+        kind: 'game',
+        gameId: r.gameId,
+        wpm: 0,
+        acc: r.accuracy,
+        chars: r.hits,
+        errors: r.wrong,
+        seconds: r.seconds,
+        ...(r.gameId === 'rhythm' && { rhythm: r.detail.onTime }),
+      })
+      completeLesson(lesson.id, s, 0, r.accuracy)
       markRoutine('lesson')
       setPhase('results')
     },
-    [lesson.id, completeLesson, markRoutine],
+    [lesson.id, completeLesson, markRoutine, recordSession],
   )
 
   const retry = () => {
@@ -254,58 +265,28 @@ function Player({ lesson }: { lesson: Lesson }) {
   }
 
   if (phase === 'game') {
+    const gameProps = {
+      layout,
+      pool: lesson.pool,
+      goalWpm: lesson.goalWpm,
+      weak: weakestKeys(keyStats, lesson.pool, 3),
+      sound,
+      onFinish: onGameFinish,
+      durationMs: Number(new URLSearchParams(window.location.search).get('dur')) || undefined,
+    }
     return (
       <div className="animate-rise">
         {header}
-        <RainGame
-          key={String(gameResult === null)}
-          layout={layout}
-          pool={lesson.pool}
-          sound={sound}
-          onFinish={onGameFinish}
-          durationMs={Number(new URLSearchParams(window.location.search).get('dur')) || undefined}
-        />
+        <RainGame key={String(gameResult === null)} {...gameProps} />
       </div>
     )
   }
 
   if (phase === 'results' && gameResult) {
-    const g = gameResult
-    const total = g.hits + g.misses + g.wrong
-    const acc = total ? g.hits / total : 0
     return (
       <div className="animate-rise">
         {header}
-        <div className="card p-8 text-center">
-          <div className="eyebrow mb-3">Juego terminado</div>
-          <div className="animate-pop inline-block">
-            <Stars count={stars} size="lg" />
-          </div>
-          <h2 className="mt-3 text-3xl">
-            {stars === 3 ? 'Ni una gota al piso.' : stars === 2 ? 'Buen reflejo. Un poco más de calma y son tres.' : 'Terminado. Con más práctica, la lluvia se vuelve lenta.'}
-          </h2>
-          <div className="mx-auto mt-6 flex max-w-lg justify-around">
-            <Stat label="Puntos" value={g.score} tone="enter" />
-            <Stat label="Atrapadas" value={g.hits} />
-            <Stat label="Al piso" value={g.misses} tone={g.misses === 0 ? 'enter' : 'esc'} />
-            <Stat label="Precisión" value={`${Math.round(acc * 100)} %`} tone={acc >= 0.95 ? 'enter' : acc >= 0.85 ? 'ink' : 'esc'} />
-          </div>
-          <p className="mt-4 text-sm text-ink-mute">Mejor racha: {g.bestCombo} seguidas. Tres estrellas con 95 % de precisión.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Keycap variant="ghost" onClick={retry}>
-              Jugar de nuevo
-            </Keycap>
-            {nextLesson ? (
-              <Keycap to={`/leccion/${nextLesson.id}`} variant="primary" size="lg">
-                Siguiente: {nextLesson.title} <span className="opacity-70">(Enter)</span> →
-              </Keycap>
-            ) : (
-              <Keycap to="/ruta" variant="primary" size="lg">
-                Volver a la ruta
-              </Keycap>
-            )}
-          </div>
-        </div>
+        <GameResults result={gameResult} stars={stars} onRetry={retry} nextLesson={nextLesson} />
       </div>
     )
   }

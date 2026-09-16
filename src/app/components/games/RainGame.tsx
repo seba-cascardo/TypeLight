@@ -1,27 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { resolveChar, type Layout } from '@/engine/layouts'
-import { Keycap } from './Keycap'
-import { FINGER_COLOR, fingerGroup } from '../lib/fingers'
-import { chime, click, thud } from '../lib/sound'
-
-export interface RainResult {
-  hits: number
-  misses: number
-  wrong: number
-  score: number
-  bestCombo: number
-  seconds: number
-}
-
-interface Props {
-  layout: Layout
-  /** Characters that may fall. Anything that needs a dead key is skipped. */
-  pool: string[]
-  durationMs?: number
-  lives?: number
-  sound?: boolean
-  onFinish: (r: RainResult) => void
-}
+import { pickLetters } from '@/engine/games'
+import { resolveChar } from '@/engine/layouts'
+import { Keycap } from '../Keycap'
+import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
+import { chime, click, thud } from '../../lib/sound'
+import { Mascot, type Mood } from './Mascot'
+import type { GameProps } from './types'
 
 interface Drop {
   id: number
@@ -42,71 +26,18 @@ interface Effect {
   at: number
 }
 
-type Mood = 'idle' | 'happy' | 'sad'
-
 const KEY = 56
 const LANES = 8
 const POP_MS = 260
 const EFFECT_MS = 650
 const WATER = 22
-
-function pickLetters(layout: Layout, pool: string[]): string[] {
-  return pool.filter((c) => {
-    if (c === ' ') return false
-    const seq = resolveChar(layout, c)
-    return seq !== null && seq.length === 1
-  })
-}
-
-/** A keycap with a face that cheers catches and winces at misses. */
-function Mascot({ mood, combo }: { mood: Mood; combo: number }) {
-  const happy = mood === 'happy'
-  const sad = mood === 'sad'
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      className={`h-16 w-16 ${happy ? 'animate-pop' : ''} ${sad ? 'animate-shake' : ''}`}
-      aria-hidden="true"
-    >
-      <rect x="6" y="10" width="52" height="48" rx="12" fill="var(--color-enter-edge)" />
-      <rect x="6" y="6" width="52" height="46" rx="12" fill="var(--color-enter)" />
-      <rect x="10" y="8" width="44" height="2" rx="1" fill="rgb(255 255 255 / 0.35)" />
-      {/* eyes */}
-      {happy ? (
-        <>
-          <path d="M18 30 q5 -7 10 0" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M36 30 q5 -7 10 0" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx="23" cy={sad ? 30 : 28} r="4" fill="#fff" />
-          <circle cx="41" cy={sad ? 30 : 28} r="4" fill="#fff" />
-          <circle cx={sad ? 22 : 24} cy={sad ? 31 : 29} r="1.8" fill="#1e2124" />
-          <circle cx={sad ? 40 : 42} cy={sad ? 31 : 29} r="1.8" fill="#1e2124" />
-        </>
-      )}
-      {/* mouth */}
-      {happy ? (
-        <path d="M22 38 q10 10 20 0" fill="#1e2124" />
-      ) : sad ? (
-        <path d="M24 42 q8 -6 16 0" fill="none" stroke="#1e2124" strokeWidth="3" strokeLinecap="round" />
-      ) : (
-        <path d="M25 39 q7 4 14 0" fill="none" stroke="#1e2124" strokeWidth="3" strokeLinecap="round" />
-      )}
-      {combo >= 5 && (
-        <text x="32" y="62" textAnchor="middle" fontSize="9" fontWeight="900" fill="var(--color-sun-edge)" fontFamily="var(--font-body)">
-          ×{combo}
-        </text>
-      )}
-    </svg>
-  )
-}
+const LIVES = 3
 
 /**
  * Lluvia de teclas: keycaps fall down lanes; type the letter to pop the lowest one.
  * Speed and spawn rate ramp up over the round.
  */
-export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound = true, onFinish }: Props) {
+export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFinish }: GameProps) {
   const letters = useMemo(() => pickLetters(layout, pool), [layout, pool])
   const field = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 800, h: 420 })
@@ -115,7 +46,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
 
   const drops = useRef<Drop[]>([])
   const effects = useRef<Effect[]>([])
-  const stats = useRef({ hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: lives })
+  const stats = useRef({ hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES })
   const mood = useRef<{ mood: Mood; at: number }>({ mood: 'idle', at: 0 })
   const startedAt = useRef(0)
   const lastSpawn = useRef(0)
@@ -147,7 +78,18 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
     const s = stats.current
     setPhase('done')
     if (sound) chime()
-    onFinish({ hits: s.hits, misses: s.misses, wrong: s.wrong, score: s.score, bestCombo: s.bestCombo, seconds: (performance.now() - startedAt.current) / 1000 })
+    const total = s.hits + s.misses + s.wrong
+    onFinish({
+      gameId: 'rain',
+      score: s.score,
+      hits: s.hits,
+      misses: s.misses,
+      wrong: s.wrong,
+      bestCombo: s.bestCombo,
+      seconds: (performance.now() - startedAt.current) / 1000,
+      accuracy: total ? s.hits / total : 0,
+      detail: {},
+    })
   }, [onFinish, sound])
 
   const spawn = useCallback(
@@ -252,7 +194,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
   const start = () => {
     drops.current = []
     effects.current = []
-    stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: lives }
+    stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES }
     mood.current = { mood: 'idle', at: 0 }
     finished.current = false
     startedAt.current = performance.now()
@@ -288,7 +230,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, lives = 3, sound =
           {s.combo >= 5 && <span className="rounded-full bg-sun-soft px-2 py-0.5 text-xs font-black text-sun-edge">racha ×{s.combo}</span>}
         </span>
         <span className="flex items-center gap-1.5" aria-label={`${s.livesLeft} vidas`}>
-          {Array.from({ length: lives }, (_, i) => (
+          {Array.from({ length: LIVES }, (_, i) => (
             <svg key={i} width="20" height="18" viewBox="0 0 20 18" aria-hidden="true">
               <path
                 d="M10 17 L2.2 9.3 A4.4 4.4 0 0 1 8.4 3.1 L10 4.7 L11.6 3.1 A4.4 4.4 0 0 1 17.8 9.3 Z"

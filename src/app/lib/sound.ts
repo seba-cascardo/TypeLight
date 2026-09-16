@@ -79,3 +79,19 @@ export function chime() {
   })
   })
 }
+
+/** Soft, short metronome tick. */
+export function metronome() {
+  safely((c) => {
+    const t = c.currentTime
+    const osc = c.createOscillator()
+    osc.type = 'sine'
+    osc.frequency.value = 1400
+    const gain = c.createGain()
+    gain.gain.setValueAtTime(0.08, t)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04)
+    osc.connect(gain).connect(c.destination)
+    osc.start(t)
+    osc.stop(t + 0.05)
+  })
+}

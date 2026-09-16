@@ -34,5 +34,10 @@ test('rain game: catch keys, finish, get stars and unlock the next lesson', asyn
   expect(score).toBeTruthy()
   const hits = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!).state.lessons['guia-juego-primeras-8'])
   expect(hits.stars).toBeGreaterThanOrEqual(1)
+  const last = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('typelight.v1')!).state.sessions
+    return s[s.length - 1]
+  })
+  expect(last).toMatchObject({ kind: 'game', gameId: 'rain' })
   await page.screenshot({ path: 'e2e/screens/game-results.png' })
 })
