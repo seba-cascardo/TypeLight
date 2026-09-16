@@ -6,6 +6,7 @@ import { AppShell } from './app/components/AppShell'
 import { Home } from './app/routes/Home'
 import { LessonPlayer } from './app/routes/LessonPlayer'
 import { Path } from './app/routes/Path'
+import { Play } from './app/routes/Play'
 import { Practice } from './app/routes/Practice'
 import { Settings } from './app/routes/Settings'
 import { Stats } from './app/routes/Stats'
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
           { path: '/ruta', element: <Path /> },
           { path: '/leccion/:id', element: <LessonPlayer /> },
           { path: '/practica/:kind', element: <Practice /> },
+          { path: '/jugar/:gameId', element: <Play /> },
           { path: '/estadisticas', element: <Stats /> },
           { path: '/ajustes', element: <Settings /> },
           { path: '*', element: <Navigate to="/" replace /> },

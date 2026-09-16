@@ -1,5 +1,7 @@
 import { Link } from 'react-router'
+import type { GameId } from '@/engine/curriculum'
 import { dayKey, referenceByDay, referenceHeadline, streakAlive } from '@/engine/stats'
+import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
@@ -25,7 +27,7 @@ export function Home() {
   const sessions = useStore((s) => s.sessions)
   const results = useStore((s) => s.lessons)
   const routine = useRoutine()
-  const { curriculum, next, completed } = useProgress()
+  const { curriculum, next, completed, learned } = useProgress()
 
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const alive = streakAlive(streak, dayKey())
@@ -34,6 +36,8 @@ export function Home() {
   const recentAcc = recent.length ? recent.reduce((a, s) => a + s.acc, 0) / recent.length : null
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
+  const wordsReady = learned.includes(' ') && learned.filter((c) => /^[a-zñ]$/.test(c)).length >= 8
+  const playable: GameId[] = wordsReady ? ['rain', 'rhythm', 'balloons', 'race'] : ['rain', 'rhythm']
 
   return (
     <div className="animate-rise">
@@ -75,6 +79,21 @@ export function Home() {
           })}
         </div>
       </section>
+
+      {doneCount === 4 && (
+        <section className="mb-10" data-testid="play-row">
+          <div className="eyebrow mb-3">Jugar · con todo lo que ya sabés</div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {playable.map((id) => (
+              <Link key={id} to={`/jugar/${id}`} className={`keycap keycap-${GAME_META[id].variant} flex-col items-start gap-1 px-4 py-4 text-left`} style={{ borderRadius: 16 }}>
+                <span className="font-display text-2xl leading-none">{GAME_META[id].glyph}</span>
+                <span className="font-display text-xl font-extrabold leading-tight">{GAME_META[id].title}</span>
+                <span className="text-sm font-semibold leading-snug opacity-90">{GAME_META[id].blurb}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
         <div className="card p-6">

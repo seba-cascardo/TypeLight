@@ -2,18 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
-import { starsForGame, type GameResult } from '@/engine/games'
-import { starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
+import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
+import { dayKey, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
+import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
-import { RainGame } from '../components/games/RainGame'
-import { RhythmGame } from '../components/games/RhythmGame'
 import { TypingArea } from '../components/TypingArea'
 import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
+import { gameSession } from '../lib/gameSession'
 import { useStore } from '../store'
 import { unitAccentClass } from '../lib/accents'
 
@@ -51,6 +51,7 @@ function Player({ lesson }: { lesson: Lesson }) {
   const completeLesson = useStore((s) => s.completeLesson)
   const markRoutine = useStore((s) => s.markRoutine)
   const keyStats = useStore((s) => s.keys)
+  const sessions = useStore((s) => s.sessions)
   const unit = curriculum.units.find((u) => u.id === lesson.unitId)!
   const nextLesson = curriculum.lessons[lesson.index + 1]
 
@@ -157,16 +158,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       const s = starsForGame(r)
       setGameResult(r)
       setStars(s)
-      recordSession({
-        kind: 'game',
-        gameId: r.gameId,
-        wpm: 0,
-        acc: r.accuracy,
-        chars: r.hits,
-        errors: r.wrong,
-        seconds: r.seconds,
-        ...(r.gameId === 'rhythm' && { rhythm: r.detail.onTime }),
-      })
+      recordSession(gameSession(r), r.typing?.samples)
       completeLesson(lesson.id, s, 0, r.accuracy)
       markRoutine('lesson')
       setPhase('results')
@@ -271,6 +263,8 @@ function Player({ lesson }: { lesson: Lesson }) {
       pool: lesson.pool,
       goalWpm: lesson.goalWpm,
       weak: weakestKeys(keyStats, lesson.pool, 3),
+      ghostWpm: ghostWpm(sessions, dayKey(), lesson.goalWpm),
+      patterns: lesson.patterns,
       sound,
       onFinish: onGameFinish,
       durationMs: Number(new URLSearchParams(window.location.search).get('dur')) || undefined,
@@ -278,7 +272,7 @@ function Player({ lesson }: { lesson: Lesson }) {
     return (
       <div className="animate-rise">
         {header}
-        {lesson.game === 'rhythm' ? <RhythmGame key={String(gameResult === null)} {...gameProps} /> : <RainGame key={String(gameResult === null)} {...gameProps} />}
+        <Game key={String(gameResult === null)} id={lesson.game ?? 'rain'} {...gameProps} />
       </div>
     )
   }
