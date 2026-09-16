@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { dayKey, streakAlive } from '@/engine/stats'
+import { dayKey, referenceByDay, referenceHeadline, streakAlive } from '@/engine/stats'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
@@ -30,7 +30,7 @@ export function Home() {
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const alive = streakAlive(streak, dayKey())
   const recent = sessions.slice(-10)
-  const bestWpm = sessions.reduce((m, s) => Math.max(m, s.wpm), 0)
+  const reference = referenceHeadline(referenceByDay(sessions))
   const recentAcc = recent.length ? recent.reduce((a, s) => a + s.acc, 0) / recent.length : null
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
@@ -127,9 +127,9 @@ export function Home() {
           <div className="eyebrow mb-3">Últimos números</div>
           <dl className="grid grid-cols-2 gap-4">
             <div>
-              <dt className="text-xs font-bold text-ink-mute">Mejor velocidad</dt>
+              <dt className="text-xs font-bold text-ink-mute">Velocidad de referencia</dt>
               <dd className="font-display text-3xl font-extrabold">
-                {bestWpm || '—'} <span className="text-sm text-ink-mute">PPM</span>
+                {reference ? reference.value : '—'} <span className="text-sm text-ink-mute">PPM</span>
               </dd>
             </div>
             <div>
