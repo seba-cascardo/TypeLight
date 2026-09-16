@@ -5,15 +5,15 @@ import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
 import { chime, click, metronome, thud } from '../../lib/sound'
-import { Mascot, type Mood } from './Mascot'
+import { Mascot } from './Mascot'
+import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
-const KEY = 56
+const BASE_KEY = 56
 /** Left edge of the hit zone inside the field. */
 const ZONE_X = 72
 /** Notes travel right → left at a constant speed, px per ms. */
 const SPEED = 0.16
-const TRACK_TOP = 150
 const JUDGE_MS = 600
 
 type Feedback = Judgement | 'wrong'
@@ -50,7 +50,11 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     return map
   }, [layout, letters])
   const field = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(800)
+  const [size, setSize] = useState({ w: 800, h: 420 })
+  const width = size.w
+  // Keys grow with the field so a tall screen gets big targets; the track sits at its middle.
+  const KEY = Math.round(Math.min(84, Math.max(BASE_KEY, size.h / 7)))
+  const TRACK_TOP = Math.round((size.h - KEY - 24) / 2)
   const [phase, setPhase] = useState<'ready' | 'playing' | 'done'>('ready')
   const [, setFrame] = useState(0)
 
@@ -62,13 +66,14 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const floating = useRef<Floating[]>([])
   const recent = useRef<Feedback[]>([])
   const mood = useRef<{ mood: Mood; at: number }>({ mood: 'idle', at: 0 })
+  const missStreak = useRef(0)
   const nextId = useRef(1)
   const finished = useRef(false)
 
   useEffect(() => {
     const el = field.current
     if (!el) return
-    const update = () => setWidth(el.clientWidth)
+    const update = () => setSize({ w: el.clientWidth, h: el.clientHeight })
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
@@ -121,7 +126,8 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
       r = step.round
       for (let i = 0; i < step.expired.length; i++) {
         feedback('fuera', now)
-        setMood('sad', now)
+        missStreak.current++
+        setMood(missMood(missStreak.current), now)
         if (sound) thud()
       }
       if (now >= nextTickAt.current) {
@@ -131,7 +137,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
       }
       round.current = r
       floating.current = floating.current.filter((f) => now - f.at < JUDGE_MS)
-      if (mood.current.mood !== 'idle' && now - mood.current.at > 700) mood.current = { mood: 'idle', at: now }
+      if (mood.current.mood !== 'idle' && now - mood.current.at > MOOD_MS[mood.current.mood]) mood.current = { mood: 'idle', at: now }
       setFrame((f) => f + 1)
       raf = requestAnimationFrame(loop)
     }
@@ -151,10 +157,12 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
       round.current = out.round
       feedback(out.judgement, now)
       if (out.judgement === 'wrong' || out.judgement === 'fuera') {
-        setMood('sad', now)
+        missStreak.current++
+        setMood(missMood(missStreak.current), now)
         if (sound) thud()
       } else {
-        setMood('happy', now)
+        missStreak.current = 0
+        setMood(hitMood(out.round.combo), now)
         if (sound) click()
       }
     }
@@ -169,6 +177,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     floating.current = []
     recent.current = []
     mood.current = { mood: 'idle', at: 0 }
+    missStreak.current = 0
     beatCount.current = 0
     nextTickAt.current = 0
     finished.current = false
@@ -212,7 +221,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         <span className="keycap keycap-sm font-display text-xl tabular-nums">0:{String(remaining).padStart(2, '0')}</span>
       </div>
 
-      <div ref={field} className="card relative h-[420px] overflow-hidden" style={{ background: 'linear-gradient(var(--color-keycap), var(--color-paper))' }}>
+      <div ref={field} className="card game-field relative overflow-hidden" style={{ background: 'linear-gradient(var(--color-keycap), var(--color-paper))' }}>
         {/* beat indicator and tempo */}
         <div className="absolute top-5 left-5 flex items-center gap-2.5" aria-hidden="true">
           {[0, 1, 2, 3].map((i) => (
@@ -244,8 +253,8 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
           return (
             <div
               key={n.id}
-              className={`kb-key absolute items-center justify-center text-2xl font-extrabold text-ink ${isCurrent ? 'ring-4 ring-mod/40' : ''}`}
-              style={{ left: x, top: TRACK_TOP + 12, width: KEY, height: KEY, background: colorOf[n.ch], padding: 0, opacity: x > width - KEY ? 0.4 : 1 }}
+              className={`kb-key absolute items-center justify-center font-extrabold text-ink ${isCurrent ? 'ring-4 ring-mod/40' : ''}`}
+              style={{ left: x, top: TRACK_TOP + 12, width: KEY, height: KEY, fontSize: KEY * 0.45, background: colorOf[n.ch], padding: 0, opacity: x > width - KEY ? 0.4 : 1 }}
               data-current={isCurrent ? '1' : undefined}
               data-ch={isCurrent ? n.ch : undefined}
               data-offset={isCurrent ? Math.round(n.at - now) : undefined}
@@ -270,14 +279,15 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         <div className="absolute right-5 bottom-6 left-5">
           <div className="eyebrow mb-1.5">Tus últimos 20 toques</div>
           <div className="flex h-2.5 overflow-hidden rounded-full bg-paper-deep">
-            {recent.current.map((f, i) => (
-              <span key={i} className="block h-full flex-1" style={{ background: FEEDBACK_BAR[f] }} />
-            ))}
+            {Array.from({ length: 20 }, (_, i) => {
+              const f = recent.current[i]
+              return <span key={i} className="block h-full flex-1 border-r border-keycap/60 last:border-r-0" style={{ background: f ? FEEDBACK_BAR[f] : undefined }} />
+            })}
           </div>
         </div>
 
         <div className="absolute right-4 bottom-14">
-          <Mascot mood={mood.current.mood} combo={r.combo} />
+          <Mascot mood={mood.current.mood} combo={r.combo} size={Math.round(KEY * 1.15)} />
         </div>
 
         {phase === 'ready' && (

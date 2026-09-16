@@ -4,7 +4,8 @@ import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
 import { chime, click, thud } from '../../lib/sound'
-import { Mascot, type Mood } from './Mascot'
+import { Mascot } from './Mascot'
+import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
 interface Drop {
@@ -26,7 +27,7 @@ interface Effect {
   at: number
 }
 
-const KEY = 56
+const BASE_KEY = 56
 const LANES = 8
 const POP_MS = 260
 const EFFECT_MS = 650
@@ -46,7 +47,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
 
   const drops = useRef<Drop[]>([])
   const effects = useRef<Effect[]>([])
-  const stats = useRef({ hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES })
+  const stats = useRef({ hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES, missStreak: 0 })
   const mood = useRef<{ mood: Mood; at: number }>({ mood: 'idle', at: 0 })
   const startedAt = useRef(0)
   const lastSpawn = useRef(0)
@@ -64,7 +65,9 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
     return () => ro.disconnect()
   }, [])
 
-  const laneX = useCallback((lane: number) => (size.w - KEY) * (lane / (LANES - 1)), [size.w])
+  // Keys grow with the field so a tall screen gets big targets, not more empty space.
+  const KEY = Math.round(Math.min(84, Math.max(BASE_KEY, size.h / 7)))
+  const laneX = useCallback((lane: number) => (size.w - KEY) * (lane / (LANES - 1)), [size.w, KEY])
   const ground = size.h - KEY - WATER
   const dropY = (d: Drop, now: number) => Math.min(ground, ((now - d.bornAt) * d.speed) / 1000)
 
@@ -107,13 +110,13 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
         ch,
         lane,
         bornAt: now,
-        speed: 52 + elapsed * 1.4 + Math.random() * 12,
+        speed: (52 + elapsed * 1.4 + Math.random() * 12) * (size.h / 420),
         poppedAt: null,
         color: FINGER_COLOR[fingerGroup(finger)],
       })
       lastSpawn.current = now
     },
-    [letters, layout],
+    [letters, layout, size.h, KEY],
   )
 
   // Main loop.
@@ -136,9 +139,10 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
           d.poppedAt = now
           stats.current.misses++
           stats.current.combo = 0
+          stats.current.missStreak++
           stats.current.livesLeft--
           shake.current = now
-          setMood('sad', now)
+          setMood(missMood(stats.current.missStreak), now)
           effects.current.push({ id: nextId.current++, kind: 'splash', x: laneX(d.lane) + KEY / 2, y: ground + KEY, color: d.color, at: now })
           if (sound) thud()
           if (stats.current.livesLeft <= 0) {
@@ -149,14 +153,14 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
       }
       drops.current = drops.current.filter((d) => !d.poppedAt || now - d.poppedAt < POP_MS)
       effects.current = effects.current.filter((e) => now - e.at < EFFECT_MS)
-      if (mood.current.mood !== 'idle' && now - mood.current.at > 700) mood.current = { mood: 'idle', at: now }
+      if (mood.current.mood !== 'idle' && now - mood.current.at > MOOD_MS[mood.current.mood]) mood.current = { mood: 'idle', at: now }
       setFrame((f) => f + 1)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, durationMs, ground, spawn, finish, sound, laneX])
+  }, [phase, durationMs, ground, spawn, finish, sound, laneX, KEY])
 
   // Keyboard input.
   useEffect(() => {
@@ -169,8 +173,9 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
       if (!candidates.length) {
         stats.current.wrong++
         stats.current.combo = 0
+        stats.current.missStreak++
         shake.current = now
-        setMood('sad', now)
+        setMood(missMood(stats.current.missStreak), now)
         if (sound) thud()
         return
       }
@@ -180,21 +185,22 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
       const s = stats.current
       s.hits++
       s.combo++
+      s.missStreak = 0
       s.bestCombo = Math.max(s.bestCombo, s.combo)
       s.score += 10 * Math.min(5, 1 + Math.floor(s.combo / 5))
-      setMood('happy', now)
+      setMood(hitMood(s.combo), now)
       effects.current.push({ id: nextId.current++, kind: 'pop', x: laneX(target.lane) + KEY / 2, y: dropY(target, now) + KEY / 2, color: target.color, at: now })
       if (sound) click()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, sound, laneX])
+  }, [phase, sound, laneX, KEY])
 
   const start = () => {
     drops.current = []
     effects.current = []
-    stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES }
+    stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES, missStreak: 0 }
     mood.current = { mood: 'idle', at: 0 }
     finished.current = false
     startedAt.current = performance.now()
@@ -246,7 +252,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
 
       <div
         ref={field}
-        className={`card relative h-[420px] overflow-hidden ${shaking ? 'animate-shake' : ''}`}
+        className={`card game-field relative overflow-hidden ${shaking ? 'animate-shake' : ''}`}
         style={{ background: 'linear-gradient(var(--color-keycap), var(--color-paper))' }}
       >
         {/* lanes */}
@@ -266,12 +272,13 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
           return (
             <div
               key={d.id}
-              className="kb-key absolute items-center justify-center text-2xl font-extrabold text-ink"
+              className="kb-key absolute items-center justify-center font-extrabold text-ink"
               style={{
                 left: laneX(d.lane),
                 top: y,
                 width: KEY,
                 height: KEY,
+                fontSize: KEY * 0.45,
                 background: d.color,
                 padding: 0,
                 transform: popped ? 'scale(1.5)' : undefined,
@@ -310,8 +317,8 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
           ),
         )}
 
-        <div className="absolute bottom-6 right-4">
-          <Mascot mood={mood.current.mood} combo={s.combo} />
+        <div className="absolute right-4" style={{ bottom: WATER + 12 }}>
+          <Mascot mood={mood.current.mood} combo={s.combo} size={Math.round(KEY * 1.15)} />
         </div>
 
         {phase === 'ready' && (
