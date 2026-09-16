@@ -13,7 +13,7 @@ export interface Unit {
 
 export type LessonKind = 'keys' | 'review' | 'practice' | 'tip' | 'text' | 'unit-review' | 'game'
 
-export type GameId = 'rain'
+export type GameId = 'rain' | 'rhythm'
 
 export interface IntroCard {
   title: string

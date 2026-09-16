@@ -1,7 +1,7 @@
 import { canType, keyByCode, type Layout } from '../layouts'
 import { explainChar } from './explain'
 import { TIP_ACCENTS, TIP_BREAK, TIP_IDEAS, TIP_INTRO, TIP_NUMBERS, TIP_POSTURE, TIP_SHIFT, TIP_SPEED, type Tip } from './tips'
-import type { Curriculum, ExerciseSpec, IntroCard, Lesson, LessonKind, Unit, UnitAccent } from './types'
+import type { Curriculum, ExerciseSpec, GameId, IntroCard, Lesson, LessonKind, Unit, UnitAccent } from './types'
 
 const LOWER = 'abcdefghijklmnopqrstuvwxyzñ'
 
@@ -65,10 +65,10 @@ function tip(b: Builder, u: Unit, t: Tip) {
   add(b, u, `tip-${t.id}`, t.title, 'tip', [], t.cards, [])
 }
 
-/** A playable break: the rain game with everything learned so far. */
-function game(b: Builder, u: Unit, slug: string, title: string) {
+/** A playable break with everything learned so far. */
+function game(b: Builder, u: Unit, slug: string, title: string, id: GameId = 'rain') {
   const l = add(b, u, `juego-${slug}`, title, 'game', [], [], [])
-  l.game = 'rain'
+  l.game = id
 }
 
 function slugOf(chars: string[]): string {
@@ -174,7 +174,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'words', pool, count: 16 },
     { kind: 'words', pool, count: 16 },
   ])
-  game(b, guia, 'fila-guia', 'Juego: fila guía')
+  game(b, guia, 'fila-guia', 'Juego: al compás', 'rhythm')
 
   // ───────── Fila superior ─────────
   const sup = unit(b, 'superior', 'Fila superior', 'Los dedos suben una fila y vuelven. Aparecen las vocales que faltaban.', 12, 'blue')
@@ -197,7 +197,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
   keyTrio(b, layout, inf, ['v', 'm'])
   keyTrio(b, layout, inf, ['c', ','])
   keyTrio(b, layout, inf, ['x', '.'])
-  game(b, inf, 'vmcx', 'Juego: v m c x')
+  game(b, inf, 'vmcx', 'Juego: al compás', 'rhythm')
   keyTrio(b, layout, inf, ['z', bottomPinky])
   tip(b, inf, TIP_BREAK)
   keyTrio(b, layout, inf, ['b', 'n'])
@@ -280,7 +280,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'sentences', pool, corpus: 'numbers', count: 2 },
     { kind: 'sentences', pool, corpus: 'numbers', count: 3 },
   ])
-  game(b, num, 'numeros', 'Juego: números')
+  game(b, num, 'numeros', 'Juego: al compás con números', 'rhythm')
 
   // ───────── Signos ─────────
   const sig = unit(b, 'signos', 'Signos y símbolos', 'Puntuación, paréntesis, comillas y los símbolos que usás todos los días.', 15, 'coral')

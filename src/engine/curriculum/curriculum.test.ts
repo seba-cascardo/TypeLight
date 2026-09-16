@@ -77,4 +77,20 @@ describe('curriculum', () => {
     expect(explainChar(LATAM, '@').body).toMatch(/Alt Gr/)
     expect(explainChar(US, '4').body).toMatch(/sube 2 filas/)
   })
+
+  it('places the games in the path with their ids', () => {
+    const c = buildCurriculum(LATAM)
+    const games = c.lessons.filter((l) => l.kind === 'game').map((l) => [l.id, l.game])
+    expect(games).toEqual([
+      ['guia-juego-primeras-8', 'rain'],
+      ['guia-juego-fila-guia', 'rhythm'],
+      ['superior-juego-ruei', 'rain'],
+      ['superior-juego-fila-superior', 'rain'],
+      ['inferior-juego-vmcx', 'rhythm'],
+      ['inferior-juego-alfabeto', 'rain'],
+      ['mayusculas-juego-mayusculas', 'rain'],
+      ['numeros-juego-numeros', 'rhythm'],
+      ['signos-juego-signos', 'rain'],
+    ])
+  })
 })
