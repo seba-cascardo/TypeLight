@@ -13,6 +13,8 @@ interface Props {
   fingerColors?: boolean
   /** Per-character heat value 0..1 (1 = strong). */
   heat?: Record<string, number>
+  /** Per-character mastery level (1 weak · 2 on track · 3 mastered); keys absent from the map render as unlearned. */
+  levels?: Record<string, 1 | 2 | 3>
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
@@ -35,7 +37,7 @@ function legendOf(key: KeyDef): { main: string; top?: string; alt?: string } {
   return { main: key.base, top: key.shift, alt: key.altGr }
 }
 
-export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = true, heat, size = 'md', className = '' }: Props) {
+export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = true, heat, levels, size = 'md', className = '' }: Props) {
   const rows = useMemo(() => {
     const base = layout.rows.map((r) => [...r])
     // Bottom row: modifiers around the space bar.
@@ -87,6 +89,17 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
     return v
   }
 
+  const LEVEL_STYLE: Record<1 | 2 | 3, { background: string; color: string }> = {
+    1: { background: 'var(--color-esc-soft)', color: 'var(--color-esc-edge)' },
+    2: { background: 'var(--color-sun-soft)', color: 'var(--color-sun-edge)' },
+    3: { background: 'var(--color-enter-soft)', color: 'var(--color-enter-edge)' },
+  }
+  const levelOf = (key: KeyDef): 1 | 2 | 3 | undefined => {
+    if (!levels) return undefined
+    if (key.code === 'Space') return levels[' ']
+    return levels[key.base] ?? (key.shift ? levels[key.shift] : undefined)
+  }
+
   return (
     <div
       ref={wrapper}
@@ -107,8 +120,16 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
               const h = heatOf(key)
               const group = fingerGroup(key.finger)
               let background: string | undefined
+              let color: string | undefined
               let finger: string | undefined
-              if (h !== undefined) {
+              if (levels) {
+                const lv = levelOf(key)
+                if (lv) ({ background, color } = LEVEL_STYLE[lv])
+                else if (key.base || key.code === 'Space') {
+                  background = 'var(--color-paper-deep)'
+                  color = 'var(--color-ink-mute)'
+                }
+              } else if (h !== undefined) {
                 // cool (slow) → warm (fast): coral → sun → mint
                 const hue = 10 + h * 150
                 background = `hsl(${hue} 75% ${78 - h * 10}%)`
@@ -124,6 +145,7 @@ export function Keyboard({ layout, nextChar, highlight, pressed, fingerColors = 
                     flexBasis: 0,
                     ['--finger' as string]: finger,
                     background: isNext ? undefined : background,
+                    color,
                     boxShadow: isSoft && !isNext ? '0 0 0 3px var(--color-sun)' : undefined,
                     fontSize: size === 'sm' ? '0.65rem' : undefined,
                   }}
