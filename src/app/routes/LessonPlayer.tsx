@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
 import { starsFor, type Stars as StarCount } from '@/engine/stats'
-import { keySamples, metrics, type TypingState } from '@/engine/typing'
+import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { RainGame, type RainResult } from '../components/RainGame'
@@ -86,7 +86,20 @@ function Player({ lesson }: { lesson: Lesson }) {
       const m = metrics(state)
       if (m.chars === 0) return
       const samples = keySamples(state)
-      recordSession({ kind: 'lesson', lessonId: lesson.id, wpm: m.wpm, acc: m.accuracy, chars: m.chars, errors: m.errors, seconds: m.seconds }, samples.values())
+      recordSession(
+        {
+          kind: 'lesson',
+          lessonId: lesson.id,
+          wpm: m.wpm,
+          acc: m.accuracy,
+          chars: m.chars,
+          errors: m.errors,
+          seconds: m.seconds,
+          rhythm: rhythm(state),
+          ...(lesson.kind === 'text' && { reference: true as const }),
+        },
+        samples.values(),
+      )
       const prev = totalsRef.current
       const errorsByKey = { ...prev.errorsByKey }
       for (const s of samples.values()) if (s.errors) errorsByKey[s.char] = (errorsByKey[s.char] ?? 0) + s.errors
@@ -102,7 +115,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       setStepDone(true)
       if (stepRef.current + 1 >= texts.length) finishLesson(t)
     },
-    [lesson.id, recordSession, texts.length, finishLesson],
+    [lesson.id, lesson.kind, recordSession, texts.length, finishLesson],
   )
 
   const nextStep = useCallback(() => {

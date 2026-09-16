@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { useStore } from '../store'
 import { dayKey, streakAlive } from '@/engine/stats'
 import { Flame } from './ui'
+import { useDaySnapshot } from '../hooks/useDaySnapshot'
 
 const links = [
   { to: '/', label: 'Hoy' },
@@ -11,6 +12,7 @@ const links = [
 ]
 
 export function AppShell() {
+  useDaySnapshot()
   const streak = useStore((s) => s.streak)
   const alive = streakAlive(streak, dayKey())
   return (

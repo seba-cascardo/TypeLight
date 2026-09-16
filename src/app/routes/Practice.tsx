@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { adaptiveText, drillText, makeRng, poolOf, sentencesText, wordsText } from '@/engine/generator'
 import { weakestKeys } from '@/engine/stats'
-import { keySamples, metrics, type TypingState } from '@/engine/typing'
+import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { TypingArea } from '../components/TypingArea'
@@ -103,11 +103,23 @@ function PracticeRun({ kind }: { kind: Kind }) {
     (state: TypingState) => {
       const m = metrics(state)
       if (m.chars === 0) return
-      recordSession({ kind: meta.session, wpm: m.wpm, acc: m.accuracy, chars: m.chars, errors: m.errors, seconds: m.seconds }, keySamples(state).values())
+      recordSession(
+        {
+          kind: meta.session,
+          wpm: m.wpm,
+          acc: m.accuracy,
+          chars: m.chars,
+          errors: m.errors,
+          seconds: m.seconds,
+          rhythm: rhythm(state),
+          ...(kind === 'reto' && { reference: true as const }),
+        },
+        keySamples(state).values(),
+      )
       markRoutine(meta.block)
       setResult(m)
     },
-    [meta.session, meta.block, recordSession, markRoutine],
+    [kind, meta.session, meta.block, recordSession, markRoutine],
   )
 
   const session = useTypingSession(text, { sound, onFinish, timeLimitMs: meta.timed })
