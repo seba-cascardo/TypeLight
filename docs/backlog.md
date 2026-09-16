@@ -2,11 +2,12 @@
 
 Pendientes acordados con Seba, en orden de llegada. Los "hechos" se borran de acá y quedan en git.
 
-## Próxima etapa (2026-09-16, Seba: "la app ya cumple su objetivo central y el apartado visual es correcto")
+## Pendientes
 
-1. **Más juegos/ejercicios.** Elegidos por Seba (2026-09-16): B · Al compás → A · Globos de palabras → C · Carrera contra tu fantasma, más la fila "Jugar" en Inicio con la rutina completa. Spec en `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md` (secciones 4–8). Hecho: infraestructura de juegos + Al compás (plan `2026-09-16-juegos-1-compas.md`). Siguen Globos, Carrera, los huecos nuevos (Patrones, Velocidad) y la fila Jugar (`juegos-2`).
+- (Sin pendientes acordados por ahora. La etapa "juegos y Progreso" del 2026-09-16/17 quedó completa: ver `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md` y los planes en `docs/superpowers/plans/`.)
 
 ## Ideas sueltas (sin compromiso)
 
-- Metrónomo opcional para trabajar cadencia.
 - Exportar/importar progreso (hoy vive solo en localStorage del navegador).
+- Sílabas y palabras como notas de Al compás en la unidad Velocidad (hoy son letras sueltas).
+- Modo "Backspace permitido" como ajuste (hoy siempre parar en el error).

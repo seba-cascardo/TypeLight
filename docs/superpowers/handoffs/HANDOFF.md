@@ -1,31 +1,31 @@
-# Handoff — TypeLight: segunda etapa (juegos y métricas)
+# Handoff — TypeLight: etapa "juegos y Progreso" cerrada
 
-Fecha 2026-09-16 · rama `master` · preparado sobre `4a91e35`
+Fecha 2026-09-17 · rama `master` · preparado sobre el último commit de la rama `juegos-2` (ver `git log -1`)
 
 ## Alcance
 
-**Sí:** la app (motor + UI + juego + tema + manos + tipografía) está implementada, testeada y commiteada en `C:\Projects\TypeLight`. Seba: "la app ya cumple su objetivo central y el apartado visual es correcto". Esta ventana cerró la tipografía (Gabarito + Lexend), el ancho para monitores grandes (`max-w-[86rem]`) y dejó un `TypeLight.bat` en su escritorio (`C:\Users\seba_\Desktop\TypeLight.bat`: si el 5173 responde solo abre el navegador; si no, `npm run dev` y abre cuando el puerto contesta).
-**No:** no se empezó nada de la etapa siguiente (juegos nuevos, métricas). No hay deploy ni backend, no se optimizó bundle (480 KB de JS), no hay PWA. El árbol quedó limpio sobre `4a91e35`.
+**Sí:** la etapa 2 completa está implementada, testeada y mergeada a `master`: **Progreso** nuevo (`/estadisticas`: velocidad de referencia solo de Retos, dominio por tecla, precisión 7 días, constancia, ritmo; store v2 con migración automática), **infraestructura de juegos** (id por hueco, `GameProps`/`GameResult`, estrellas en el motor, `GameResults`, mascota compartida con humor escalonado, campos a pantalla completa), tres juegos nuevos (**Al compás**, **Globos de palabras**, **Carrera contra tu fantasma**) repartidos en 12 huecos de la ruta, y el **modo libre "Jugar"** en Inicio con la rutina completa. Spec: `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md`; planes ejecutados: `docs/superpowers/plans/2026-09-16-progreso.md`, `2026-09-16-juegos-1-compas.md`, `2026-09-17-juegos-2-globos-carrera-jugar.md`.
+**No:** no hay deploy ni backend, no se optimizó bundle (524 KB de JS), no hay PWA. Seba probó Lluvia y Al compás (pidió y obtuvo alto completo + mascota escalonada); Globos, Carrera y Jugar todavía no los probó en uso real.
 
 ## Arrancá acá
 
-**Primera acción:** abrir la etapa que Seba definió, en este orden y **proponiendo antes de codear** (con él funcionó dos veces mostrar 2-3 opciones concretas y que elija):
+**Primera acción:** no hay pendiente acordado (`docs/backlog.md` solo tiene ideas sueltas). Preguntale a Seba qué le pareció Globos, Carrera y la fila Jugar en uso real, y arreglá lo que reporte. Si pide cambios visuales grandes, mostrale 2-3 opciones renderizadas antes de tocar la app (le funcionó tres veces: diseño, tipografía, juegos/métricas).
 
-1. **Juegos/ejercicios nuevos.** Sus palabras: "Hay uno solo y se vuelve monótono, hace falta variedad, lograr que enganche y que no sea algo tan repetitivo/iterativo." Proponele 2-3 mecánicas concretas: qué entrena cada una (teclas nuevas, palabras completas, ritmo, texto real), dónde entra en la ruta (hoy `game(b, u, slug, title)` en `src/engine/curriculum/build.ts` inserta lecciones `kind: 'game'`, 11 en la ruta) y cómo se puntúa (estrellas). Si es visual, mostráselo renderizado (artifact o captura).
-2. **Métricas de Progreso** (`src/app/routes/Stats.tsx`, ruta `/estadisticas`; motor en `src/engine/stats/index.ts`). Sus palabras: "dicen poco o mal/poco claro. El chart *Por día*: me gusta ver PPM, pero es engañoso porque si hago un ejercicio solo fácil ya me marca que fui rapidísimo, o sea es *engañable*; las métricas deben mostrar mejor cómo voy avanzando. Luego decidiremos cómo, hay que tomar ideas de Duolingo o apps así." Proponé métricas no engañables (p. ej. PPM solo sobre texto real / ponderado por dificultad o tamaño del pool, precisión y consistencia por lección, teclas flojas, tendencia) con un boceto de pantalla, y esperá su elección.
-
-Verificá con: `npm test` (34 unitarios) · `npm run e2e` (5 Playwright; arranca su propio dev server en :5174) · `npm run build`.
+Verificá con: `npm test` (81 unitarios) · `npm run e2e` (10 Playwright; arranca su propio dev server en :5174) · `npm run build`. Lint: `npm run lint` tiene 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`, React Compiler sobre memoización manual): no sumar ninguna.
 Dev server: `npm run dev` (:5173). Capturas con progreso sembrado: `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]`.
 
 Leé, en este orden:
-- `docs/backlog.md` — la etapa nueva con las palabras de Seba, más ideas sueltas.
-- `.serena/memories/typelight-architecture.md` — decisiones con porqué (incluida la restricción de métricas: nada "engañable", ponderar dificultad o medir solo texto real, mostrar tendencia), trampas del entorno, y lo que Seba rechazó (no volver a proponerlo).
-- `src/app/components/RainGame.tsx` — el único juego: física por tiempo con rAF, carriles, agua, partículas, mascota; acepta `?dur=6000` para tests.
-- `src/engine/curriculum/build.ts` — cómo se arma la ruta y dónde se insertan los juegos; `src/engine/curriculum/types.ts` para los `kind` de lección.
-- `src/engine/stats/index.ts` — qué se calcula hoy (PPM, precisión, sesiones, racha); `src/app/store/index.ts` guarda `sessions` (`{at, kind, wpm, acc, chars, errors, seconds}`) y `lessons` por ID.
-- `src/app/routes/Home.tsx` — la rutina diaria de 4 tarjetas (Calentamiento / Lección / Repaso / Reto), el corazón de la app: los juegos nuevos y las métricas tienen que alimentarla, no competirle.
+- `docs/backlog.md` — ideas sueltas.
+- `.serena/memories/typelight-architecture.md` — decisiones con porqué (Progreso, juegos, trampas del entorno) y lo que Seba rechazó (no volver a proponerlo).
+- `src/engine/games/` — reducers puros de los juegos con tests; `src/app/components/games/` — componentes, `Game.tsx`, `meta.ts`, `GameResults.tsx`, `Mascot.tsx` + `moods.ts`.
+- `src/engine/stats/progress.ts` y `days.ts` — las métricas; `src/app/routes/Stats.tsx` — la pantalla.
+- `src/app/routes/Play.tsx` y la fila "Jugar" en `Home.tsx`.
 
-**Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque el plan lo liste como pendiente: este handoff es más reciente que el plan. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
+**Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque un plan lo liste como pendiente: este handoff es más reciente que los planes. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
+
+Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho, con el dev server en :5173 levantado desde `C:\Users\seba_\Desktop\TypeLight.bat` (sirve el árbol de trabajo: si trabajás en una rama checkouteada en la misma carpeta, él ya la ve). Cada edición dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. El navegador integrado no puede capturar `file://` ni ver artifacts de claude.ai; para capturas usá Playwright desde `scripts/` (los scripts fuera del proyecto no resuelven `@playwright/test`). Heredocs con backticks en el tool Bash rompen el parser: para archivos con template strings usá el tool Write o un script Python escrito con Write.
+
+## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque el plan lo liste como pendiente: este handoff es más reciente que el plan. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
 Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html { font-size: clamp(16px, 0.55vw + 9px, 21px) }` y contenedor `max-w-[86rem]`, ambos con su OK ("bien la letra"). Mientras usa la app, cada edición tuya dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. Otra sesión de Claude puede tener el dev server en :5173 (el hook lo avisa): las capturas con `scripts/shot.mjs` sirven igual porque apuntan a ese puerto; el navegador integrado no puede capturar archivos `file://` ni ver artifacts de claude.ai (no tiene sesión).
 
@@ -43,6 +43,11 @@ Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html {
 - **Corpus de OpenSubtitles sin filtrar**: trae nombres en inglés ("jules", "ford"), palabras violentas/vulgares y formas de vosotros. Lo que quedó: filtro contra diccionario (`words/an-array-of-spanish-words`, sin tildes: comparar con acentos quitados) + blocklist en `scripts/build-corpus.py`. Caduca si `git log -1 --format=%h -- scripts/build-corpus.py` deja de dar `7c5c16e`.
 - **Sondear el puerto de Vite desde un `.bat` con `New-Object Net.Sockets.TcpClient` sin argumentos + `.Connect('localhost', 5173)`** da siempre "cerrado": Windows PowerShell 5.1 crea el socket IPv4 y Vite escucha solo en `[::1]`. Funciona el constructor con host: `New-Object Net.Sockets.TcpClient('localhost',5173)` (resuelve las dos familias). Además, `%errorlevel%` en la misma línea de `cmd /c` se expande antes de correr el comando: probarlo en un `.bat` con el `if` en línea aparte. Caduca si `powershell -NoProfile -Command "try{(New-Object Net.Sockets.TcpClient).Connect('localhost',5173); 'ok'}catch{'fail'}"` imprime `ok` con el dev server levantado.
 - **Tipografía**: se mostraron tres parejas con contenido real (artifact `https://claude.ai/artifact/FktdvPVBNM2jv5sbBqN4vR`). Rechazadas por Seba al elegir la B: **Fraunces + Atkinson Hyperlegible Next** (serif cálida + sans hiperlegible) y **Chivo + Asap** (argentinas, sobrias); antes había rechazado **Bricolage Grotesque + Nunito Sans** ("no me gusta") e **IBM Plex Mono** en el ejercicio. Caduca: hasta que Seba pida cambiar la tipografía.
+- **Heredocs con backticks en el tool Bash** volvieron a romper el parser el 2026-09-17 (`unexpected EOF while looking for matching`) al escribir un `.py` con template strings JSX. Salida: tool Write para el archivo (o para el script Python) y correrlo desde Bash. Caduca si `bash -c 'cat <<EOF
+\`x\`
+EOF'` corre sin error desde el tool Bash.
+- **Selectores Playwright por texto en los juegos**: `getByText('A tiempo')` y `getByRole('heading', { name })` chocan con el pie de resultados y con el h1 de la lección/modo libre. Lo que funciona: `exact: true`, `{ level: 2 }`, y los `data-*` que exponen los juegos. Caduca: nunca (es convención).
+- **Fechas en e2e**: `new Date().toISOString().slice(0,10)` es UTC y la app usa el día local (`dayKey`); de noche difieren y la rutina "de hoy" no coincide. Usar un `localDay()` como en `e2e/play.spec.ts`. Caduca: nunca.
 
 ## Decisiones
 
@@ -54,6 +59,9 @@ Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html {
 | Botones planos, sin canto ni sombra, en TODA la app | Seba rechazó bordes gruesos y luego el canto inferior por inconsistente | relieve Duolingo; canto inferior 4 px | usuario | decidida | hasta que Seba pida relieve |
 | Manos = asset PD + máscara derivada | Seba pidió realismo; lo procedural falló tres veces | dibujo procedural | usuario | decidida | hasta que Seba pida otra pose/estilo |
 | `f j` se enseña sin espacios; la barra va en la lección siguiente | Seba: no usar la barra antes de explicarla | drill con espacios desde la primera lección | usuario | decidida | hasta que Seba cambie el orden |
-| Los juegos viven como lecciones `kind: 'game'` dentro de la ruta (hoy solo "Lluvia de teclas", 11 veces) | Seba pidió un juego visual cada x niveles | sección de juegos aparte de la ruta | usuario | decidida; **Seba pidió variedad, no reemplazo**: la Lluvia queda y se suman otros | hasta que Seba pida sacar los juegos de la ruta |
+| Los juegos viven como lecciones `kind: 'game'` dentro de la ruta: 12 huecos (Lluvia ×3, Al compás ×3, Globos ×3, Carrera ×3) | Seba pidió un juego visual cada x niveles y después variedad, no reemplazo | sección de juegos aparte de la ruta; reemplazar la Lluvia | usuario | decidida (reparto aprobado el 2026-09-16 sobre el artifact `Fw6mUvuvXHzoG2M2L5gMM2`) | hasta que Seba pida otro reparto |
+| Velocidad de referencia = solo Retos (+ textos de Velocidad + Carreras), mediana por día; "Mejor velocidad" no vuelve | Seba: el PPM por día era *engañable* (un drill fácil inflaba el día); eligió la opción 1 entre tres | PPM ponderado por dificultad (opción 2); solo frases del corpus (opción 3) | usuario | decidida | hasta que Seba pida otra definición |
+| Modo libre "Jugar" en Inicio solo con la rutina completa; no cuenta para la rutina, sí para racha y minutos | Seba: los juegos alimentan la rutina, no le compiten | fila siempre visible; sección aparte | usuario | decidida | hasta que Seba pida verla siempre |
+| Campos de juego a pantalla completa (`clamp(420px, 100dvh − 19rem, 900px)`) y mascota con reacciones escalonadas por racha de errores | Seba: "ocupa muy poco espacio vertical"; "la mascota necesita animaciones que varíen si le erramos cada vez más" | alto fijo 420 px; una sola cara triste | usuario | decidida | hasta que Seba pida otro alto o quitar la mascota |
 | Tema oscuro automático + grano + rebote + brillo en keycaps | Seba aprobó los seis retoques | — | usuario | decidida | hasta que Seba desactive alguno |
 | Escala fluida de fuente (`clamp`) y contenedor `max-w-[86rem]` | Seba: "a 125 % se ve muy pequeño"; después "bien la letra, los objetos podrían ocupar más ancho" | ancho fijo 1024 px; `max-w-6xl` | usuario | decidida | hasta que Seba pida otro tamaño |
