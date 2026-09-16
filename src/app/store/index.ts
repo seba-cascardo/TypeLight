@@ -1,8 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { GameId } from '@/engine/curriculum'
 import type { LayoutId } from '@/engine/layouts'
-import { bumpStreak, dayKey, updateKeyStats, type KeyStats, type Stars, type Streak } from '@/engine/stats'
+import { addSeconds, bumpStreak, dayKey, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
 import type { KeySample } from '@/engine/typing'
+import { migrateState } from './migrate'
 
 export type Theme = 'auto' | 'light' | 'dark'
 
@@ -23,7 +25,7 @@ export interface LessonResult {
   completedAt: string
 }
 
-export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge'
+export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge' | 'game'
 
 export interface SessionRecord {
   at: string
@@ -34,6 +36,11 @@ export interface SessionRecord {
   chars: number
   errors: number
   seconds: number
+  /** Counts toward the reference speed (Reto, Velocidad texts, race game). Decided when recording. */
+  reference?: true
+  /** 0..1, how even the gaps between keys were (`rhythm` in engine/typing). */
+  rhythm?: number
+  gameId?: GameId
 }
 
 export type RoutineBlock = 'warmup' | 'lesson' | 'review' | 'challenge'
@@ -53,10 +60,12 @@ interface State {
   sessions: SessionRecord[]
   streak: Streak
   routine: Routine
+  days: Days
   setSettings: (patch: Partial<Settings>) => void
   recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => void
   completeLesson: (id: string, stars: Stars, wpm: number, acc: number) => void
   markRoutine: (block: RoutineBlock) => void
+  snapshotDay: (learned: number, mastered: number) => void
   resetProgress: () => void
 }
 
@@ -68,6 +77,7 @@ const initialProgress = () => ({
   sessions: [] as SessionRecord[],
   streak: { count: 0, lastDay: null } as Streak,
   routine: emptyRoutine(dayKey()),
+  days: {} as Days,
 })
 
 export const useStore = create<State>()(
@@ -86,6 +96,7 @@ export const useStore = create<State>()(
             sessions,
             keys: samples ? updateKeyStats(s.keys, samples) : s.keys,
             streak: bumpStreak(s.streak, today),
+            days: addSeconds(s.days, today, rec.seconds),
           }
         }),
 
@@ -105,14 +116,22 @@ export const useStore = create<State>()(
       markRoutine: (block) => {
         const today = dayKey()
         const r = get().routine.day === today ? get().routine : emptyRoutine(today)
-        set({ routine: { ...r, [block]: true } })
+        const routine = { ...r, [block]: true }
+        const blocks = [routine.warmup, routine.lesson, routine.review, routine.challenge].filter(Boolean).length
+        set({ routine, days: setBlocks(get().days, today, blocks) })
+      },
+
+      snapshotDay: (learned, mastered) => {
+        const days = setSnapshot(get().days, dayKey(), learned, mastered)
+        if (days !== get().days) set({ days })
       },
 
       resetProgress: () => set({ ...initialProgress() }),
     }),
     {
       name: 'typelight.v1',
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
 )
