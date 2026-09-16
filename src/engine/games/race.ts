@@ -1,12 +1,12 @@
 import { sentencesText, wordsText, type Rng } from '../generator'
-import { daysBetween, sessionDay } from '../stats'
+import { dayKey, daysBetween } from '../stats'
 
 /** The ghost runs at the best reference session of the last 7 days, or at the goal when there is none. */
 export function ghostWpm(sessions: readonly { at: string; wpm: number; reference?: true }[], today: string, fallback: number): number {
   let best = 0
   for (const s of sessions) {
     if (!s.reference) continue
-    const gap = daysBetween(sessionDay(s), today)
+    const gap = daysBetween(dayKey(new Date(s.at)), today)
     if (gap < 0 || gap > 6) continue
     best = Math.max(best, s.wpm)
   }
