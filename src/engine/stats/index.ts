@@ -5,14 +5,16 @@ export interface KeyStat {
   latencyEma: number
   errorEma: number
   samples: number
+  /** Local day the key was last typed (attempted), for "hace N días que no la ves". */
+  lastSeen?: string
 }
 
 export type KeyStats = Record<string, KeyStat>
 
 const ALPHA = 0.25
 
-/** Fold a finished session's per-key samples into the rolling stats. */
-export function updateKeyStats(stats: KeyStats, samples: Iterable<KeySample>): KeyStats {
+/** Fold a finished session's per-key samples into the rolling stats; `today` stamps `lastSeen`. */
+export function updateKeyStats(stats: KeyStats, samples: Iterable<KeySample>, today?: string): KeyStats {
   const next: KeyStats = { ...stats }
   for (const s of samples) {
     if (s.occurrences === 0 && s.errors === 0) continue
@@ -21,15 +23,18 @@ export function updateKeyStats(stats: KeyStats, samples: Iterable<KeySample>): K
     const meanLatency = s.latencies.length
       ? s.latencies.reduce((a, b) => a + b, 0) / s.latencies.length
       : undefined
+    const seen = today ? { lastSeen: today } : {}
     const prev = next[s.char]
     if (!prev) {
-      next[s.char] = { latencyEma: meanLatency ?? 600, errorEma: errRate, samples: attempts }
+      next[s.char] = { latencyEma: meanLatency ?? 600, errorEma: errRate, samples: attempts, ...seen }
       continue
     }
     next[s.char] = {
+      ...prev,
       latencyEma: meanLatency === undefined ? prev.latencyEma : prev.latencyEma + ALPHA * (meanLatency - prev.latencyEma),
       errorEma: prev.errorEma + ALPHA * (errRate - prev.errorEma),
       samples: prev.samples + attempts,
+      ...seen,
     }
   }
   return next
@@ -89,24 +94,59 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((db - da) / 86400000)
 }
 
+/**
+ * A streak that forgives. An active day is a day with a recorded session. One missed day is
+ * always forgiven ("never twice"); further missed days cost a freeze each. Freezes are earned
+ * automatically, one every `FREEZE_EVERY` active days, up to `MAX_FREEZES`, and spent on their own.
+ */
 export interface Streak {
   count: number
   lastDay: string | null
+  best: number
+  freezes: number
+  /** Days with at least one session, ever. Milestones count these. */
+  activeDays: number
 }
 
-/** Register activity on `today`; consecutive days grow the streak, gaps reset it. */
+export const MAX_FREEZES = 2
+export const FREEZE_EVERY = 5
+
+export function emptyStreak(): Streak {
+  return { count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 }
+}
+
+/** Days since the last active day, or null before any activity. */
+export function streakGap(streak: Streak, today: string): number | null {
+  return streak.lastDay ? daysBetween(streak.lastDay, today) : null
+}
+
+/** Register activity on `today`. */
 export function bumpStreak(streak: Streak, today: string): Streak {
   if (streak.lastDay === today) return streak
-  if (streak.lastDay && daysBetween(streak.lastDay, today) === 1) {
-    return { count: streak.count + 1, lastDay: today }
-  }
-  return { count: 1, lastDay: today }
+  const gap = streakGap(streak, today)
+  let count: number
+  let freezes = streak.freezes
+  if (gap === null) count = 1
+  else if (gap <= 2) count = streak.count + 1
+  else if (gap - 2 <= freezes) {
+    freezes -= gap - 2
+    count = streak.count + 1
+  } else count = 1
+  const activeDays = streak.activeDays + 1
+  if (activeDays % FREEZE_EVERY === 0) freezes = Math.min(MAX_FREEZES, freezes + 1)
+  return { count, lastDay: today, best: Math.max(streak.best, count), freezes, activeDays }
 }
 
-/** A streak is still alive if the last activity was today or yesterday. */
+/** Still alive while practising today would continue it (one free day plus the freezes). */
 export function streakAlive(streak: Streak, today: string): boolean {
-  if (!streak.lastDay) return false
-  return daysBetween(streak.lastDay, today) <= 1
+  const gap = streakGap(streak, today)
+  return gap !== null && gap <= 2 + streak.freezes
+}
+
+/** Alive, but today is the day it needs. */
+export function streakAtRisk(streak: Streak, today: string): boolean {
+  const gap = streakGap(streak, today)
+  return gap !== null && gap >= 2 && streakAlive(streak, today)
 }
 
 export function formatAccuracy(acc: number): string {
@@ -117,3 +157,7 @@ export * from './days'
 export * from './progress'
 export * from './rollover'
 export * from './exam'
+export * from './week'
+export * from './records'
+export * from './milestones'
+export * from './reasons'

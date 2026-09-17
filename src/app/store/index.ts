@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { GameId } from '@/engine/curriculum'
 import type { LayoutId } from '@/engine/layouts'
-import { addSession, bumpStreak, dayKey, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
+import { MILESTONES, addSession, bumpStreak, dayKey, emptyStreak, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
 import type { KeySample } from '@/engine/typing'
 import { migrateState } from './migrate'
 
@@ -21,6 +21,10 @@ export interface Settings {
   anchor: string
   /** The converso card in Inicio was closed. */
   conversoSeen: boolean
+  /** Active days per week to aim for (3..7), apart from the streak. */
+  weeklyGoal: number
+  /** The mascot says one line in Inicio. */
+  mascot: boolean
 }
 
 /** The one-minute test typed "the old way", before TypeLight: the bar the new fingering has to beat. */
@@ -98,6 +102,10 @@ interface State {
   lastExamDay: string | null
   /** Day of the first reference session typed without help: the chart's discontinuity. */
   blindSince: string | null
+  /** Milestones (active days) whose card was closed. */
+  milestonesSeen: number[]
+  /** ISO week (its Monday) whose summary was closed, so it shows once. */
+  lastWeeklySummaryWeek: string | null
   setSettings: (patch: Partial<Settings>) => void
   /** Records the session and returns its timestamp, so it can be annotated afterwards. */
   recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => string
@@ -107,6 +115,8 @@ interface State {
   snapshotDay: (learned: number, mastered: number) => void
   setLegacy: (legacy: Legacy | null) => void
   setLastExamDay: (day: string | null) => void
+  markMilestoneSeen: (milestone: number) => void
+  setLastWeeklySummaryWeek: (week: string | null) => void
   resetProgress: () => void
 }
 
@@ -116,17 +126,19 @@ const initialProgress = () => ({
   lessons: {} as Record<string, LessonResult>,
   keys: {} as KeyStats,
   sessions: [] as SessionRecord[],
-  streak: { count: 0, lastDay: null } as Streak,
+  streak: emptyStreak() as Streak,
   routine: emptyRoutine(dayKey()),
   days: {} as Days,
   lastExamDay: null as string | null,
   blindSince: null as string | null,
+  milestonesSeen: [] as number[],
+  lastWeeklySummaryWeek: null as string | null,
 })
 
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: false },
+      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true },
       legacy: null,
       ...initialProgress(),
 
@@ -139,7 +151,7 @@ export const useStore = create<State>()(
           const sessions = [...s.sessions, { ...rec, at }].slice(-1000)
           return {
             sessions,
-            keys: samples ? updateKeyStats(s.keys, samples) : s.keys,
+            keys: samples ? updateKeyStats(s.keys, samples, today) : s.keys,
             streak: bumpStreak(s.streak, today),
             days: addSession(s.days, today, rec.seconds, rec.reference ? rec.wpm : undefined, rec.kind === 'exam' ? rec.wpm : undefined),
             blindSince: s.blindSince ?? (rec.reference && rec.blind ? today : null),
@@ -169,7 +181,8 @@ export const useStore = create<State>()(
             attempts: (prev?.attempts ?? 0) + 1,
             completedAt: new Date().toISOString(),
           }
-          return { lessons: { ...s.lessons, [id]: result }, streak: bumpStreak(s.streak, dayKey()) }
+          // A tip is reading, not practice: the streak moves with recorded sessions only.
+          return { lessons: { ...s.lessons, [id]: result } }
         }),
 
       markRoutine: (block) => {
@@ -189,6 +202,11 @@ export const useStore = create<State>()(
 
       setLastExamDay: (day) => set({ lastExamDay: day }),
 
+      markMilestoneSeen: (milestone) =>
+        set((s) => ({ milestonesSeen: [...new Set([...s.milestonesSeen, ...MILESTONES.filter((m) => m <= milestone)])].sort((a, b) => a - b) })),
+
+      setLastWeeklySummaryWeek: (week) => set({ lastWeeklySummaryWeek: week }),
+
       resetProgress: () =>
         set((s) => ({
           ...initialProgress(),
@@ -197,7 +215,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'typelight.v1',
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -214,7 +232,7 @@ export function useSettings(): Settings {
   return useStore((s) => s.settings)
 }
 
-export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy', 'lastExamDay', 'blindSince'] as const
+export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy', 'lastExamDay', 'blindSince', 'milestonesSeen', 'lastWeeklySummaryWeek'] as const
 export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 
 /** The data half of the store, exactly what persist writes. */

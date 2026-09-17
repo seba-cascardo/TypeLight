@@ -3,7 +3,7 @@ import { LAYOUTS } from '@/engine/layouts'
 import { migrateState } from '../store/migrate'
 import { PERSISTED_KEYS, type PersistedState } from '../store'
 
-export const BACKUP_VERSION = 4
+export const BACKUP_VERSION = 5
 
 export interface Backup {
   app: 'typelight'
@@ -58,6 +58,7 @@ export function isPersistedState(x: unknown): x is PersistedState {
 
   const streak = x.streak
   if (!isPlainObject(streak) || typeof streak.count !== 'number') return false
+  if (typeof streak.best !== 'number' || typeof streak.freezes !== 'number' || typeof streak.activeDays !== 'number') return false
 
   const routine = x.routine
   if (!isPlainObject(routine) || typeof routine.day !== 'string') return false
@@ -67,6 +68,8 @@ export function isPersistedState(x: unknown): x is PersistedState {
 
   if (x.lastExamDay !== null && typeof x.lastExamDay !== 'string') return false
   if (x.blindSince !== null && typeof x.blindSince !== 'string') return false
+  if (!Array.isArray(x.milestonesSeen)) return false
+  if (x.lastWeeklySummaryWeek !== null && typeof x.lastWeeklySummaryWeek !== 'string') return false
 
   return true
 }

@@ -64,6 +64,34 @@ describe('store', () => {
     expect(day.reference).toEqual([28])
   })
 
+  it('a tip does not move the streak; a session does', () => {
+    useStore.getState().completeLesson('guia-tip-intro', 3, 0, 1)
+    expect(useStore.getState().streak.count).toBe(0)
+    useStore.getState().recordSession({ kind: 'warmup', wpm: 20, acc: 1, chars: 40, errors: 0, seconds: 20 })
+    expect(useStore.getState().streak.count).toBe(1)
+    expect(useStore.getState().streak.activeDays).toBe(1)
+  })
+
+  it('recordSession stamps lastSeen on the keys it saw', () => {
+    useStore.getState().recordSession({ kind: 'warmup', wpm: 20, acc: 1, chars: 40, errors: 0, seconds: 20 }, [{ char: 'f', latencies: [300], errors: 0, occurrences: 1 }])
+    expect(useStore.getState().keys.f.lastSeen).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('markMilestoneSeen closes that milestone and every smaller one', () => {
+    useStore.getState().markMilestoneSeen(30)
+    expect(useStore.getState().milestonesSeen).toEqual([7, 14, 30])
+    useStore.getState().markMilestoneSeen(7)
+    expect(useStore.getState().milestonesSeen).toEqual([7, 14, 30])
+  })
+
+  it('resetProgress clears the streak, the milestones and the weekly summary mark', () => {
+    useStore.setState({ streak: { count: 3, lastDay: '2026-09-18', best: 5, freezes: 1, activeDays: 9 }, milestonesSeen: [7], lastWeeklySummaryWeek: '2026-09-14' })
+    useStore.getState().resetProgress()
+    expect(useStore.getState().streak).toEqual({ count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 })
+    expect(useStore.getState().milestonesSeen).toEqual([])
+    expect(useStore.getState().lastWeeklySummaryWeek).toBeNull()
+  })
+
   it('resetProgress clears the exam day and the blind mark', () => {
     useStore.setState({ lastExamDay: '2026-09-14', blindSince: '2026-09-10' })
     useStore.getState().resetProgress()

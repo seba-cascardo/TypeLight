@@ -23,6 +23,9 @@ interface Persisted {
   legacy?: unknown
   lastExamDay?: unknown
   blindSince?: unknown
+  streak?: { count?: number; lastDay?: string | null; best?: number; freezes?: number; activeDays?: number }
+  milestonesSeen?: unknown
+  lastWeeklySummaryWeek?: unknown
 }
 
 /** v1 → v2: Retos count toward the reference speed (`reference: true`); the store gains `days`. */
@@ -52,10 +55,19 @@ function toV4(s: Persisted): Persisted {
   return { ...s, lastExamDay: null, blindSince: null, settings: { ...(s.settings ?? {}), anchor: '', conversoSeen: false } }
 }
 
+/** v4 → v5: the streak gains best/freezes/activeDays (active days counted from `days`), weekly goal, mascot, milestones, weekly summary mark. */
+function toV5(s: Persisted): Persisted {
+  const count = s.streak?.count ?? 0
+  const active = Object.values(s.days ?? {}).filter((d) => (d?.seconds ?? 0) > 0).length
+  const streak = { count, lastDay: s.streak?.lastDay ?? null, best: count, freezes: 0, activeDays: Math.max(active, count) }
+  return { ...s, streak, milestonesSeen: [], lastWeeklySummaryWeek: null, settings: { ...(s.settings ?? {}), weeklyGoal: 5, mascot: true } }
+}
+
 export function migrateState(persisted: unknown, version: number): unknown {
   let s = (persisted ?? {}) as Persisted
   if (version < 2) s = toV2(s)
   if (version < 3) s = toV3(s)
   if (version < 4) s = toV4(s)
-  return version >= 4 ? persisted : s
+  if (version < 5) s = toV5(s)
+  return version >= 5 ? persisted : s
 }
