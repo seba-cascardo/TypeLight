@@ -151,6 +151,14 @@ export function Stats() {
           <Swatch className="bg-sun-edge" label="meta de la unidad" />
           <Swatch className="bg-ink-mute" label="llegaron teclas nuevas" />
         </div>
+        <details className="mt-3 text-sm text-ink-soft">
+          <summary className="cursor-pointer font-bold text-ink">¿Por qué este número y no otro?</summary>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>Solo cuentan el Reto de un minuto, los textos de la unidad Velocidad y las Carreras: texto real, de corrido, contra reloj.</li>
+            <li>Si hubo varios en un día, vale la mediana: un intento suelto, bueno o malo, no mueve la línea.</li>
+            <li>La precisión es al primer intento: cada tecla equivocada cuenta, aunque el ejercicio termine perfecto.</li>
+          </ul>
+        </details>
       </Card>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
