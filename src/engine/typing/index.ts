@@ -262,3 +262,131 @@ export function rhythm(s: TypingState): number | undefined {
   const variance = gaps.reduce((a, g) => a + (g - mean) ** 2, 0) / gaps.length
   return Math.max(0, Math.min(1, 1 - Math.sqrt(variance) / mean))
 }
+
+/* ───────── Finer-grained samples for the skill model v2 ───────── */
+
+export interface BigramSample {
+  bigram: string
+  /** Latency of the second key when both keys were typed right in a row. */
+  latencies: number[]
+  /** Wrong keys typed right after a correct first key. */
+  errors: number
+}
+
+/**
+ * Per in-word bigram of the target (no spaces): clean transition latencies and errors on the second key.
+ * The bigram is the unit that predicts speed (Dhakal 2018); this is where "same finger" and "alternating
+ * hands" become measurable.
+ */
+export function bigramSamples(s: TypingState): Map<string, BigramSample> {
+  const map = new Map<string, BigramSample>()
+  const keys = attempts(s)
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i]
+    if (k.pos === 0 || k.expected === ' ') continue
+    const before = s.target[k.pos - 1]
+    if (before === ' ') continue
+    const prev = keys[i - 1]
+    const cleanPrev = prev !== undefined && prev.correct && prev.pos === k.pos - 1
+    if (!cleanPrev) continue
+    const bigram = before + k.expected
+    let v = map.get(bigram)
+    if (!v) {
+      v = { bigram, latencies: [], errors: 0 }
+      map.set(bigram, v)
+    }
+    if (!k.correct) v.errors++
+    else if (k.latency !== undefined && k.latency < MAX_LATENCY) v.latencies.push(k.latency)
+  }
+  return map
+}
+
+export interface WordSample {
+  word: string
+  /** Mean latency per letter after the first (which carries the reading pause), or null without clean keys. */
+  latency: number | null
+  errors: number
+}
+
+const LETTER = /[\p{L}]/u
+
+/** Per word of the target with three letters or more (punctuation stripped): letter latencies after the first, and errors. */
+export function wordSamples(s: TypingState): Map<string, WordSample> {
+  const map = new Map<string, WordSample>()
+  const keys = attempts(s)
+  const target = s.target
+  let i = 0
+  while (i < target.length) {
+    if (target[i] === ' ') {
+      i++
+      continue
+    }
+    let end = i
+    while (end < target.length && target[end] !== ' ') end++
+    // letters only: the range from the first to the last letter of the token
+    let first = i
+    while (first < end && !LETTER.test(target[first])) first++
+    let last = end - 1
+    while (last >= first && !LETTER.test(target[last])) last--
+    const word = target.slice(first, last + 1).toLowerCase()
+    if ([...word].filter((c) => LETTER.test(c)).length >= 3) {
+      let errors = 0
+      const lat: number[] = []
+      for (let j = 0; j < keys.length; j++) {
+        const k = keys[j]
+        if (k.pos < first || k.pos > last) continue
+        if (!k.correct) {
+          errors++
+          continue
+        }
+        if (k.pos === first) continue
+        const prev = keys[j - 1]
+        if (prev && prev.correct && prev.pos === k.pos - 1 && k.latency !== undefined && k.latency < MAX_LATENCY) lat.push(k.latency)
+      }
+      const existing = map.get(word)
+      const latency = lat.length ? lat.reduce((a, b) => a + b, 0) / lat.length : null
+      if (existing) {
+        existing.errors += errors
+        if (latency !== null) existing.latency = existing.latency === null ? latency : (existing.latency + latency) / 2
+      } else map.set(word, { word, latency, errors })
+    }
+    i = end
+  }
+  return map
+}
+
+export interface DeadKeyStats {
+  /** Correct accented characters typed, and their mean latency. */
+  n: number
+  latency: number | null
+  /** The plain vowel typed where an accented one was expected. */
+  missed: number
+  /** A bare accent, or an accented vowel where a plain one was expected. */
+  loose: number
+}
+
+const ACCENTED = /^[áéíóúüÁÉÍÓÚÜ]$/
+const BARE_ACCENT = /^[´¨`^]$/
+const plain = (ch: string) => ch.normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+/** How the dead keys went in this session, or null when no accented character was involved. */
+export function deadKeyStats(s: TypingState): DeadKeyStats | null {
+  let n = 0
+  let missed = 0
+  let loose = 0
+  const lat: number[] = []
+  for (const k of attempts(s)) {
+    const expAcc = ACCENTED.test(k.expected)
+    if (k.correct) {
+      if (expAcc) {
+        n++
+        if (k.latency !== undefined && k.latency < MAX_LATENCY) lat.push(k.latency)
+      }
+      continue
+    }
+    if (expAcc && k.actual === plain(k.expected)) missed++
+    else if (BARE_ACCENT.test(k.actual) || (ACCENTED.test(k.actual) && !expAcc)) loose++
+  }
+  if (n + missed + loose === 0) return null
+  return { n, latency: lat.length ? Math.round(lat.reduce((a, b) => a + b, 0) / lat.length) : null, missed, loose }
+}
