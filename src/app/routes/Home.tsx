@@ -25,6 +25,7 @@ export function Home() {
   const name = useStore((s) => s.settings.name)
   const streak = useStore((s) => s.streak)
   const sessions = useStore((s) => s.sessions)
+  const days = useStore((s) => s.days)
   const results = useStore((s) => s.lessons)
   const routine = useRoutine()
   const { curriculum, next, completed, learned } = useProgress()
@@ -32,7 +33,8 @@ export function Home() {
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const alive = streakAlive(streak, dayKey())
   const recent = sessions.slice(-10)
-  const reference = referenceHeadline(referenceByDay(sessions))
+  const reference = referenceHeadline(referenceByDay(days))
+  const exercises = Object.values(days).reduce((a, d) => a + d.sessions, 0)
   const recentAcc = recent.length ? recent.reduce((a, s) => a + s.acc, 0) / recent.length : null
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
@@ -165,7 +167,7 @@ export function Home() {
             </div>
             <div>
               <dt className="text-xs font-bold text-ink-mute">Ejercicios</dt>
-              <dd className="font-display text-3xl font-extrabold">{sessions.length}</dd>
+              <dd className="font-display text-3xl font-extrabold">{exercises}</dd>
             </div>
           </dl>
           <Link to="/estadisticas" className="mt-4 inline-block text-sm font-bold text-mod-edge underline">

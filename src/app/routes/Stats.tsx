@@ -65,7 +65,7 @@ export function Stats() {
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
 
-  const points = useMemo(() => referenceByDay(sessions), [sessions])
+  const points = useMemo(() => referenceByDay(days), [days])
   const headline = referenceHeadline(points)
   const marks = useMemo(() => unitMarks(days), [days])
   const weekly = weeklyAccuracy(sessions, today)

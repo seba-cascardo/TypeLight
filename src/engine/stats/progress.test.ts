@@ -3,6 +3,7 @@ import type { Days } from './days'
 import {
   calendar,
   constancy,
+  legacyBeaten,
   mastery,
   masteryCounts,
   masteryMap,
@@ -15,6 +16,7 @@ import {
   snapshotBefore,
   unitMarks,
   weeklyAccuracy,
+  type DayPoint,
   type SessionLike,
 } from './progress'
 
@@ -43,26 +45,43 @@ describe('shiftDay / median', () => {
   })
 })
 
-describe('reference speed', () => {
-  const sessions = [
-    session('2026-09-08', 20, { reference: true }),
-    session('2026-09-08', 60), // a lesson: never a reference point
-    session('2026-09-15', 24, { reference: true }),
-    session('2026-09-16', 30, { reference: true }),
-    session('2026-09-16', 26, { reference: true }),
-    session('2026-09-16', 90),
-  ]
-
-  it('folds reference sessions into one median point per day, oldest first', () => {
-    expect(referenceByDay(sessions)).toEqual([
-      { day: '2026-09-08', wpm: 20, n: 1 },
-      { day: '2026-09-15', wpm: 24, n: 1 },
-      { day: '2026-09-16', wpm: 28, n: 2 },
+describe('referenceByDay from days', () => {
+  it('folds each day to the median of its reference speeds, oldest first, skipping days without one', () => {
+    const days: Days = {
+      '2026-09-12': { seconds: 60, blocks: 1, learned: 8, mastered: 2, reference: [20, 30, 26], sessions: 3 },
+      '2026-09-10': { seconds: 60, blocks: 1, learned: 8, mastered: 2, reference: [22], sessions: 1 },
+      '2026-09-11': { seconds: 60, blocks: 1, learned: 8, mastered: 2, reference: [], sessions: 2 },
+    }
+    expect(referenceByDay(days)).toEqual([
+      { day: '2026-09-10', wpm: 22, n: 1 },
+      { day: '2026-09-12', wpm: 26, n: 3 },
     ])
   })
+})
+
+describe('legacyBeaten', () => {
+  const p = (day: string, wpm: number) => ({ day, wpm, n: 1 })
+  it('needs at least three days and a 7-day median at or above the legacy speed', () => {
+    expect(legacyBeaten([p('2026-09-10', 50)], 40)).toBe(false)
+    expect(legacyBeaten([p('2026-09-10', 30), p('2026-09-11', 45), p('2026-09-12', 44)], 40)).toBe(true)
+    expect(legacyBeaten([p('2026-09-10', 30), p('2026-09-11', 45), p('2026-09-12', 39)], 40)).toBe(false)
+  })
+  it('only looks at the last seven days with data', () => {
+    const old = Array.from({ length: 7 }, (_, i) => p(`2026-09-0${i + 1}`, 10))
+    const recent = Array.from({ length: 7 }, (_, i) => p(`2026-09-1${i + 1}`, 45))
+    expect(legacyBeaten([...old, ...recent], 40)).toBe(true)
+  })
+})
+
+describe('referenceHeadline', () => {
+  const points: DayPoint[] = [
+    { day: '2026-09-08', wpm: 20, n: 1 },
+    { day: '2026-09-15', wpm: 24, n: 1 },
+    { day: '2026-09-16', wpm: 28, n: 2 },
+  ]
 
   it('headline = last point, delta vs. the nearest point 7–10 days back', () => {
-    expect(referenceHeadline(referenceByDay(sessions))).toEqual({ value: 28, day: '2026-09-16', delta: 8 })
+    expect(referenceHeadline(points)).toEqual({ value: 28, day: '2026-09-16', delta: 8 })
     expect(referenceHeadline([{ day: '2026-09-16', wpm: 28, n: 2 }])).toEqual({ value: 28, day: '2026-09-16', delta: null })
     expect(referenceHeadline([])).toBeNull()
   })

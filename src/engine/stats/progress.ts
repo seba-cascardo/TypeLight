@@ -38,16 +38,18 @@ export interface DayPoint {
 }
 
 /** Reference sessions (Reto, Velocidad texts, race) folded to one point per local day: the median. Oldest first. */
-export function referenceByDay(sessions: SessionLike[]): DayPoint[] {
-  const map = new Map<string, number[]>()
-  for (const s of sessions) {
-    if (!s.reference) continue
-    const d = sessionDay(s)
-    map.set(d, [...(map.get(d) ?? []), s.wpm])
-  }
-  return [...map.entries()]
+export function referenceByDay(days: Days): DayPoint[] {
+  return Object.entries(days)
+    .filter(([, d]) => d.reference.length > 0)
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([day, w]) => ({ day, wpm: median(w), n: w.length }))
+    .map(([day, d]) => ({ day, wpm: median(d.reference), n: d.reference.length }))
+}
+
+/** True once the median of the last seven days with data (at least three) reaches the speed typed "the old way". */
+export function legacyBeaten(points: DayPoint[], legacyWpm: number): boolean {
+  const recent = points.slice(-7)
+  if (recent.length < 3) return false
+  return median(recent.map((p) => p.wpm)) >= legacyWpm
 }
 
 export interface Headline {
