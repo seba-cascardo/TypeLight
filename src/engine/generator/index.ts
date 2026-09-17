@@ -187,20 +187,45 @@ const CORPORA: Record<SentenceCorpus, string[]> = {
   symbols: SYMBOL_SENTENCES,
 }
 
-/**
- * Real sentences typable with the pool. Returns '' if none fit, so callers can fall back.
- */
+/** Distinct real sentences typable with the pool, up to `count`. Empty when none fit. */
+export function pickSentences(
+  pool: ReadonlySet<string>,
+  count: number,
+  opts: GenOpts & { corpus?: SentenceCorpus } = {},
+): string[] {
+  const rng = opts.rng ?? makeRng()
+  const source = CORPORA[opts.corpus ?? 'general']
+  const fits = source.filter((s) => usesOnly(s, pool))
+  return rng.shuffle([...fits]).slice(0, count)
+}
+
+/** Real sentences typable with the pool, joined. Returns '' if none fit, so callers can fall back. */
 export function sentencesText(
   pool: ReadonlySet<string>,
   count = 2,
   opts: GenOpts & { corpus?: SentenceCorpus } = {},
 ): string {
+  return pickSentences(pool, count, opts).join(' ')
+}
+
+/** A Reto's text: distinct sentences until `minChars`, topped up with words; words only when no sentence fits. */
+export function challengeText(pool: ReadonlySet<string>, opts: GenOpts & { minChars?: number } = {}): string {
   const rng = opts.rng ?? makeRng()
-  const source = CORPORA[opts.corpus ?? 'general']
-  const fits = source.filter((s) => usesOnly(s, pool))
-  if (fits.length === 0) return ''
-  const chosen = rng.shuffle([...fits]).slice(0, count)
-  return chosen.join(' ')
+  const min = opts.minChars ?? 420
+  const out: string[] = []
+  let total = 0
+  for (const s of pickSentences(pool, 12, { rng })) {
+    if (total >= min) break
+    out.push(s)
+    total += s.length + 1
+  }
+  let guard = 0
+  while (total < min && guard++ < 12) {
+    const w = wordsText(pool, 20, { rng })
+    out.push(w)
+    total += w.length + 1
+  }
+  return out.join(' ')
 }
 
 /** Text for the adaptive review: words heavy on the weakest keys. */

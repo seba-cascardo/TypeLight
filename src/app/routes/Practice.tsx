@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
-import { adaptiveText, drillText, makeRng, poolOf, sentencesText, wordsText } from '@/engine/generator'
+import { adaptiveText, challengeText, drillText, makeRng, poolOf, wordsText } from '@/engine/generator'
 import { weakestKeys } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
@@ -86,17 +86,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       return adaptiveText(pool, weak, 18, { rng })
     }
     if (joined) return drillText(learned, 12, { rng, joined })
-    // Reto: enough text for a full minute at 60 wpm.
-    const parts: string[] = []
-    let total = 0
-    let guard = 0
-    while (total < 420 && guard++ < 12) {
-      const s = sentencesText(pool, 2, { rng })
-      const w = s || wordsText(pool, 20, { rng })
-      parts.push(w)
-      total += w.length
-    }
-    return parts.join(' ')
+    return challengeText(pool, { rng })
   }, [kind, pool, weak, learned, round])
 
   const onFinish = useCallback(

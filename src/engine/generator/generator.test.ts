@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adaptiveText, drillText, makeRng, poolOf, reviewText, sentencesText, wordsText } from './index'
+import { adaptiveText, challengeText, drillText, makeRng, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
 
 const only = (text: string, allowed: Iterable<string>) => {
   const set = new Set(allowed)
@@ -64,5 +64,23 @@ describe('generators', () => {
   it('is deterministic for a given seed', () => {
     const pool = poolOf('asdfjklñ')
     expect(wordsText(pool, 10, { rng: makeRng(9) })).toBe(wordsText(pool, 10, { rng: makeRng(9) }))
+  })
+
+  it('pickSentences never repeats a sentence within one call', () => {
+    const pool = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    const picked = pickSentences(pool, 10, { rng: makeRng(11) })
+    expect(picked).toHaveLength(10)
+    expect(new Set(picked).size).toBe(10)
+  })
+
+  it('challengeText reaches the minimum length with distinct sentences, or words when none fit', () => {
+    const full = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    const t = challengeText(full, { rng: makeRng(12) })
+    expect(t.length).toBeGreaterThanOrEqual(420)
+    const sentences = t.split(/(?<=[.?!]) /)
+    expect(new Set(sentences).size).toBe(sentences.length)
+    const fj = challengeText(poolOf('fj'), { rng: makeRng(13) })
+    expect(only(fj, 'fj ')).toBe(true)
+    expect(fj.length).toBeGreaterThanOrEqual(420)
   })
 })
