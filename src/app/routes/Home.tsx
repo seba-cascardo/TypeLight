@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import type { GameId } from '@/engine/curriculum'
-import { dayKey, examDue, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
+import { warmupGame, wordsReady, type GameId } from '@/engine/curriculum'
+import { dayKey, dayOfYear, examDue, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
@@ -10,7 +10,9 @@ import { useRoutine, useStore, type RoutineBlock } from '../store'
 import { unitAccentClass } from '../lib/accents'
 import { backupDue } from '../lib/backup'
 
-const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral'; to: string }[] = [
+type Block = { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral' | 'lav' | 'mint'; to: string }
+
+const BLOCKS: Block[] = [
   { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '~1 min', variant: 'sun', to: '/practica/calentamiento' },
   { id: 'lesson', title: 'Lección', detail: 'La siguiente de tu ruta.', minutes: '5 min', variant: 'primary', to: '' },
   { id: 'review', title: 'Repaso', detail: 'Tus tres teclas más flojas, adrede.', minutes: '2 min', variant: 'secondary', to: '/practica/repaso' },
@@ -18,7 +20,13 @@ const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string
 ]
 
 /** Once a week the coral card is the exam: three minutes, no help, no Backspace. */
-const EXAM_BLOCK: (typeof BLOCKS)[number] = { id: 'challenge', title: 'Examen semanal', detail: 'Sin ayuda ni Backspace. Tu velocidad limpia.', minutes: '3 min', variant: 'coral', to: '/practica/examen' }
+const EXAM_BLOCK: Block = { id: 'challenge', title: 'Examen semanal', detail: 'Sin ayuda ni Backspace. Tu velocidad limpia.', minutes: '3 min', variant: 'coral', to: '/practica/examen' }
+
+/** One day in three the warm-up is a game; it still counts as the warm-up. */
+const GAME_BLOCK: Record<'rhythm' | 'balloons', Block> = {
+  rhythm: { id: 'warmup', title: 'Al compás', detail: 'Hoy el Calentamiento es un juego: pulso un poco por debajo de tu ritmo.', minutes: '~1 min · juego', variant: 'lav', to: '/practica/calentamiento' },
+  balloons: { id: 'warmup', title: 'Globos', detail: 'Hoy el Calentamiento es un juego: palabras enteras antes de que se escapen.', minutes: '~1 min · juego', variant: 'mint', to: '/practica/calentamiento' },
+}
 
 /** "Después de ___, practico." — the sentence reads with a lower-case anchor. */
 function anchorSentence(anchor: string): string {
@@ -88,8 +96,9 @@ export function Home() {
   const conversoSeen = useStore((s) => s.settings.conversoSeen)
   const routine = useRoutine()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
-  const blocks = examToday ? BLOCKS.map((b) => (b.id === 'challenge' ? EXAM_BLOCK : b)) : BLOCKS
   const { curriculum, next, completed, learned } = useProgress()
+  const game = warmupGame(dayOfYear(), learned)
+  const blocks = BLOCKS.map((b) => (b.id === 'challenge' && examToday ? EXAM_BLOCK : b.id === 'warmup' && game ? GAME_BLOCK[game] : b))
 
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const activeDays = Object.values(days).filter((d) => d.seconds > 0).length
@@ -101,8 +110,7 @@ export function Home() {
   const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
-  const wordsReady = learned.includes(' ') && learned.filter((c) => /^[a-zñ]$/.test(c)).length >= 8
-  const playable: GameId[] = wordsReady ? ['rain', 'rhythm', 'balloons', 'race'] : ['rain', 'rhythm']
+  const playable: GameId[] = wordsReady(learned) ? ['rain', 'rhythm', 'balloons', 'race'] : ['rain', 'rhythm']
 
   useEffect(() => {
     if (legacy && !legacy.beatenAt && legacyBeaten(points, legacy.wpm)) setLegacy({ ...legacy, beatenAt: dayKey() })

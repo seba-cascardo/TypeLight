@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
+import { warmupGame } from '@/engine/curriculum'
 import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
-import { dayKey, dayOfYear, monthKey, newRollover, rolloverRatio, weakestKeys } from '@/engine/stats'
+import { starsForGame, type GameResult } from '@/engine/games'
+import { dayKey, dayOfYear, median, monthKey, newRollover, referenceByDay, rolloverRatio, weakestKeys } from '@/engine/stats'
 import { keySamples, metrics, repairMetrics, rhythm, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
 import { FormCheck } from '../components/FormCheck'
+import { Game } from '../components/games/Game'
+import { GameResults } from '../components/games/GameResults'
+import { GAME_META } from '../components/games/meta'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { TypingArea } from '../components/TypingArea'
@@ -11,6 +16,7 @@ import { Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { handsOpacityFor } from '../lib/fingers'
+import { gameSession } from '../lib/gameSession'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
 type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes'
@@ -79,7 +85,90 @@ const META: Record<Kind, Meta> = {
 export function Practice() {
   const { kind = '' } = useParams()
   if (!(kind in META)) return <Navigate to="/" replace />
+  if (kind === 'calentamiento') return <WarmupOrGame />
   return <PracticeRun key={kind} kind={kind as Kind} />
+}
+
+/** One day in three the warm-up is a game (decided once per mount, like the bigram day). */
+function WarmupOrGame() {
+  const { learned } = useProgress()
+  const [game] = useState(() => warmupGame(dayOfYear(), learned))
+  if (game === 'rhythm' || game === 'balloons') return <WarmupGame key={game} game={game} />
+  return <PracticeRun key="calentamiento" kind="calentamiento" />
+}
+
+function WarmupGame({ game }: { game: 'rhythm' | 'balloons' }) {
+  const { layout, learned, goalWpm } = useProgress()
+  const keyStats = useStore((s) => s.keys)
+  const days = useStore((s) => s.days)
+  const sound = useStore((s) => s.settings.sound)
+  const recordSession = useStore((s) => s.recordSession)
+  const markRoutine = useStore((s) => s.markRoutine)
+  const [result, setResult] = useState<GameResult | null>(null)
+  const [round, setRound] = useState(0)
+  const navigate = useNavigate()
+  // Al compás beats a little under the comfortable speed: 90 % of the 7-day reference median, or the unit goal without one.
+  const beatWpm = useMemo(() => {
+    const recent = referenceByDay(days).slice(-7)
+    return recent.length ? Math.max(8, Math.round(median(recent.map((p) => p.wpm)) * 0.9)) : goalWpm
+  }, [days, goalWpm])
+
+  const onFinish = useCallback(
+    (r: GameResult) => {
+      setResult(r)
+      recordSession(gameSession(r), r.typing?.samples)
+      markRoutine('warmup')
+    },
+    [recordSession, markRoutine],
+  )
+
+  useEffect(() => {
+    if (!result) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        navigate('/')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [result, navigate])
+
+  const meta = GAME_META[game]
+  return (
+    <div className="animate-rise">
+      <header className="mb-6">
+        <div className="eyebrow mb-1">Rutina de hoy · Calentamiento</div>
+        <h1 className="text-3xl md:text-4xl">{meta.title}</h1>
+        <p className="mt-1 text-ink-soft">
+          {game === 'rhythm' ? `Hoy el Calentamiento es un juego. Pulso a ${beatWpm} PPM, un poco por debajo de tu ritmo: el mapeo nuevo al mando.` : 'Hoy el Calentamiento es un juego. Palabras enteras, de corrido, antes de que se escapen.'}
+        </p>
+      </header>
+      {result ? (
+        <GameResults
+          result={result}
+          stars={starsForGame(result)}
+          onRetry={() => {
+            setResult(null)
+            setRound((n) => n + 1)
+          }}
+          backTo={{ to: '/', label: 'Volver a la rutina' }}
+        />
+      ) : (
+        <Game
+          key={round}
+          id={game}
+          layout={layout}
+          pool={learned}
+          goalWpm={game === 'rhythm' ? beatWpm : goalWpm}
+          weak={weakestKeys(keyStats, learned, 3)}
+          sound={sound}
+          onFinish={onFinish}
+          durationMs={Number(new URLSearchParams(window.location.search).get('dur')) || 60_000}
+        />
+      )}
+    </div>
+  )
 }
 
 interface Result {

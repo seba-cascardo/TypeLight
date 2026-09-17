@@ -18,6 +18,7 @@ import type { Curriculum, ExerciseSpec, Lesson } from './types'
 
 export * from './types'
 export { buildCurriculum } from './build'
+export { warmupGame, wordsReady } from './warmup'
 export { explainChar } from './explain'
 
 const cache = new Map<string, Curriculum>()

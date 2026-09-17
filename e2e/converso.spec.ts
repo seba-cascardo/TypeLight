@@ -172,3 +172,35 @@ test('the converso card shows once; the anchor lives under the greeting and in A
   await expect(page.getByTestId('anchor')).toHaveCount(0)
   await expect(page.getByTestId('converso-card')).toHaveCount(0)
 })
+
+test('one day in three the warm-up card is a game and playing it fills the warm-up', async ({ page }) => {
+  // 2026-01-09 is day 9 of the year: 9 % 3 === 0 and floor(9 / 3) is odd → Al compás.
+  await page.clock.setFixedTime(new Date(2026, 0, 9, 12, 0, 0))
+  await page.goto('/')
+  await seed(page, {
+    lessons: Object.fromEntries(['guia-tip-intro', 'guia-66-6a-keys', 'guia-space', 'guia-64-6b-keys', 'guia-unit-review'].map((id) => [id, { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }])),
+  })
+  await page.goto('/')
+  const card = page.getByTestId('routine-warmup')
+  await expect(card).toContainText('Al compás')
+  await expect(card).toContainText('juego')
+  await card.click()
+  await expect(page).toHaveURL(/practica\/calentamiento/)
+  await page.goto('/practica/calentamiento?dur=3000')
+  await expect(page.getByRole('heading', { level: 1, name: 'Al compás' })).toBeVisible()
+  await expect(page.getByText('Hoy el Calentamiento es un juego', { exact: false })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('Juego terminado')).toBeVisible({ timeout: 15_000 })
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL('http://localhost:5174/')
+  await expect(card).toHaveAttribute('data-done', 'true')
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
+  expect(stored.state.sessions[0].kind).toBe('game')
+  expect(stored.state.sessions[0].gameId).toBe('rhythm')
+
+  // The day after it is the plain warm-up again.
+  await page.clock.setFixedTime(new Date(2026, 0, 10, 12, 0, 0))
+  await page.goto('/')
+  await expect(card).toContainText('Calentamiento')
+  await expect(card).not.toContainText('juego')
+})
