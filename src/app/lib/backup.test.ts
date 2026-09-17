@@ -25,7 +25,16 @@ describe('backup', () => {
   })
 
   it('migrates an older backup on import', () => {
-    const v2 = JSON.stringify({ app: 'typelight', version: 2, exportedAt: 'x', state: { settings: { name: 'S' }, sessions: [], days: {} } })
+    const v2state = {
+      settings: { name: 'S', layoutId: 'latam', sound: true, showHands: true, onboarded: true, theme: 'auto' },
+      lessons: {},
+      keys: {},
+      sessions: [],
+      streak: { count: 0, lastDay: null },
+      routine: { day: '2026-09-17', warmup: false, lesson: false, review: false, challenge: false },
+      days: {},
+    }
+    const v2 = JSON.stringify({ app: 'typelight', version: 2, exportedAt: 'x', state: v2state })
     const parsed = parseBackup(v2)
     expect(parsed.ok).toBe(true)
     if (parsed.ok) expect(parsed.state.legacy).toBeNull()
@@ -35,6 +44,33 @@ describe('backup', () => {
     expect(parseBackup('hola').ok).toBe(false)
     expect(parseBackup('{"app":"otra","version":1,"state":{}}').ok).toBe(false)
     expect(parseBackup('{"app":"typelight","version":99,"state":{}}').ok).toBe(false)
+  })
+
+  it('rejects a malformed state instead of crashing on import', () => {
+    const withDays = (days: unknown) => JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: { ...state, days } })
+
+    // A `days` map that isn't an object at all.
+    expect(parseBackup(withDays(null)).ok).toBe(false)
+
+    // A day row missing `reference`.
+    expect(parseBackup(withDays({ '2026-09-17': { seconds: 40, blocks: 1, learned: 3, mastered: 1, sessions: 1 } })).ok).toBe(false)
+
+    // A v2 backup whose `sessions` survives migration as something other than an array.
+    const v2 = JSON.stringify({
+      app: 'typelight',
+      version: 2,
+      exportedAt: 'x',
+      state: { settings: { name: 'S' }, sessions: 'x', days: {} },
+    })
+    expect(parseBackup(v2).ok).toBe(false)
+
+    // A layout that doesn't exist.
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: { ...state, settings: { ...state.settings, layoutId: 'dvorak' } } })).ok).toBe(false)
+
+    // Missing a required top-level key entirely.
+    const withoutLegacy: Record<string, unknown> = { ...state }
+    delete withoutLegacy.legacy
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: withoutLegacy })).ok).toBe(false)
   })
 
   it('names the file by local day', () => {

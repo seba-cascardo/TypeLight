@@ -1,6 +1,7 @@
 import { dayKey, daysBetween } from '@/engine/stats'
+import { LAYOUTS } from '@/engine/layouts'
 import { migrateState } from '../store/migrate'
-import type { PersistedState } from '../store'
+import { PERSISTED_KEYS, type PersistedState } from '../store'
 
 export const BACKUP_VERSION = 3
 
@@ -22,6 +23,51 @@ export function serializeBackup(state: PersistedState, now: Date = new Date()): 
   return JSON.stringify(backup, null, 2)
 }
 
+const NOT_A_BACKUP = 'No parece una copia de TypeLight.'
+
+function isPlainObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+
+function isDaySummary(x: unknown): boolean {
+  return (
+    isPlainObject(x) &&
+    Array.isArray(x.reference) &&
+    x.reference.every((v) => typeof v === 'number') &&
+    typeof x.sessions === 'number'
+  )
+}
+
+/** Shape-checks a migrated backup before it overwrites the store: every field the app reads must be there and well-formed. */
+export function isPersistedState(x: unknown): x is PersistedState {
+  if (!isPlainObject(x)) return false
+  if (!PERSISTED_KEYS.every((k) => k in x)) return false
+
+  const settings = x.settings
+  if (!isPlainObject(settings)) return false
+  if (typeof settings.layoutId !== 'string' || !(settings.layoutId in LAYOUTS)) return false
+  if (typeof settings.onboarded !== 'boolean') return false
+
+  if (!isPlainObject(x.lessons)) return false
+  if (!isPlainObject(x.keys)) return false
+
+  if (!isPlainObject(x.days)) return false
+  if (!Object.values(x.days).every(isDaySummary)) return false
+
+  if (!Array.isArray(x.sessions)) return false
+
+  const streak = x.streak
+  if (!isPlainObject(streak) || typeof streak.count !== 'number') return false
+
+  const routine = x.routine
+  if (!isPlainObject(routine) || typeof routine.day !== 'string') return false
+
+  const legacy = x.legacy
+  if (legacy !== null && (!isPlainObject(legacy) || typeof legacy.wpm !== 'number')) return false
+
+  return true
+}
+
 /** Validate and (if older) migrate a backup file's text. */
 export function parseBackup(text: string): ParsedBackup {
   let raw: unknown
@@ -32,12 +78,20 @@ export function parseBackup(text: string): ParsedBackup {
   }
   const b = raw as Partial<Backup> | null
   if (!b || b.app !== 'typelight' || typeof b.version !== 'number' || !b.state || typeof b.state !== 'object') {
-    return { ok: false, error: 'No parece una copia de TypeLight.' }
+    return { ok: false, error: NOT_A_BACKUP }
   }
   if (b.version > BACKUP_VERSION) {
     return { ok: false, error: `La copia es de una versión más nueva (${b.version}) que esta app (${BACKUP_VERSION}).` }
   }
-  const state = migrateState(b.state, b.version) as PersistedState
+  let state: unknown
+  try {
+    state = migrateState(b.state, b.version)
+  } catch {
+    return { ok: false, error: NOT_A_BACKUP }
+  }
+  if (!isPersistedState(state)) {
+    return { ok: false, error: NOT_A_BACKUP }
+  }
   return { ok: true, state, exportedAt: typeof b.exportedAt === 'string' ? b.exportedAt : '' }
 }
 
@@ -55,5 +109,6 @@ export function downloadText(filename: string, text: string): void {
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(url)
+  // Some browsers still read the href when the click is dispatched; revoke on the next tick so the download can start.
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
