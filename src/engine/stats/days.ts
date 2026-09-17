@@ -6,15 +6,28 @@ export interface DaySummary {
   /** Snapshot of the learned pool size and of mastered keys, taken whenever key stats change. */
   learned: number
   mastered: number
+  /** WPM of each reference session recorded that day (Reto, Velocidad text, race). Survives the sessions cap. */
+  reference: number[]
+  /** Sessions recorded that day. */
+  sessions: number
 }
 
 export type Days = Record<string, DaySummary>
 
-const empty = (): DaySummary => ({ seconds: 0, blocks: 0, learned: 0, mastered: 0 })
+const empty = (): DaySummary => ({ seconds: 0, blocks: 0, learned: 0, mastered: 0, reference: [], sessions: 0 })
 
-export function addSeconds(days: Days, day: string, seconds: number): Days {
+/** Fold one finished session into its day; `referenceWpm` is given only for reference sessions. */
+export function addSession(days: Days, day: string, seconds: number, referenceWpm?: number): Days {
   const prev = days[day] ?? empty()
-  return { ...days, [day]: { ...prev, seconds: prev.seconds + Math.max(0, seconds) } }
+  return {
+    ...days,
+    [day]: {
+      ...prev,
+      seconds: prev.seconds + Math.max(0, seconds),
+      sessions: prev.sessions + 1,
+      reference: referenceWpm === undefined ? prev.reference : [...prev.reference, referenceWpm],
+    },
+  }
 }
 
 export function setBlocks(days: Days, day: string, blocks: number): Days {

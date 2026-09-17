@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { GameId } from '@/engine/curriculum'
 import type { LayoutId } from '@/engine/layouts'
-import { addSeconds, bumpStreak, dayKey, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
+import { addSession, bumpStreak, dayKey, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
 import type { KeySample } from '@/engine/typing'
 import { migrateState } from './migrate'
 
@@ -15,6 +15,19 @@ export interface Settings {
   showHands: boolean
   onboarded: boolean
   theme: Theme
+  /** ISO of the last downloaded backup, for the reminder. */
+  lastBackupAt: string | null
+}
+
+/** The one-minute test typed "the old way", before TypeLight: the bar the new fingering has to beat. */
+export interface Legacy {
+  wpm: number
+  acc: number
+  at: string
+  /** Day the 7-day reference median first reached `wpm`. */
+  beatenAt?: string
+  /** The celebration card was closed. */
+  beatenSeen?: true
 }
 
 export interface LessonResult {
@@ -61,11 +74,13 @@ interface State {
   streak: Streak
   routine: Routine
   days: Days
+  legacy: Legacy | null
   setSettings: (patch: Partial<Settings>) => void
   recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => void
   completeLesson: (id: string, stars: Stars, wpm: number, acc: number) => void
   markRoutine: (block: RoutineBlock) => void
   snapshotDay: (learned: number, mastered: number) => void
+  setLegacy: (legacy: Legacy | null) => void
   resetProgress: () => void
 }
 
@@ -83,7 +98,8 @@ const initialProgress = () => ({
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto' },
+      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null },
+      legacy: null,
       ...initialProgress(),
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -96,7 +112,7 @@ export const useStore = create<State>()(
             sessions,
             keys: samples ? updateKeyStats(s.keys, samples) : s.keys,
             streak: bumpStreak(s.streak, today),
-            days: addSeconds(s.days, today, rec.seconds),
+            days: addSession(s.days, today, rec.seconds, rec.reference ? rec.wpm : undefined),
           }
         }),
 
@@ -126,11 +142,13 @@ export const useStore = create<State>()(
         if (days !== get().days) set({ days })
       },
 
+      setLegacy: (legacy) => set({ legacy }),
+
       resetProgress: () => set({ ...initialProgress() }),
     }),
     {
       name: 'typelight.v1',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -145,4 +163,17 @@ export function useRoutine(): Routine {
 
 export function useSettings(): Settings {
   return useStore((s) => s.settings)
+}
+
+export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy'] as const
+export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
+
+/** The data half of the store, exactly what persist writes. */
+export function persistedState(s: State): PersistedState {
+  return { settings: s.settings, lessons: s.lessons, keys: s.keys, sessions: s.sessions, streak: s.streak, routine: s.routine, days: s.days, legacy: s.legacy }
+}
+
+/** Replace the data half wholesale (backup import); persist saves it on the next tick. */
+export function importState(state: PersistedState): void {
+  useStore.setState(state)
 }

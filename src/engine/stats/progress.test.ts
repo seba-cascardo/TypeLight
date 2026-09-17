@@ -75,11 +75,11 @@ describe('reference speed', () => {
 describe('unit marks', () => {
   it('marks the days the learned pool grew', () => {
     const days: Days = {
-      '2026-09-10': { seconds: 1, blocks: 1, learned: 10, mastered: 4 },
-      '2026-09-12': { seconds: 1, blocks: 1, learned: 10, mastered: 6 },
-      '2026-09-14': { seconds: 1, blocks: 1, learned: 16, mastered: 6 },
-      '2026-09-15': { seconds: 1, blocks: 0, learned: 0, mastered: 0 }, // no snapshot that day
-      '2026-09-16': { seconds: 1, blocks: 1, learned: 18, mastered: 7 },
+      '2026-09-10': { seconds: 1, blocks: 1, learned: 10, mastered: 4, reference: [], sessions: 0 },
+      '2026-09-12': { seconds: 1, blocks: 1, learned: 10, mastered: 6, reference: [], sessions: 0 },
+      '2026-09-14': { seconds: 1, blocks: 1, learned: 16, mastered: 6, reference: [], sessions: 0 },
+      '2026-09-15': { seconds: 1, blocks: 0, learned: 0, mastered: 0, reference: [], sessions: 0 }, // no snapshot that day
+      '2026-09-16': { seconds: 1, blocks: 1, learned: 18, mastered: 7, reference: [], sessions: 0 },
     }
     expect(unitMarks(days)).toEqual([
       { day: '2026-09-14', added: 6 },
@@ -125,10 +125,10 @@ describe('mastery', () => {
 
 describe('snapshots, calendar, constancy', () => {
   const days: Days = {
-    '2026-09-06': { seconds: 600, blocks: 4, learned: 10, mastered: 3 },
-    '2026-09-09': { seconds: 300, blocks: 2, learned: 12, mastered: 5 },
-    '2026-09-14': { seconds: 900, blocks: 4, learned: 16, mastered: 8 },
-    '2026-09-16': { seconds: 420, blocks: 4, learned: 16, mastered: 9 },
+    '2026-09-06': { seconds: 600, blocks: 4, learned: 10, mastered: 3, reference: [], sessions: 0 },
+    '2026-09-09': { seconds: 300, blocks: 2, learned: 12, mastered: 5, reference: [], sessions: 0 },
+    '2026-09-14': { seconds: 900, blocks: 4, learned: 16, mastered: 8, reference: [], sessions: 0 },
+    '2026-09-16': { seconds: 420, blocks: 4, learned: 16, mastered: 9, reference: [], sessions: 0 },
   }
 
   it('finds the nearest snapshot 7–10 days back', () => {

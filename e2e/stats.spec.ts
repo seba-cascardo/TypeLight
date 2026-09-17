@@ -8,7 +8,14 @@ function at(offset: number): string {
   return d.toISOString()
 }
 
+/** Local calendar day of an ISO timestamp, as yyyy-mm-dd (mirrors `dayKey` on the engine side). */
+const localDay = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 test('progreso: reference speed comes from Retos only; v1 state migrates', async ({ page }) => {
+  const today = at(0)
   await page.goto('/')
   await page.evaluate(
     ([eightDaysAgo, yesterday, today]) => {
@@ -28,7 +35,7 @@ test('progreso: reference speed comes from Retos only; v1 state migrates', async
         }),
       )
     },
-    [at(-8), at(-1), at(0)],
+    [at(-8), at(-1), today],
   )
   await page.goto('/estadisticas')
   await expect(page.getByRole('heading', { name: 'Cómo vas avanzando.' })).toBeVisible()
@@ -45,10 +52,11 @@ test('progreso: reference speed comes from Retos only; v1 state migrates', async
   await expect(page.getByText('Velocidad de referencia')).toBeVisible()
   await expect(page.getByText('30', { exact: false }).first()).toBeVisible()
 
-  // v1 → v2: Retos became reference sessions and the store gained `days`
+  // v1 → v3: Retos became reference sessions and the store gained `days`, with per-day reference speeds backfilled
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
-  expect(stored.version).toBe(2)
+  expect(stored.version).toBe(3)
   expect(stored.state.sessions.filter((x: { reference?: true }) => x.reference).length).toBe(3)
   expect(stored.state.days).toBeDefined()
+  expect(stored.state.days[localDay(today)].reference).toEqual([30])
   await page.screenshot({ path: 'e2e/screens/stats-reference.png', fullPage: true })
 })
