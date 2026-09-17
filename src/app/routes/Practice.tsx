@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router'
 import { warmupGame } from '@/engine/curriculum'
 import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
 import { starsForGame, type GameResult } from '@/engine/games'
-import { dayKey, dayOfYear, median, monthKey, newRollover, referenceByDay, rolloverRatio, weakestKeys } from '@/engine/stats'
+import { dayKey, dayOfYear, keyReason, median, monthKey, newRollover, records, referenceByDay, rolloverRatio, weakestKeys } from '@/engine/stats'
 import { keySamples, metrics, repairMetrics, rhythm, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
 import { FormCheck } from '../components/FormCheck'
 import { Game } from '../components/games/Game'
@@ -176,6 +176,8 @@ interface Result {
   repair: RepairMetrics | null
   /** Timestamp of the recorded session, for the form self-check. */
   at: string | null
+  /** Faster than every reference session before it. */
+  record: boolean
 }
 
 function PracticeRun({ kind }: { kind: Kind }) {
@@ -246,9 +248,12 @@ function PracticeRun({ kind }: { kind: Kind }) {
       const repair = repairMetrics(state)
       if (kind === 'antes') {
         setLegacy({ wpm: m.wpm, acc: m.accuracy, at: new Date().toISOString() })
-        setResult({ m, repair, at: null })
+        setResult({ m, repair, at: null, record: false })
         return
       }
+      // A personal best is judged against everything recorded before this session.
+      const previousBest = meta.reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
+      const record = m.wpm > previousBest
       const at = recordSession(
         {
           kind: meta.session!,
@@ -267,7 +272,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       )
       markRoutine(meta.block!)
       if (kind === 'examen') setLastExamDay(dayKey())
-      setResult({ m, repair, at })
+      setResult({ m, repair, at, record })
     },
     [kind, meta, recordSession, markRoutine, setLegacy, setLastExamDay],
   )
@@ -293,13 +298,22 @@ function PracticeRun({ kind }: { kind: Kind }) {
           <p className="mt-1 text-ink-soft">{meta.blurb}</p>
         </div>
         {kind === 'repaso' && weak.length > 0 && (
-          <div className="flex items-center gap-2 text-sm font-bold text-ink-soft">
-            Hoy insistimos con
-            {weak.map((k) => (
-              <span key={k} className="keycap keycap-secondary keycap-sm">
-                {k}
-              </span>
-            ))}
+          <div className="text-sm font-bold text-ink-soft" data-testid="why-today">
+            <div className="flex items-center gap-2">
+              Hoy insistimos con
+              {weak.map((k) => (
+                <span key={k} className="keycap keycap-secondary keycap-sm">
+                  {k}
+                </span>
+              ))}
+            </div>
+            <ul className="mt-1.5 grid gap-0.5 text-xs font-semibold text-ink-mute">
+              {weak.map((k) => (
+                <li key={k}>
+                  <span className="font-extrabold text-ink">{k}</span> · {keyReason(keyStats[k], dayKey())}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
         {remaining !== null && (
@@ -312,6 +326,11 @@ function PracticeRun({ kind }: { kind: Kind }) {
       {result && r ? (
         <div className="card animate-rise p-8 text-center">
           <div className="eyebrow mb-3">{meta.title} · listo</div>
+          {result.record && (
+            <div className="animate-pop mb-4 inline-flex items-center gap-2 rounded-full bg-sun px-4 py-1.5 font-display text-lg font-extrabold text-ink" data-testid="record-chip">
+              ★ Récord personal
+            </div>
+          )}
           <div className="mx-auto flex max-w-2xl flex-wrap justify-around gap-x-6 gap-y-4">
             <Stat label="Velocidad" value={r.wpm} unit="PPM" tone={r.wpm >= goalWpm ? 'enter' : 'ink'} />
             <Stat

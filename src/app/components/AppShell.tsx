@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router'
 import { useStore } from '../store'
-import { dayKey, streakAlive } from '@/engine/stats'
+import { dayKey, streakAlive, streakAtRisk } from '@/engine/stats'
 import { Flame } from './ui'
 import { useDaySnapshot } from '../hooks/useDaySnapshot'
 
@@ -15,6 +15,7 @@ export function AppShell() {
   useDaySnapshot()
   const streak = useStore((s) => s.streak)
   const alive = streakAlive(streak, dayKey())
+  const atRisk = streakAtRisk(streak, dayKey())
   return (
     <div className="min-h-dvh px-4 pb-16 md:px-8">
       <nav className="mx-auto flex max-w-[86rem] flex-wrap items-center justify-between gap-3 py-4 md:py-5">
@@ -38,7 +39,7 @@ export function AppShell() {
             </NavLink>
           ))}
         </div>
-        <Flame count={alive ? streak.count : 0} alive={alive} />
+        <Flame count={alive ? streak.count : 0} alive={alive} freezes={streak.freezes} atRisk={atRisk} />
       </nav>
       <main className="mx-auto max-w-[86rem]">
         <Outlet />

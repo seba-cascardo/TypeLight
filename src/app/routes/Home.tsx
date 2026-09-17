@@ -1,14 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { warmupGame, wordsReady, type GameId } from '@/engine/curriculum'
-import { dayKey, dayOfYear, examDue, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
+import {
+  dayKey,
+  dayOfYear,
+  examDue,
+  legacyBeaten,
+  median,
+  milestoneReached,
+  monthSummary,
+  records,
+  referenceByDay,
+  referenceHeadline,
+  streakAlive,
+  streakGap,
+  weekActiveDays,
+  weeklyAccuracy,
+  weeklySummary,
+} from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
+import { MascotLine } from '../components/home/MascotLine'
+import { MilestoneCard } from '../components/home/MilestoneCard'
+import { WeeklySummaryCard } from '../components/home/WeeklySummaryCard'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useRoutine, useStore, type RoutineBlock } from '../store'
 import { unitAccentClass } from '../lib/accents'
 import { backupDue } from '../lib/backup'
+import { mascotLine, returnLine, type MascotContext } from '../lib/mascot'
 
 type Block = { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral' | 'lav' | 'mint'; to: string }
 
@@ -95,15 +115,41 @@ export function Home() {
   const lastExamDay = useStore((s) => s.lastExamDay)
   const anchor = useStore((s) => s.settings.anchor)
   const conversoSeen = useStore((s) => s.settings.conversoSeen)
+  const weeklyGoal = useStore((s) => s.settings.weeklyGoal)
+  const mascotOn = useStore((s) => s.settings.mascot)
+  const milestonesSeen = useStore((s) => s.milestonesSeen)
+  const markMilestoneSeen = useStore((s) => s.markMilestoneSeen)
+  const lastWeeklySummaryWeek = useStore((s) => s.lastWeeklySummaryWeek)
+  const setLastWeeklySummaryWeek = useStore((s) => s.setLastWeeklySummaryWeek)
   const routine = useRoutine()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const { curriculum, next, completed, learned } = useProgress()
   const game = warmupGame(dayOfYear(), learned)
   const blocks = BLOCKS.map((b) => (b.id === 'challenge' && examToday ? EXAM_BLOCK : b.id === 'warmup' && game ? GAME_BLOCK[game] : b))
 
+  const today = dayKey()
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const activeDays = Object.values(days).filter((d) => d.seconds > 0).length
-  const alive = streakAlive(streak, dayKey())
+  const alive = streakAlive(streak, today)
+  const weekDays = weekActiveDays(days, today)
+  const summary = weeklySummary(days, sessions, today, weeklyGoal)
+  const showSummary = summary !== null && summary.week !== lastWeeklySummaryWeek
+  const milestone = milestoneReached(streak.activeDays, milestonesSeen)
+  const best = records(days, sessions)
+  const mascotCtx: MascotContext = {
+    recordToday: best.bestReference?.day === today && (days[today]?.reference.length ?? 0) > 0,
+    milestone,
+    gap: streakGap(streak, today),
+    alive,
+    freezes: streak.freezes,
+    streak: alive ? streak.count : 0,
+    activeDays: streak.activeDays,
+    routineDone: doneCount === 4,
+    examDue: examToday,
+    game,
+  }
+  const line = mascotLine(mascotCtx)
+  const back = returnLine(mascotCtx)
   const points = referenceByDay(days)
   const reference = referenceHeadline(points)
   const recentMedian = points.length ? median(points.slice(-7).map((p) => p.wpm)) : null
@@ -122,20 +168,39 @@ export function Home() {
       <header className="mb-8">
         <div className="eyebrow mb-2">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1 className="text-4xl md:text-5xl">{greeting(name)}</h1>
-        <p className="mt-2 text-lg text-ink-soft">
-          {doneCount === 4
-            ? 'Rutina completa. Lo que sigue es regalo.'
-            : doneCount === 0
-              ? 'Cuatro teclas para hoy. Diez minutos, no más.'
-              : `${doneCount} de 4. Seguimos.`}
-        </p>
-        {anchor && (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-ink-soft" data-testid="anchor">
-            <span className="inline-block h-2 w-2 rounded-full bg-enter" aria-hidden="true" />
-            {anchorSentence(anchor)}
+        {mascotOn ? (
+          <MascotLine mood={line.mood} text={line.text} />
+        ) : (
+          <p className="mt-2 text-lg text-ink-soft">
+            {doneCount === 4
+              ? 'Rutina completa. Lo que sigue es regalo.'
+              : doneCount === 0
+                ? 'Cuatro teclas para hoy. Diez minutos, no más.'
+                : `${doneCount} de 4. Seguimos.`}
           </p>
         )}
+        {!mascotOn && back && (
+          <p className="mt-2 text-sm font-bold text-ink-soft" data-testid="return-line">
+            {back}
+          </p>
+        )}
+        <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-bold text-ink-soft">
+          {anchor && (
+            <span className="inline-flex items-center gap-2" data-testid="anchor">
+              <span className="inline-block h-2 w-2 rounded-full bg-enter" aria-hidden="true" />
+              {anchorSentence(anchor)}
+            </span>
+          )}
+          <span className={`inline-flex items-center gap-2 ${weekDays >= weeklyGoal ? 'text-enter-edge' : ''}`} data-testid="week-goal">
+            <span className={`inline-block h-2 w-2 rounded-full ${weekDays >= weeklyGoal ? 'bg-enter' : 'bg-line'}`} aria-hidden="true" />
+            Esta semana: {weekDays} de {weeklyGoal} días
+          </span>
+        </div>
       </header>
+
+      {milestone !== null && <MilestoneCard milestone={milestone} month={milestone === 30 ? monthSummary(days, today) : null} onClose={() => markMilestoneSeen(milestone)} />}
+
+      {showSummary && summary && <WeeklySummaryCard summary={summary} goal={weeklyGoal} onClose={() => setLastWeeklySummaryWeek(summary.week)} />}
 
       {!conversoSeen && <ConversoCard />}
 

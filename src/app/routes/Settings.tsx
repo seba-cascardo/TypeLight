@@ -166,6 +166,18 @@ export function Settings() {
           </label>
           <Toggle checked={settings.sound} onChange={(v) => setSettings({ sound: v })} label="Sonido" hint="Un clic suave por tecla y un golpe seco por error." />
           <Toggle checked={settings.showHands} onChange={(v) => setSettings({ showHands: v })} label="Manos guía" hint="Las manos debajo del teclado, con el dedo que toca." />
+          <Toggle checked={settings.mascot} onChange={(v) => setSettings({ mascot: v })} label="Mascota en Inicio" hint="Una línea al lado del saludo: qué toca hoy, nunca un reproche." />
+          <div className="rounded-xl bg-paper px-4 py-3" data-testid="weekly-goal">
+            <span className="block font-bold">Meta semanal</span>
+            <span className="block text-sm text-ink-soft">Días con práctica por semana. Va aparte de la racha: la racha perdona un día, la meta es tu número.</span>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[3, 4, 5, 6, 7].map((n) => (
+                <Keycap key={n} size="sm" variant={settings.weeklyGoal === n ? 'secondary' : 'ghost'} onClick={() => setSettings({ weeklyGoal: n })}>
+                  {n}
+                </Keycap>
+              ))}
+            </div>
+          </div>
           <div className="rounded-xl bg-paper px-4 py-3">
             <span className="block font-bold">Tema</span>
             <span className="block text-sm text-ink-soft">"Automático" sigue al sistema: papel de día, noche de teclado cuando oscurece.</span>

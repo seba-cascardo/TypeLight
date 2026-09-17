@@ -45,13 +45,16 @@ export function PageTitle({ eyebrow, title, children }: { eyebrow?: string; titl
   )
 }
 
-export function Flame({ count, alive }: { count: number; alive: boolean }) {
+export function Flame({ count, alive, freezes = 0, atRisk = false }: { count: number; alive: boolean; freezes?: number; atRisk?: boolean }) {
+  const title = `${count} ${count === 1 ? 'día seguido' : 'días seguidos'} · ${freezes} ${freezes === 1 ? 'comodín' : 'comodines'}${atRisk ? ' · hoy la salvás' : ''}`
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-extrabold ${
-        alive ? 'border-esc-edge bg-esc-soft text-esc-edge' : 'border-line bg-keycap text-ink-mute'
+        alive ? (atRisk ? 'border-sun-edge bg-sun-soft text-ink' : 'border-esc-edge bg-esc-soft text-esc-edge') : 'border-line bg-keycap text-ink-mute'
       }`}
-      title="Días seguidos practicando"
+      title={title}
+      data-testid="flame"
+      data-freezes={freezes}
     >
       <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true">
         <path

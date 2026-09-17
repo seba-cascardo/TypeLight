@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import {
+  activeWeeks,
   calendar,
   constancy,
   dayKey,
@@ -11,9 +12,11 @@ import {
   referenceHeadline,
   fluidity,
   formHeadline,
+  records,
   snapshotBefore,
   streakAlive,
   unitMarks,
+  weekActiveDays,
   weaknessScore,
   weeklyAccuracy,
 } from '@/engine/stats'
@@ -68,6 +71,7 @@ export function Stats() {
   const streak = useStore((s) => s.streak)
   const legacy = useStore((s) => s.legacy)
   const blindSince = useStore((s) => s.blindSince)
+  const weeklyGoal = useStore((s) => s.settings.weeklyGoal)
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
 
@@ -88,6 +92,9 @@ export function Stats() {
   const cons = constancy(days, today)
   const fluid = fluidity(sessions, today)
   const form = formHeadline(sessions)
+  const best = useMemo(() => records(days, sessions), [days, sessions])
+  const weekDays = weekActiveDays(days, today)
+  const weeksMet = activeWeeks(days, weeklyGoal)
   const alive = streakAlive(streak, today)
 
   const heat = useMemo(() => {
@@ -149,7 +156,13 @@ export function Stats() {
           note={weekAgo ? `${signed(counts.mastered - weekAgo.mastered)} esta semana` : 'aprendidas hasta hoy'}
           up={weekAgo !== null && counts.mastered > weekAgo.mastered}
         />
-        <Tile id="constancy" label="Constancia" value={cons.fullOfLast7} unit="de 7 días" note={`racha de ${alive ? streak.count : 0} · ${cons.minutesPerDay} min por día`} />
+        <Tile
+          id="constancy"
+          label="Constancia"
+          value={cons.fullOfLast7}
+          unit="de 7 días"
+          note={`racha ${alive ? streak.count : 0} · mejor ${streak.best} · ${streak.activeDays} ${streak.activeDays === 1 ? 'día activo' : 'días activos'}`}
+        />
         <Tile
           id="form"
           label="Forma"
@@ -229,6 +242,22 @@ export function Stats() {
             <span>Rutina completa {cons.fullOfLast7} de los últimos 7 días</span>
             <span>{cons.totalMinutes} min en total</span>
           </div>
+          <div className="mt-4" data-testid="week-progress">
+            <div className="mb-1.5 flex justify-between text-sm">
+              <span>
+                <span className="font-bold">Esta semana</span> <span className="text-ink-soft">· meta de {weeklyGoal} días</span>
+              </span>
+              <span className="font-bold tabular-nums">
+                {weekDays} de {weeklyGoal}
+              </span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
+              <div className={`h-full rounded-full transition-all ${weekDays >= weeklyGoal ? 'bg-enter' : 'bg-sun'}`} style={{ width: `${Math.min(100, (weekDays / weeklyGoal) * 100)}%` }} />
+            </div>
+            <p className="mt-1.5 text-xs text-ink-mute">
+              {weeksMet} {weeksMet === 1 ? 'semana' : 'semanas'} con la meta cumplida · {streak.freezes} {streak.freezes === 1 ? 'comodín' : 'comodines'} de racha (uno cada 5 días activos, máximo 2; un día perdido siempre se perdona).
+            </p>
+          </div>
           <div className="mt-5" data-testid="fluidity">
             <div className="mb-1.5 flex justify-between text-sm">
               <span>
@@ -245,6 +274,47 @@ export function Stats() {
                 : 'Aparece con ejercicios de veinte teclas o más en los últimos 7 días.'}
             </p>
           </div>
+        </Card>
+
+        <Card title="Récords" sub="Solo sobre medidas que un drill fácil no infla: el mejor Reto, la mejor mediana de 7 días, la mejor semana de precisión (500 caracteres o más) y la racha de rutinas completas.">
+          {!best.bestReference && !best.bestWeeklyAcc && !best.bestRoutineRun ? (
+            <p className="text-ink-soft">Todavía sin récords: el primer Reto pone el primero.</p>
+          ) : (
+            <ul className="grid gap-2" data-testid="records">
+              {best.bestReference && (
+                <li className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
+                  <span className="font-bold">Mejor Reto</span>
+                  <span className="text-sm text-ink-soft">
+                    <span className="font-display text-lg font-extrabold text-ink">{best.bestReference.wpm}</span> PPM · {best.bestReference.day.slice(5).split('-').reverse().join('/')}
+                  </span>
+                </li>
+              )}
+              {best.bestMedian7 && (
+                <li className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
+                  <span className="font-bold">Mejor mediana de 7 días</span>
+                  <span className="text-sm text-ink-soft">
+                    <span className="font-display text-lg font-extrabold text-ink">{best.bestMedian7.wpm}</span> PPM · {best.bestMedian7.day.slice(5).split('-').reverse().join('/')}
+                  </span>
+                </li>
+              )}
+              {best.bestWeeklyAcc && (
+                <li className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
+                  <span className="font-bold">Mejor semana de precisión</span>
+                  <span className="text-sm text-ink-soft">
+                    <span className="font-display text-lg font-extrabold text-ink">{(best.bestWeeklyAcc.acc * 100).toFixed(1).replace('.', ',')} %</span> · semana del {best.bestWeeklyAcc.week.slice(5).split('-').reverse().join('/')}
+                  </span>
+                </li>
+              )}
+              {best.bestRoutineRun && (
+                <li className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
+                  <span className="font-bold">Rutina completa seguida</span>
+                  <span className="text-sm text-ink-soft">
+                    <span className="font-display text-lg font-extrabold text-ink">{best.bestRoutineRun.days}</span> {best.bestRoutineRun.days === 1 ? 'día' : 'días'}
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
         </Card>
 
         <Card title="Teclas que piden práctica" sub="El Repaso diario usa exactamente estas.">
