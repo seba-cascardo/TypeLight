@@ -83,4 +83,21 @@ describe('generators', () => {
     expect(only(fj, 'fj ')).toBe(true)
     expect(fj.length).toBeGreaterThanOrEqual(420)
   })
+
+  it('challengeText tops up with words when the sentences that fit fall short of minChars', () => {
+    const full = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    const t = challengeText(full, { minChars: 1200, rng: makeRng(14) })
+    expect(t.length).toBeGreaterThanOrEqual(1200)
+    // the twelve distinct sentences (~750 chars) came first…
+    expect((t.match(/[.?!]/g) ?? []).length).toBeGreaterThanOrEqual(12)
+    // …and word runs filled the rest: the last chunk is not a sentence
+    expect(/[.?!]$/.test(t)).toBe(false)
+  })
+
+  it('challengeText never returns fewer than minChars when sentences suffice', () => {
+    const full = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    for (let seed = 0; seed < 25; seed++) {
+      for (const min of [100, 200, 300, 420]) expect(challengeText(full, { minChars: min, rng: makeRng(seed) }).length).toBeGreaterThanOrEqual(min)
+    }
+  })
 })

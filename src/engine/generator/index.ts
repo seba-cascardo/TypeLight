@@ -214,17 +214,16 @@ export function challengeText(pool: ReadonlySet<string>, opts: GenOpts & { minCh
   const min = opts.minChars ?? 420
   const out: string[] = []
   let total = 0
+  const push = (chunk: string) => {
+    total += (out.length ? 1 : 0) + chunk.length
+    out.push(chunk)
+  }
   for (const s of pickSentences(pool, 12, { rng })) {
     if (total >= min) break
-    out.push(s)
-    total += s.length + 1
+    push(s)
   }
   let guard = 0
-  while (total < min && guard++ < 12) {
-    const w = wordsText(pool, 20, { rng })
-    out.push(w)
-    total += w.length + 1
-  }
+  while (total < min && guard++ < 12) push(wordsText(pool, 20, { rng }))
   return out.join(' ')
 }
 
