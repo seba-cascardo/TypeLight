@@ -14,5 +14,6 @@ export function gameSession(r: GameResult): Omit<SessionRecord, 'at'> {
     ...(r.gameId === 'race' && { reference: true as const }),
     ...(r.gameId === 'rhythm' && { rhythm: r.detail.onTime }),
     ...(r.typing?.rhythm !== undefined && { rhythm: r.typing.rhythm }),
+    ...(r.typing?.rollover !== undefined && { rollover: r.typing.rollover }),
   }
 }

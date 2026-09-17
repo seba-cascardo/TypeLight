@@ -18,7 +18,7 @@ export interface GameResult {
   accuracy: number
   detail: Record<string, number>
   /** Games played through the typing engine (Carrera) also report what a lesson would. */
-  typing?: { wpm: number; rhythm?: number; samples: KeySample[] }
+  typing?: { wpm: number; rhythm?: number; rollover?: number; samples: KeySample[] }
 }
 
 export function starsForGame(r: GameResult): Stars {

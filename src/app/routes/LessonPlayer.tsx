@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
 import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
-import { dayKey, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
+import { dayKey, newRollover, rolloverRatio, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
@@ -88,7 +88,7 @@ function Player({ lesson }: { lesson: Lesson }) {
   )
 
   const onExerciseFinish = useCallback(
-    (state: TypingState) => {
+    (state: TypingState, rollover?: number) => {
       const m = metrics(state)
       if (m.chars === 0) return
       const samples = keySamples(state)
@@ -102,6 +102,7 @@ function Player({ lesson }: { lesson: Lesson }) {
           errors: m.errors,
           seconds: m.seconds,
           rhythm: rhythm(state),
+          rollover,
           ...(lesson.kind === 'text' && { reference: true as const }),
         },
         samples.values(),
@@ -367,7 +368,8 @@ function Player({ lesson }: { lesson: Lesson }) {
 interface ExerciseProps {
   text: string
   sound: boolean
-  onFinish: (state: TypingState) => void
+  /** `rollover` is the share of overlapping keystrokes, when there were enough presses to mean anything. */
+  onFinish: (state: TypingState, rollover?: number) => void
   done: boolean
   onNext?: () => void
   showHands: boolean
@@ -377,13 +379,15 @@ interface ExerciseProps {
 export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm }: ExerciseProps) {
   const { layout } = useProgress()
   const keyStats = useStore((s) => s.keys)
-  const session = useTypingSession(text, { sound, onFinish })
+  const rollover = useRef(newRollover())
+  const finish = useCallback((state: TypingState) => onFinish(state, rolloverRatio(rollover.current)), [onFinish])
+  const session = useTypingSession(text, { sound, onFinish: finish })
   const nextChar = session.finished ? null : session.state.target[session.state.pos]
   const m = session.live
   return (
     <div className="grid gap-4">
       <div className="card relative p-6 md:p-8">
-        <TypingArea state={session.state} onInput={session.input} onRestart={() => session.restart()} />
+        <TypingArea state={session.state} onInput={session.input} onRestart={() => session.restart()} rollover={rollover} />
         {done && (
           <div className="animate-pop mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-enter-soft px-4 py-3">
             <span className="font-bold text-enter-edge">

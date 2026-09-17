@@ -10,6 +10,7 @@ export interface SessionLike {
   seconds: number
   reference?: true
   rhythm?: number
+  rollover?: number
 }
 
 /** `day` ± n calendar days, as yyyy-mm-dd. */
@@ -218,16 +219,17 @@ export function constancy(days: Days, today: string): Constancy {
   return { fullOfLast7: full, minutesPerDay: active ? Math.round(seconds7 / active / 60) : 0, totalMinutes: Math.round(total / 60) }
 }
 
-/** Mean rhythm of the last 10 sessions that have one, weighted by chars, vs. the 10 before them. */
-export function rhythmHeadline(sessions: SessionLike[]): { value: number; delta: number | null } | null {
-  const withRhythm = sessions.filter((s): s is SessionLike & { rhythm: number } => typeof s.rhythm === 'number')
-  if (withRhythm.length === 0) return null
-  const mean = (list: (SessionLike & { rhythm: number })[]) => {
-    const weight = list.reduce((a, s) => a + Math.max(1, s.chars), 0)
-    return list.reduce((a, s) => a + s.rhythm * Math.max(1, s.chars), 0) / weight
+/** Rollover share over the last 7 days, weighted by chars; null without a session that measured it. */
+export function fluidity(sessions: SessionLike[], today: string): number | null {
+  let weight = 0
+  let sum = 0
+  for (const s of sessions) {
+    if (typeof s.rollover !== 'number') continue
+    const gap = daysBetween(sessionDay(s), today)
+    if (gap < 0 || gap > 6) continue
+    const w = Math.max(1, s.chars)
+    weight += w
+    sum += s.rollover * w
   }
-  const recent = withRhythm.slice(-10)
-  const before = withRhythm.slice(-20, -10)
-  const value = mean(recent)
-  return { value, delta: before.length ? value - mean(before) : null }
+  return weight === 0 ? null : sum / weight
 }

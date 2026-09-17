@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRng, poolOf } from '@/engine/generator'
 import { ghostPos, raceOutcome, raceText } from '@/engine/games'
+import { newRollover, rolloverRatio } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { TypingArea } from '../TypingArea'
 import { useTypingSession } from '../../hooks/useTypingSession'
@@ -21,6 +22,7 @@ export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFi
   const missStreak = useRef(0)
   const seen = useRef(0)
   const finished = useRef(false)
+  const rollover = useRef(newRollover())
 
   const handleFinish = useCallback(
     (state: TypingState) => {
@@ -38,7 +40,7 @@ export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFi
         seconds: m.seconds,
         accuracy: m.accuracy,
         detail: { won: outcome.won ? 1 : 0, marginSeconds: outcome.marginSeconds, wpm: m.wpm, ghostWpm },
-        typing: { wpm: m.wpm, rhythm: rhythm(state), samples: [...keySamples(state).values()] },
+        typing: { wpm: m.wpm, rhythm: rhythm(state), rollover: rolloverRatio(rollover.current), samples: [...keySamples(state).values()] },
       })
     },
     [ghostWpm, length, onFinish],
@@ -131,7 +133,7 @@ export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFi
         </p>
 
         <div className="absolute right-6 bottom-6 left-6 rounded-2xl bg-keycap/80 p-5">
-          <TypingArea state={state} onInput={session.input} onRestart={() => session.restart()} />
+          <TypingArea state={state} onInput={session.input} onRestart={() => session.restart()} rollover={rollover} />
         </div>
 
         <div className="absolute top-[56%] right-6">

@@ -8,7 +8,7 @@ import {
   masteryMap,
   referenceByDay,
   referenceHeadline,
-  rhythmHeadline,
+  fluidity,
   snapshotBefore,
   streakAlive,
   unitMarks,
@@ -76,7 +76,7 @@ export function Stats() {
   const weekAgo = snapshotBefore(days, today)
   const cells = calendar(days, today)
   const cons = constancy(days, today)
-  const rhythm = rhythmHeadline(sessions)
+  const fluid = fluidity(sessions, today)
   const alive = streakAlive(streak, today)
 
   const heat = useMemo(() => {
@@ -197,22 +197,20 @@ export function Stats() {
             <span>Rutina completa {cons.fullOfLast7} de los últimos 7 días</span>
             <span>{cons.totalMinutes} min en total</span>
           </div>
-          <div className="mt-5">
+          <div className="mt-5" data-testid="fluidity">
             <div className="mb-1.5 flex justify-between text-sm">
               <span>
-                <span className="font-bold">Ritmo parejo</span> <span className="text-ink-soft">· cuánto varía el tiempo entre teclas</span>
+                <span className="font-bold">Fluidez</span> <span className="text-ink-soft">· qué fracción de teclas empezás antes de soltar la anterior</span>
               </span>
-              <span className="font-bold tabular-nums">{rhythm ? pct(rhythm.value) : '—'}</span>
+              <span className="font-bold tabular-nums">{fluid !== null ? pct(fluid) : '—'}</span>
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-paper-deep">
-              <div className="h-full rounded-full bg-mod transition-all" style={{ width: `${rhythm ? rhythm.value * 100 : 0}%` }} />
+              <div className="h-full rounded-full bg-mod transition-all" style={{ width: `${fluid !== null ? fluid * 100 : 0}%` }} />
             </div>
             <p className="mt-1.5 text-xs text-ink-mute">
-              {rhythm
-                ? rhythm.delta === null
-                  ? 'Sube con ejercicios largos y, más adelante, jugando Al compás.'
-                  : `Antes: ${pct(rhythm.value - rhythm.delta)}. Sube jugando Al compás.`
-                : 'Aparece con ejercicios de más de ocho teclas.'}
+              {fluid !== null
+                ? 'Últimos 7 días. Sube sola cuando la mano ya prepara la tecla siguiente: es el mejor predictor de velocidad que se conoce.'
+                : 'Aparece con ejercicios de veinte teclas o más en los últimos 7 días.'}
             </p>
           </div>
         </Card>

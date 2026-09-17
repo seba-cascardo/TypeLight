@@ -12,7 +12,7 @@ import {
   movingAverage,
   referenceByDay,
   referenceHeadline,
-  rhythmHeadline,
+  fluidity,
   shiftDay,
   snapshotBefore,
   unitMarks,
@@ -186,14 +186,16 @@ describe('snapshots, calendar, constancy', () => {
   })
 })
 
-describe('rhythm headline', () => {
-  it('weights the last 10 sessions with rhythm by chars and compares with the 10 before', () => {
-    const before = Array.from({ length: 10 }, (_, i) => session(`2026-09-0${(i % 9) + 1}`, 10, { rhythm: 0.5, chars: 100 }))
-    const recent = Array.from({ length: 10 }, (_, i) => session(`2026-09-1${i % 6}`, 10, { rhythm: i < 5 ? 0.6 : 0.8, chars: i < 5 ? 100 : 300 }))
-    const r = rhythmHeadline([...before, session('2026-09-16', 10), ...recent])
-    expect(r?.value).toBeCloseTo((5 * 0.6 * 100 + 5 * 0.8 * 300) / 2000)
-    expect(r?.delta).toBeCloseTo(r!.value - 0.5)
-    expect(rhythmHeadline([session('2026-09-16', 10)])).toBeNull()
-    expect(rhythmHeadline([session('2026-09-16', 10, { rhythm: 0.7 })])).toEqual({ value: 0.7, delta: null })
+describe('fluidity', () => {
+  it('is the chars-weighted rollover of the last 7 days, or null without one', () => {
+    const list = [
+      session('2026-09-01', 10, { rollover: 0.9, chars: 500 }), // too old
+      session('2026-09-12', 10, { rollover: 0.2, chars: 100 }),
+      session('2026-09-16', 10, { rollover: 0.5, chars: 300 }),
+      session('2026-09-16', 10), // no rollover: ignored
+    ]
+    expect(fluidity(list, '2026-09-16')).toBeCloseTo((0.2 * 100 + 0.5 * 300) / 400)
+    expect(fluidity([session('2026-09-16', 10)], '2026-09-16')).toBeNull()
+    expect(fluidity(list, '2026-09-30')).toBeNull()
   })
 })
