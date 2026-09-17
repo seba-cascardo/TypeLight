@@ -165,4 +165,10 @@ describe('generators', () => {
     const t = ngramText(poolOf('fj'), 2, { rng: makeRng(24) })
     expect(only(t, 'fj ')).toBe(true)
   })
+
+  it('ngramText stays total for degenerate options', () => {
+    const pool = poolOf('abcdefghijklmnopqrstuvwxyzñ')
+    expect(ngramText(pool, 2, { combination: 0, tokens: 6, rng: makeRng(31) }).split(' ')).toHaveLength(6)
+    expect(ngramText(pool, 2, { tokens: 0, rng: makeRng(32) })).toBe('')
+  })
 })

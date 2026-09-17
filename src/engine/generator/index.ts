@@ -305,12 +305,14 @@ export function ngramText(
   const fits = (n === 2 ? BIGRAMS : TRIGRAMS).filter(([g]) => usesOnly(g, pool))
   if (fits.length < 6) return wordsText(pool, tokens, { rng })
   const weights = fits.map(([g, w]) => w * ([...g].some((c) => weak.has(c)) ? 3 : 1))
+  const want = Math.min(Math.max(1, combination), fits.length)
   const chosen: string[] = []
   let guard = 0
-  while (chosen.length < Math.min(combination, fits.length) && guard++ < 200) {
+  while (chosen.length < want && guard++ < 200) {
     const g = fits[weightedIndex(weights, rng)][0]
     if (!chosen.includes(g)) chosen.push(g)
   }
+  if (chosen.length === 0) return wordsText(pool, tokens, { rng })
   const words = candidateWords(pool, 1500).filter((w) => chosen.some((g) => w.includes(g)))
   const out: string[] = []
   while (out.length < tokens) {
