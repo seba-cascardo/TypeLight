@@ -81,7 +81,7 @@ test('the Reto has no keyboard, lets an error pass and repairs it with Backspace
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL('http://localhost:5174/')
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
-  expect(stored.version).toBe(5)
+  expect(stored.version).toBe(6)
   const s = stored.state.sessions[0]
   expect(s.kind).toBe('challenge')
   expect(s.mode).toBe('free')

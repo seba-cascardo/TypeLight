@@ -92,6 +92,25 @@ describe('store', () => {
     expect(useStore.getState().lastWeeklySummaryWeek).toBeNull()
   })
 
+  it('recordSession folds bigram, word and dead-key samples, and the dead-key stats travel with the session', () => {
+    useStore.getState().recordSession(
+      { kind: 'challenge', wpm: 30, acc: 0.95, chars: 150, errors: 5, seconds: 60, dead: { n: 2, latency: 400, missed: 1, loose: 0 } },
+      [{ char: 'f', latencies: [300], errors: 0, occurrences: 1 }],
+      { bigrams: [{ bigram: 'ca', latencies: [300], errors: 0 }], words: [{ word: 'casa', latency: 300, errors: 0 }] },
+    )
+    const s = useStore.getState()
+    expect(s.bigrams.ca.samples).toBe(1)
+    expect(s.words.casa.samples).toBe(1)
+    expect(s.sessions[0].dead).toEqual({ n: 2, latency: 400, missed: 1, loose: 0 })
+  })
+
+  it('resetProgress clears the bigram and word tables', () => {
+    useStore.setState({ bigrams: { ca: { latencyEma: 300, errorEma: 0, samples: 5 } }, words: { casa: { latencyEma: 300, errorEma: 0, samples: 2, lastSeen: 'x' } } })
+    useStore.getState().resetProgress()
+    expect(useStore.getState().bigrams).toEqual({})
+    expect(useStore.getState().words).toEqual({})
+  })
+
   it('resetProgress clears the exam day and the blind mark', () => {
     useStore.setState({ lastExamDay: '2026-09-14', blindSince: '2026-09-10' })
     useStore.getState().resetProgress()

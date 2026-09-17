@@ -15,6 +15,8 @@ const state: PersistedState = {
   blindSince: '2026-09-17',
   lastWeeklySummaryWeek: null,
   milestonesSeen: [],
+  bigrams: {},
+  words: {},
 }
 
 describe('backup', () => {
@@ -49,10 +51,12 @@ describe('backup', () => {
   })
 
   it('rejects a state with a malformed blind mark, streak or milestone list', () => {
-    const bad = (patch: Record<string, unknown>) => JSON.stringify({ app: 'typelight', version: 5, exportedAt: 'x', state: { ...state, ...patch } })
+    const bad = (patch: Record<string, unknown>) => JSON.stringify({ app: 'typelight', version: 6, exportedAt: 'x', state: { ...state, ...patch } })
     expect(parseBackup(bad({ blindSince: 3 })).ok).toBe(false)
     expect(parseBackup(bad({ streak: { count: 1, lastDay: null } })).ok).toBe(false)
     expect(parseBackup(bad({ milestonesSeen: 'x' })).ok).toBe(false)
+    expect(parseBackup(bad({ bigrams: [] })).ok).toBe(false)
+    expect(parseBackup(bad({ words: null })).ok).toBe(false)
   })
 
   it('rejects things that are not a TypeLight backup', () => {
@@ -62,7 +66,7 @@ describe('backup', () => {
   })
 
   it('rejects a malformed state instead of crashing on import', () => {
-    const withDays = (days: unknown) => JSON.stringify({ app: 'typelight', version: 5, exportedAt: 'x', state: { ...state, days } })
+    const withDays = (days: unknown) => JSON.stringify({ app: 'typelight', version: 6, exportedAt: 'x', state: { ...state, days } })
 
     // A `days` map that isn't an object at all.
     expect(parseBackup(withDays(null)).ok).toBe(false)
@@ -80,12 +84,12 @@ describe('backup', () => {
     expect(parseBackup(v2).ok).toBe(false)
 
     // A layout that doesn't exist.
-    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 5, exportedAt: 'x', state: { ...state, settings: { ...state.settings, layoutId: 'dvorak' } } })).ok).toBe(false)
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 6, exportedAt: 'x', state: { ...state, settings: { ...state.settings, layoutId: 'dvorak' } } })).ok).toBe(false)
 
     // Missing a required top-level key entirely.
     const withoutLegacy: Record<string, unknown> = { ...state }
     delete withoutLegacy.legacy
-    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 5, exportedAt: 'x', state: withoutLegacy })).ok).toBe(false)
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 6, exportedAt: 'x', state: withoutLegacy })).ok).toBe(false)
   })
 
   it('names the file by local day', () => {

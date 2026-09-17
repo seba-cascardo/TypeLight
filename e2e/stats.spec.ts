@@ -54,7 +54,7 @@ test('progreso: reference speed comes from Retos only; v1 state migrates', async
 
   // v1 → v4: Retos became reference sessions and the store gained `days`, with per-day reference speeds backfilled
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
-  expect(stored.version).toBe(5)
+  expect(stored.version).toBe(6)
   expect(stored.state.sessions.filter((x: { reference?: true }) => x.reference).length).toBe(3)
   expect(stored.state.days).toBeDefined()
   expect(stored.state.days[localDay(today)].reference).toEqual([30])

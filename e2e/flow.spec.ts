@@ -84,7 +84,7 @@ test('onboarding → first lessons → routine → stats', async ({ page }) => {
   await expect(page.getByTestId('tile-reference')).toContainText('—')
   await expect(page.getByTestId('tile-mastery')).toBeVisible()
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
-  expect(stored.version).toBe(5)
+  expect(stored.version).toBe(6)
   expect(typeof stored.state.sessions[1].rhythm).toBe('number')
   const todayRow = stored.state.days[Object.keys(stored.state.days)[0]]
   expect(todayRow.blocks).toBe(2)

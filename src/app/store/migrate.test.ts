@@ -33,6 +33,9 @@ describe('store migration v1 → v2', () => {
       streak: { count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 },
       milestonesSeen: [],
       lastWeeklySummaryWeek: null,
+      keys: {},
+      bigrams: {},
+      words: {},
       settings: { lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true },
     })
   })
@@ -118,8 +121,26 @@ describe('store migration v4 → v5', () => {
     expect(v5.streak.best).toBe(4)
   })
 
-  it('leaves a v5 state untouched', () => {
-    const v5 = { sessions: [], days: {}, legacy: null, streak: { count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 }, milestonesSeen: [], lastWeeklySummaryWeek: null }
-    expect(migrateState(v5, 5)).toBe(v5)
+  it('chains into v6', () => {
+    const v5 = { sessions: [], days: {}, legacy: null, streak: { count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 }, milestonesSeen: [], lastWeeklySummaryWeek: null, keys: {} }
+    const v6 = migrateState(v5, 5) as { bigrams: unknown; words: unknown }
+    expect(v6.bigrams).toEqual({})
+    expect(v6.words).toEqual({})
+  })
+})
+
+describe('store migration v5 → v6', () => {
+  it('gives every key a half-life and a day count, and adds empty bigram and word tables', () => {
+    const v5 = { keys: { f: { latencyEma: 300, errorEma: 0, samples: 10, lastSeen: '2026-09-18' }, j: { latencyEma: 300, errorEma: 0, samples: 10 } } }
+    const v6 = migrateState(v5, 5) as { keys: Record<string, { halfLife: number; daysSeen: number }>; bigrams: unknown; words: unknown }
+    expect(v6.keys.f).toEqual({ latencyEma: 300, errorEma: 0, samples: 10, lastSeen: '2026-09-18', halfLife: 3, daysSeen: 1 })
+    expect(v6.keys.j).toEqual({ latencyEma: 300, errorEma: 0, samples: 10, halfLife: 3, daysSeen: 0 })
+    expect(v6.bigrams).toEqual({})
+    expect(v6.words).toEqual({})
+  })
+
+  it('leaves a v6 state untouched', () => {
+    const v6 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {} }
+    expect(migrateState(v6, 6)).toBe(v6)
   })
 })

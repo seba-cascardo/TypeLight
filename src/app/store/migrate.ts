@@ -26,6 +26,9 @@ interface Persisted {
   streak?: { count?: number; lastDay?: string | null; best?: number; freezes?: number; activeDays?: number }
   milestonesSeen?: unknown
   lastWeeklySummaryWeek?: unknown
+  keys?: Record<string, { lastSeen?: string; halfLife?: number; daysSeen?: number }>
+  bigrams?: unknown
+  words?: unknown
 }
 
 /** v1 → v2: Retos count toward the reference speed (`reference: true`); the store gains `days`. */
@@ -63,11 +66,18 @@ function toV5(s: Persisted): Persisted {
   return { ...s, streak, milestonesSeen: [], lastWeeklySummaryWeek: null, settings: { ...(s.settings ?? {}), weeklyGoal: 5, mascot: true } }
 }
 
+/** v5 → v6: every key gets a forgetting half-life and a day count; bigram and word tables start empty. */
+function toV6(s: Persisted): Persisted {
+  const keys = Object.fromEntries(Object.entries(s.keys ?? {}).map(([k, v]) => [k, { ...v, halfLife: 3, daysSeen: v.lastSeen ? 1 : 0 }]))
+  return { ...s, keys, bigrams: {}, words: {} }
+}
+
 export function migrateState(persisted: unknown, version: number): unknown {
   let s = (persisted ?? {}) as Persisted
   if (version < 2) s = toV2(s)
   if (version < 3) s = toV3(s)
   if (version < 4) s = toV4(s)
   if (version < 5) s = toV5(s)
-  return version >= 5 ? persisted : s
+  if (version < 6) s = toV6(s)
+  return version >= 6 ? persisted : s
 }

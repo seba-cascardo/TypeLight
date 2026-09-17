@@ -2,8 +2,25 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { GameId } from '@/engine/curriculum'
 import type { LayoutId } from '@/engine/layouts'
-import { MILESTONES, addSession, bumpStreak, dayKey, emptyStreak, setBlocks, setSnapshot, updateKeyStats, type Days, type KeyStats, type Stars, type Streak } from '@/engine/stats'
-import type { KeySample } from '@/engine/typing'
+import {
+  MILESTONES,
+  addSession,
+  bumpStreak,
+  dayKey,
+  emptyStreak,
+  setBlocks,
+  setSnapshot,
+  updateBigramStats,
+  updateKeyStats,
+  updateWordStats,
+  type BigramStats,
+  type Days,
+  type KeyStats,
+  type Stars,
+  type Streak,
+  type WordStats,
+} from '@/engine/stats'
+import type { BigramSample, DeadKeyStats, KeySample, WordSample } from '@/engine/typing'
 import { migrateState } from './migrate'
 
 export type Theme = 'auto' | 'light' | 'dark'
@@ -77,6 +94,14 @@ export interface SessionRecord {
   /** Share of keystrokes that began before the previous key was released (0..1). */
   rollover?: number
   form?: FormAnswer
+  /** How the dead keys went, when an accented character was involved. */
+  dead?: DeadKeyStats
+}
+
+/** Finer samples a session can hand to the store beside the per-key ones. */
+export interface ExtraSamples {
+  bigrams?: Iterable<BigramSample>
+  words?: Iterable<WordSample>
 }
 
 export type RoutineBlock = 'warmup' | 'lesson' | 'review' | 'challenge'
@@ -106,9 +131,12 @@ interface State {
   milestonesSeen: number[]
   /** ISO week (its Monday) whose summary was closed, so it shows once. */
   lastWeeklySummaryWeek: string | null
+  /** Rolling stats per in-word bigram and per word (skill model v2). */
+  bigrams: BigramStats
+  words: WordStats
   setSettings: (patch: Partial<Settings>) => void
   /** Records the session and returns its timestamp, so it can be annotated afterwards. */
-  recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => string
+  recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>, extra?: ExtraSamples) => string
   setSessionForm: (at: string, form: FormAnswer | null) => void
   completeLesson: (id: string, stars: Stars, wpm: number, acc: number) => void
   markRoutine: (block: RoutineBlock) => void
@@ -133,6 +161,8 @@ const initialProgress = () => ({
   blindSince: null as string | null,
   milestonesSeen: [] as number[],
   lastWeeklySummaryWeek: null as string | null,
+  bigrams: {} as BigramStats,
+  words: {} as WordStats,
 })
 
 export const useStore = create<State>()(
@@ -144,7 +174,7 @@ export const useStore = create<State>()(
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
-      recordSession: (rec, samples) => {
+      recordSession: (rec, samples, extra) => {
         const at = new Date().toISOString()
         set((s) => {
           const today = dayKey()
@@ -152,6 +182,8 @@ export const useStore = create<State>()(
           return {
             sessions,
             keys: samples ? updateKeyStats(s.keys, samples, today) : s.keys,
+            bigrams: extra?.bigrams ? updateBigramStats(s.bigrams, extra.bigrams) : s.bigrams,
+            words: extra?.words ? updateWordStats(s.words, extra.words, today) : s.words,
             streak: bumpStreak(s.streak, today),
             days: addSession(s.days, today, rec.seconds, rec.reference ? rec.wpm : undefined, rec.kind === 'exam' ? rec.wpm : undefined),
             blindSince: s.blindSince ?? (rec.reference && rec.blind ? today : null),
@@ -215,7 +247,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'typelight.v1',
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -232,7 +264,22 @@ export function useSettings(): Settings {
   return useStore((s) => s.settings)
 }
 
-export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy', 'lastExamDay', 'blindSince', 'milestonesSeen', 'lastWeeklySummaryWeek'] as const
+export const PERSISTED_KEYS = [
+  'settings',
+  'lessons',
+  'keys',
+  'sessions',
+  'streak',
+  'routine',
+  'days',
+  'legacy',
+  'lastExamDay',
+  'blindSince',
+  'milestonesSeen',
+  'lastWeeklySummaryWeek',
+  'bigrams',
+  'words',
+] as const
 export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 
 /** The data half of the store, exactly what persist writes. */
