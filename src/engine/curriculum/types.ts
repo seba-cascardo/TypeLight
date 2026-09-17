@@ -31,6 +31,7 @@ export type ExerciseSpec =
   | { kind: 'symbols'; pool: string[]; symbols: string[]; tokens?: number }
   | { kind: 'pattern'; pool: string[]; pattern: string; count?: number }
   | { kind: 'adaptive'; pool: string[]; count?: number }
+  | { kind: 'ngram'; pool: string[]; n: 2 | 3; combination?: number; repetition?: number; tokens?: number }
 
 export interface Lesson {
   id: string

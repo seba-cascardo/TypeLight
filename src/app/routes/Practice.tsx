@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
-import { adaptiveText, challengeText, drillText, makeRng, poolOf, wordsText } from '@/engine/generator'
-import { weakestKeys } from '@/engine/stats'
+import { adaptiveText, challengeText, drillText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
+import { dayOfYear, weakestKeys } from '@/engine/stats'
 import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
@@ -55,6 +55,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<ReturnType<typeof metrics> | null>(null)
   const navigate = useNavigate()
+  const bigramDay = dayOfYear() % 2 === 1
 
   // Enter on the result card goes back to the routine.
   useEffect(() => {
@@ -79,7 +80,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
     const joined = !learned.includes(' ')
     if (kind === 'calentamiento') {
       if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
-      return wordsText(pool, 16, { rng })
+      // Odd days warm up on the bigrams that lean on the weakest keys; even days on real words.
+      return bigramDay ? ngramText(pool, 2, { weak, tokens: 16, rng }) : wordsText(pool, 16, { rng })
     }
     if (kind === 'repaso') {
       if (learned.length < 5) return drillText(learned, joined ? 8 : 16, { rng, joined })
@@ -87,7 +89,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     if (joined) return drillText(learned, 12, { rng, joined })
     return challengeText(pool, { rng })
-  }, [kind, pool, weak, learned, round])
+  }, [kind, pool, weak, learned, round, bigramDay])
 
   const onFinish = useCallback(
     (state: TypingState) => {
@@ -127,7 +129,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="eyebrow mb-1">Rutina de hoy</div>
-          <h1 className="text-3xl md:text-4xl">{meta.title}</h1>
+          <h1 className="text-3xl md:text-4xl">{kind === 'calentamiento' && bigramDay ? 'Calentamiento · bigramas' : meta.title}</h1>
           <p className="mt-1 text-ink-soft">{meta.blurb}</p>
         </div>
         {kind === 'repaso' && weak.length > 0 && (

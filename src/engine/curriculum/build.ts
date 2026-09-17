@@ -310,6 +310,17 @@ export function buildCurriculum(layout: Layout): Curriculum {
   const goals = [25, 28, 31, 34, 37, 40, 45, 50]
   const vel = unit(b, 'velocidad', 'Velocidad', 'Texto real, metas crecientes. La precisión manda.', goals[0], 'green')
   tip(b, vel, TIP_SPEED)
+  const velPool = [...b.pool]
+  add(b, vel, 'bigramas', 'Bigramas del español', 'practice', [], [], [
+    { kind: 'ngram', pool: velPool, n: 2, tokens: 15 },
+    { kind: 'ngram', pool: velPool, n: 2, tokens: 15 },
+    { kind: 'words', pool: velPool, count: 16 },
+  ])
+  add(b, vel, 'trigramas', 'Trigramas del español', 'practice', [], [], [
+    { kind: 'ngram', pool: velPool, n: 3, tokens: 15 },
+    { kind: 'ngram', pool: velPool, n: 3, tokens: 15 },
+    { kind: 'words', pool: velPool, count: 16 },
+  ])
   goals.forEach((goal, i) => {
     const pool = [...b.pool]
     const l = add(b, vel, `texto-${i + 1}`, `Texto ${i + 1} · meta ${goal} PPM`, 'text', [], [], [

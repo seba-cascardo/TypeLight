@@ -13,6 +13,7 @@ function legend(l: Lesson): { main: string; sub: string } {
     case 'review':
       return { main: '↻', sub: 'repaso' }
     case 'practice':
+      if (l.id.endsWith('-bigramas') || l.id.endsWith('-trigramas')) return { main: 'ab', sub: 'n-gramas' }
       return l.id.includes('-patron-') ? { main: l.title.replace('Patrón: ', ''), sub: 'patrón' } : { main: '✎', sub: 'práctica' }
     case 'tip':
       return { main: 'tip', sub: 'consejo' }

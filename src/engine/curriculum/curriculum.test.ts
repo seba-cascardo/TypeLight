@@ -112,4 +112,15 @@ describe('curriculum', () => {
     expect(c.byId.get('velocidad-juego-carrera-2')!.goalWpm).toBe(50)
     expect(c.lessons.indexOf(c.byId.get('velocidad-juego-carrera-1')!)).toBe(c.lessons.indexOf(c.byId.get('velocidad-texto-4')!) + 1)
   })
+
+  it('opens Velocidad with bigram and trigram drills that generate text within the pool', () => {
+    const c = buildCurriculum(LATAM)
+    const bi = c.byId.get('velocidad-bigramas')!
+    const tri = c.byId.get('velocidad-trigramas')!
+    expect(bi.unitId).toBe('velocidad')
+    expect(tri.index).toBe(bi.index + 1)
+    const pool = new Set([...bi.pool, ' '])
+    for (const spec of bi.exercises) expect([...generateExercise(spec, makeRng(3))].every((ch) => pool.has(ch))).toBe(true)
+    expect(generateExercise(tri.exercises[0], makeRng(4)).split(' ')[0]).toHaveLength(3)
+  })
 })

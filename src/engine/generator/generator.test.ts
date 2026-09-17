@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildCurriculum } from '../curriculum'
 import { LATAM } from '../layouts'
 import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
-import { adaptiveText, challengeText, drillText, fitSentence, makeRng, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
+import { adaptiveText, challengeText, drillText, fitSentence, makeRng, ngramText, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
 
 const only = (text: string, allowed: Iterable<string>) => {
   const set = new Set(allowed)
@@ -130,5 +130,39 @@ describe('generators', () => {
     for (let seed = 0; seed < 200; seed++) for (const s of pickSentences(full, 1, { rng: makeRng(seed) })) if (!generated.has(s)) house++
     // ~185 house vs ~1500 generated at weight 3:1 → roughly 27 % house; well above the unweighted 11 %.
     expect(house).toBeGreaterThan(35)
+  })
+
+  it('ngramText repeats the chosen n-grams consecutively, inside the pool, and leans on weak keys', () => {
+    const pool = poolOf('abcdefghijklmnopqrstuvwxyzñ')
+    const t = ngramText(pool, 2, { combination: 3, repetition: 3, tokens: 15, rng: makeRng(21) })
+    expect(only(t, pool)).toBe(true)
+    const tokens = t.split(' ')
+    expect(tokens).toHaveLength(15)
+    // pattern: g1 g2 g3 g1 g2 g3 g1 g2 g3 word g1 g2 g3 g1 g2
+    const [g1, g2, g3] = tokens
+    expect([g1, g2, g3].every((g) => g.length === 2)).toBe(true)
+    expect(new Set([g1, g2, g3]).size).toBe(3)
+    expect(tokens.slice(0, 9)).toEqual([g1, g2, g3, g1, g2, g3, g1, g2, g3])
+    expect([g1, g2, g3].some((g) => tokens[9].includes(g))).toBe(true) // a real word carrying one of them
+    expect(tokens.slice(10)).toEqual([g1, g2, g3, g1, g2])
+    const tri = ngramText(pool, 3, { tokens: 12, rng: makeRng(23) })
+    expect(tri.split(' ')[0]).toHaveLength(3)
+  })
+
+  it('ngramText leans on the weak keys', () => {
+    const pool = poolOf('abcdefghijklmnopqrstuvwxyzñ')
+    const rare = /[xzwkj]/
+    let withWeak = 0
+    let without = 0
+    for (let seed = 0; seed < 40; seed++) {
+      if (rare.test(ngramText(pool, 2, { weak: ['x', 'z', 'w', 'k', 'j'], tokens: 9, rng: makeRng(seed) }))) withWeak++
+      if (rare.test(ngramText(pool, 2, { tokens: 9, rng: makeRng(seed) }))) without++
+    }
+    expect(withWeak).toBeGreaterThan(without)
+  })
+
+  it('ngramText falls back to words when the pool fits fewer than six n-grams', () => {
+    const t = ngramText(poolOf('fj'), 2, { rng: makeRng(24) })
+    expect(only(t, 'fj ')).toBe(true)
   })
 })

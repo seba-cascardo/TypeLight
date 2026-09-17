@@ -67,6 +67,12 @@ export function starsFor(m: Metrics, goalWpm: number): Stars {
   return 1
 }
 
+/** 1-based day of the year, local time. */
+export function dayOfYear(d: Date = new Date()): number {
+  const start = new Date(d.getFullYear(), 0, 0)
+  return Math.floor((d.getTime() - start.getTime()) / 86400000)
+}
+
 /** Local calendar day as yyyy-mm-dd. */
 export function dayKey(d: Date = new Date()): string {
   const y = d.getFullYear()

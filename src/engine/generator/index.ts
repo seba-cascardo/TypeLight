@@ -1,3 +1,4 @@
+import { BIGRAMS, TRIGRAMS } from '../corpus/ngrams'
 import { ONE_LETTER, WORDS } from '../corpus/words'
 import { NUMBER_SENTENCES, SENTENCES, SYMBOL_SENTENCES } from '../corpus/sentences'
 import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
@@ -287,6 +288,36 @@ export function poolOf(chars: Iterable<string>, withSpace = true): Set<string> {
   const s = new Set(chars)
   if (withSpace) s.add(' ')
   return s
+}
+
+/**
+ * Ngram-Type style drill: `combination` n-grams, each repeated `repetition` times in a row, then a real word
+ * that contains one of them, and again. Weighted by frequency, ×3 for n-grams with a weak key.
+ */
+export function ngramText(
+  pool: ReadonlySet<string>,
+  n: 2 | 3,
+  opts: GenOpts & { combination?: number; repetition?: number; tokens?: number; weak?: readonly string[] } = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const { combination = 3, repetition = 3, tokens = 15 } = opts
+  const weak = new Set(opts.weak ?? [])
+  const fits = (n === 2 ? BIGRAMS : TRIGRAMS).filter(([g]) => usesOnly(g, pool))
+  if (fits.length < 6) return wordsText(pool, tokens, { rng })
+  const weights = fits.map(([g, w]) => w * ([...g].some((c) => weak.has(c)) ? 3 : 1))
+  const chosen: string[] = []
+  let guard = 0
+  while (chosen.length < Math.min(combination, fits.length) && guard++ < 200) {
+    const g = fits[weightedIndex(weights, rng)][0]
+    if (!chosen.includes(g)) chosen.push(g)
+  }
+  const words = candidateWords(pool, 1500).filter((w) => chosen.some((g) => w.includes(g)))
+  const out: string[] = []
+  while (out.length < tokens) {
+    for (let r = 0; r < repetition; r++) for (const g of chosen) if (out.length < tokens) out.push(g)
+    if (words.length && out.length < tokens) out.push(rng.pick(words))
+  }
+  return out.join(' ')
 }
 
 /** Real words containing an n-gram (que, ción, ent…), weighted by frequency. */

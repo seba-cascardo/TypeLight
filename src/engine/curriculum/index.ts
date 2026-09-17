@@ -2,6 +2,7 @@ import {
   adaptiveText,
   drillText,
   makeRng,
+  ngramText,
   numbersText,
   patternText,
   poolOf,
@@ -53,6 +54,8 @@ export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): stri
       return patternText(poolOf(spec.pool), spec.pattern, spec.count, { rng })
     case 'adaptive':
       return adaptiveText(poolOf(spec.pool), [], spec.count, { rng })
+    case 'ngram':
+      return ngramText(poolOf(spec.pool), spec.n, { rng, combination: spec.combination, repetition: spec.repetition, tokens: spec.tokens })
   }
 }
 
