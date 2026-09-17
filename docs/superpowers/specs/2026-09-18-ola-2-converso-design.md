@@ -2,7 +2,7 @@
 
 Fecha 2026-09-18 · aprobado por Seba el 2026-09-18 («aprobado todo») sobre el artifact `https://claude.ai/artifact/FP7sAfjYGDGJQja7Uenqgb` (respuesta: `1A · 2A · 3A · 4B · 5A · 6A · 7A · 8A · 9A`). Fuente: `docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 2 (puntos 8–14) y §10.
 
-**Estado:** en implementación (rama `ola-2`).
+**Estado:** implementado completo (rama `ola-2`, mergeada fast-forward a `master` el 2026-09-18). Desvíos: el examen usa `pickSentences(pool, 60)` y `minChars = 1500` (no 1200) para cubrir 3 min a 80 PPM; en la Carrera Enter no espera al auto-chequeo (sí en Reto y examen); `repairMs` es el tiempo hasta el primer Backspace después de cada error, no solo de los reparados.
 
 ## 0. Qué es
 
