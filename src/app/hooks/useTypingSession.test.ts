@@ -29,4 +29,21 @@ describe('useTypingSession', () => {
     // 200 ms before hiding + 200 ms after: the five hidden seconds are not typing time.
     expect(metrics(result.current.state).seconds).toBeCloseTo(0.4, 1)
   })
+
+  it('in free mode a wrong key moves on and backspace() takes it back', () => {
+    const { result } = renderHook(() => useTypingSession('abc', { sound: false, mode: 'free' }))
+    expect(result.current.state.mode).toBe('free')
+    act(() => result.current.input('x'))
+    expect(result.current.state.pos).toBe(1)
+    act(() => result.current.backspace())
+    expect(result.current.state.pos).toBe(0)
+    expect(result.current.state.keystrokes).toHaveLength(2)
+  })
+
+  it('restart keeps the mode', () => {
+    const { result } = renderHook(() => useTypingSession('abc', { sound: false, mode: 'free' }))
+    act(() => result.current.restart('xyz'))
+    expect(result.current.state.mode).toBe('free')
+    expect(result.current.state.target).toBe('xyz')
+  })
 })

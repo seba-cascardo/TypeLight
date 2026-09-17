@@ -3,6 +3,11 @@ import { useCallback, useEffect, useRef, useState, type CompositionEvent, type F
 interface Options {
   onText: (text: string) => void
   onEscape?: () => void
+  /** Free mode: Backspace repairs instead of being swallowed. */
+  onBackspace?: () => void
+  /** Printable key down (no auto-repeat) / up, for the rollover count. */
+  onKeyDown?: (key: string) => void
+  onKeyUp?: (key: string) => void
   /** Focus the input when mounted and whenever `focusKey` changes. */
   autoFocus?: boolean
   focusKey?: unknown
@@ -16,9 +21,10 @@ export interface HiddenInput {
 
 /**
  * Keystroke capture through a hidden <input>, so dead keys (´ + a → á) and IMEs compose like in any
- * text field. Listens to input/compositionend, not keydown; keydown only handles Escape and blocks Enter/Backspace.
+ * text field. Listens to input/compositionend, not keydown; keydown only handles Escape, Backspace (repair or
+ * swallow) and the printable key down/up trackers, and blocks Enter.
  */
-export function useHiddenInput({ onText, onEscape, autoFocus = true, focusKey }: Options): HiddenInput {
+export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: trackDown, onKeyUp: trackUp, autoFocus = true, focusKey }: Options): HiddenInput {
   const inputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(false)
   const composing = useRef(false)
@@ -62,9 +68,21 @@ export function useHiddenInput({ onText, onEscape, autoFocus = true, focusKey }:
         e.preventDefault()
         onEscape?.()
       }
-      if (e.key === 'Enter' || e.key === 'Backspace') e.preventDefault()
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        onBackspace?.()
+      }
+      if (e.key === 'Enter') e.preventDefault()
+      if (e.key.length === 1 && !e.repeat) trackDown?.(e.key)
     },
-    [onEscape],
+    [onEscape, onBackspace, trackDown],
+  )
+
+  const onKeyUp = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key.length === 1) trackUp?.(e.key)
+    },
+    [trackUp],
   )
 
   const focus = useCallback(() => inputRef.current?.focus(), [])
@@ -85,6 +103,7 @@ export function useHiddenInput({ onText, onEscape, autoFocus = true, focusKey }:
       },
       onCompositionEnd,
       onKeyDown,
+      onKeyUp,
       onFocus: () => setFocused(true),
       onBlur: () => setFocused(false),
     },

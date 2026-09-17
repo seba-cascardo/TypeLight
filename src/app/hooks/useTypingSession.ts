@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createSession, endSession, isFinished, metrics, typeText, type Metrics, type TypingState } from '@/engine/typing'
+import { backspace as backspaceChar, createSession, endSession, isFinished, metrics, typeText, type Metrics, type TypingMode, type TypingState } from '@/engine/typing'
 import { chime, click, thud } from '../lib/sound'
 
 interface Options {
   sound?: boolean
+  /** `stop` (default) holds the cursor on an error; `free` lets it pass and repairs with Backspace. */
+  mode?: TypingMode
   /** Stop automatically after this many ms of typing. */
   timeLimitMs?: number
   onFinish?: (state: TypingState) => void
@@ -17,10 +19,13 @@ export interface TypingSession {
   restart: (target?: string) => void
   /** Feed characters from an input event. */
   input: (text: string) => void
+  /** Free mode: repair one character. No-op in stop mode. */
+  backspace: () => void
 }
 
 export function useTypingSession(target: string, opts: Options = {}): TypingSession {
-  const [state, setStateRaw] = useState<TypingState>(() => createSession(target))
+  const mode = opts.mode ?? 'stop'
+  const [state, setStateRaw] = useState<TypingState>(() => createSession(target, mode))
   const stateRef = useRef(state)
   const setState = useCallback((next: TypingState | ((s: TypingState) => TypingState)) => {
     const value = typeof next === 'function' ? next(stateRef.current) : next
@@ -55,8 +60,8 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
   }, [])
 
   useEffect(() => {
-    setState(createSession(target))
-  }, [target, setState])
+    setState(createSession(target, mode))
+  }, [target, mode, setState])
 
   // Fire onFinish exactly once per session.
   const notified = useRef<TypingState | null>(null)
@@ -98,17 +103,23 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
     [sound, setState, clock],
   )
 
+  const backspace = useCallback(() => {
+    const s = stateRef.current
+    if (s.mode !== 'free' || isFinished(s)) return
+    setState(backspaceChar(s, clock()))
+  }, [setState, clock])
+
   const restart = useCallback(
     (t?: string) => {
       notified.current = null
       hiddenMs.current = 0
       resumed.current = false
-      setState(createSession(t ?? target))
+      setState(createSession(t ?? target, mode))
     },
-    [target, setState],
+    [target, mode, setState],
   )
 
   const end = state.finishedAt ?? now ?? state.startedAt ?? 0
   const elapsedMs = state.startedAt === null ? 0 : Math.max(0, end - state.startedAt)
-  return { state, live: metrics(state, now), elapsedMs, finished: isFinished(state), restart, input }
+  return { state, live: metrics(state, now), elapsedMs, finished: isFinished(state), restart, input, backspace }
 }
