@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mascotLine, returnLine, type MascotContext } from './mascot'
 
-const base: MascotContext = { recordToday: false, milestone: null, gap: 1, alive: true, freezes: 0, streak: 1, activeDays: 1, routineDone: false, examDue: false, game: null }
+const base: MascotContext = { recordToday: false, milestone: null, gap: 1, alive: true, freezes: 0, streak: 1, activeDays: 1, routineDone: false, done: 0, examDue: false, game: null }
 
 describe('mascot line', () => {
   it('picks one line by priority, never a guilt trip', () => {
@@ -9,6 +9,7 @@ describe('mascot line', () => {
     expect(mascotLine({ ...base, milestone: 7 }).text).toMatch(/hito/i)
     expect(mascotLine({ ...base, gap: 3, alive: false, activeDays: 9 }).text).toMatch(/Volvés/)
     expect(mascotLine({ ...base, routineDone: true })).toEqual({ mood: 'happy', text: 'Rutina completa. Lo que sigue es regalo.' })
+    expect(mascotLine({ ...base, done: 2, examDue: true }).text).toBe('2 de 4. Seguimos.')
     expect(mascotLine({ ...base, examDue: true }).text).toMatch(/examen/)
     expect(mascotLine({ ...base, game: 'rhythm' }).text).toMatch(/juego/)
     expect(mascotLine({ ...base, streak: 4 }).text).toBe('4 días seguidos. Sin apuro.')

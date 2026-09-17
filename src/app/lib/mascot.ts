@@ -13,6 +13,8 @@ export interface MascotContext {
   streak: number
   activeDays: number
   routineDone: boolean
+  /** Routine cards done today, 0..4. */
+  done: number
   examDue: boolean
   game: 'rhythm' | 'balloons' | null
 }
@@ -32,6 +34,7 @@ export function mascotLine(ctx: MascotContext): { mood: MascotMood; text: string
   const back = returnLine(ctx)
   if (back) return { mood: 'idle', text: back }
   if (ctx.routineDone) return { mood: 'happy', text: 'Rutina completa. Lo que sigue es regalo.' }
+  if (ctx.done > 0) return { mood: 'happy', text: `${ctx.done} de 4. Seguimos.` }
   if (ctx.examDue) return { mood: 'idle', text: 'Hoy toca el examen: tres minutos limpios, sin apuro.' }
   if (ctx.game) return { mood: 'happy', text: 'Hoy el Calentamiento es un juego.' }
   if (ctx.streak >= 3) return { mood: 'happy', text: `${ctx.streak} días seguidos. Sin apuro.` }

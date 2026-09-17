@@ -145,6 +145,7 @@ export function Home() {
     streak: alive ? streak.count : 0,
     activeDays: streak.activeDays,
     routineDone: doneCount === 4,
+    done: doneCount,
     examDue: examToday,
     game,
   }
