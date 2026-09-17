@@ -170,5 +170,6 @@ describe('generators', () => {
     const pool = poolOf('abcdefghijklmnopqrstuvwxyzñ')
     expect(ngramText(pool, 2, { combination: 0, tokens: 6, rng: makeRng(31) }).split(' ')).toHaveLength(6)
     expect(ngramText(pool, 2, { tokens: 0, rng: makeRng(32) })).toBe('')
+    expect(ngramText(pool, 2, { repetition: 0, tokens: 6, rng: makeRng(33) }).split(' ')).toHaveLength(6)
   })
 })

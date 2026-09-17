@@ -301,6 +301,7 @@ export function ngramText(
 ): string {
   const rng = opts.rng ?? makeRng()
   const { combination = 3, repetition = 3, tokens = 15 } = opts
+  const reps = Math.max(1, repetition)
   const weak = new Set(opts.weak ?? [])
   const fits = (n === 2 ? BIGRAMS : TRIGRAMS).filter(([g]) => usesOnly(g, pool))
   if (fits.length < 6) return wordsText(pool, tokens, { rng })
@@ -316,7 +317,7 @@ export function ngramText(
   const words = candidateWords(pool, 1500).filter((w) => chosen.some((g) => w.includes(g)))
   const out: string[] = []
   while (out.length < tokens) {
-    for (let r = 0; r < repetition; r++) for (const g of chosen) if (out.length < tokens) out.push(g)
+    for (let r = 0; r < reps; r++) for (const g of chosen) if (out.length < tokens) out.push(g)
     if (words.length && out.length < tokens) out.push(rng.pick(words))
   }
   return out.join(' ')

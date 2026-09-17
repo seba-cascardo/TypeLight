@@ -62,7 +62,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<ReturnType<typeof metrics> | null>(null)
   const navigate = useNavigate()
-  const bigramDay = dayOfYear() % 2 === 1
+  // A stable per-mount coin flip: a day change mid-exercise must not regenerate the text underneath the typist.
+  const [bigramDay] = useState(() => dayOfYear() % 2 === 1)
 
   // Enter on the result card goes back to the routine (or, after "antes", to Progreso).
   useEffect(() => {
@@ -82,6 +83,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
     [kind, curriculum, learned],
   )
   const weak = useMemo(() => weakestKeys(keyStats, learned, 3), [keyStats, learned])
+  // Odd days warm up on the bigrams that lean on the weakest keys, once there are enough keys to make bigrams; even days (or fewer keys) use real words.
+  const bigramWarmup = kind === 'calentamiento' && bigramDay && learned.length >= 6
 
   const text = useMemo(() => {
     const rng = makeRng()
@@ -91,8 +94,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     if (kind === 'antes') return challengeText(pool, { rng })
     if (kind === 'calentamiento') {
       if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
-      // Odd days warm up on the bigrams that lean on the weakest keys; even days on real words.
-      return bigramDay ? ngramText(pool, 2, { weak, tokens: 16, rng }) : wordsText(pool, 16, { rng })
+      return bigramWarmup ? ngramText(pool, 2, { weak, tokens: 16, rng }) : wordsText(pool, 16, { rng })
     }
     if (kind === 'repaso') {
       if (learned.length < 5) return drillText(learned, joined ? 8 : 16, { rng, joined })
@@ -100,7 +102,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     if (joined) return drillText(learned, 12, { rng, joined })
     return challengeText(pool, { rng })
-  }, [kind, pool, weak, learned, round, bigramDay])
+  }, [kind, pool, weak, learned, round, bigramWarmup])
 
   const onFinish = useCallback(
     (state: TypingState) => {
@@ -145,7 +147,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="eyebrow mb-1">{kind === 'antes' ? 'Ajustes · tu velocidad de antes' : 'Rutina de hoy'}</div>
-          <h1 className="text-3xl md:text-4xl">{kind === 'calentamiento' && bigramDay ? 'Calentamiento · bigramas' : meta.title}</h1>
+          <h1 className="text-3xl md:text-4xl">{bigramWarmup ? 'Calentamiento · bigramas' : meta.title}</h1>
           <p className="mt-1 text-ink-soft">{meta.blurb}</p>
         </div>
         {kind === 'repaso' && weak.length > 0 && (
