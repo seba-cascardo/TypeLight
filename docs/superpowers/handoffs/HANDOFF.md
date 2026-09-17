@@ -42,36 +42,42 @@ if not exist node_modules (
   call npm install || (pause & exit /b 1)
 )
 
-rem Reconstruye dist/ si falta o si master tiene un commit mas nuevo que el build.
-rem (Sin bloques entre parentesis: las variables que se setean adentro no se leen en el mismo bloque.)
+rem Reconstruye dist/ si falta o si master avanzo desde el ultimo build (dist\.commit guarda el commit buildeado).
+rem Si el checkout esta en otra rama, se sirve el ultimo build de master sin reconstruir (las ramas se prueban en :5175).
 set "NEEDS_BUILD=0"
-set "COMMIT_TS="
-set "BUILD_TS="
+set "MASTER_SHA="
+set "BUILT_SHA="
+set "BRANCH="
+for /f %%h in ('git rev-parse master') do set "MASTER_SHA=%%h"
+for /f %%b in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%b"
 if not exist dist\index.html set "NEEDS_BUILD=1"
-if "%NEEDS_BUILD%"=="1" goto build
-git log -1 --format=%%ct master > "%TEMP%\typelight-commit.txt"
-set /p COMMIT_TS=<"%TEMP%\typelight-commit.txt"
-if not defined COMMIT_TS set "NEEDS_BUILD=1"
-if "%NEEDS_BUILD%"=="1" goto build
-powershell -NoProfile -Command "[int]((Get-Item 'dist\index.html').LastWriteTimeUtc - [datetime]'1970-01-01').TotalSeconds" > "%TEMP%\typelight-build.txt"
-set /p BUILD_TS=<"%TEMP%\typelight-build.txt"
-if not defined BUILD_TS set "NEEDS_BUILD=1"
-if "%NEEDS_BUILD%"=="1" goto build
-if %BUILD_TS% LSS %COMMIT_TS% set "NEEDS_BUILD=1"
-:build
+if not exist dist\.commit set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto decide
+set /p BUILT_SHA=<dist\.commit
+if not defined BUILT_SHA set "NEEDS_BUILD=1"
+if not "%BUILT_SHA%"=="%MASTER_SHA%" set "NEEDS_BUILD=1"
+:decide
+if not "%BRANCH%"=="master" (
+  echo Atencion: el checkout esta en la rama %BRANCH%, no en master.
+)
+if not "%BRANCH%"=="master" if exist dist\index.html (
+  echo Se sirve el ultimo build de master sin reconstruir. Para probar la rama usa npm run dev -- --port 5175
+  set "NEEDS_BUILD=0"
+)
 if "%NEEDS_BUILD%"=="1" (
   echo Construyendo TypeLight...
   call npm run build || (pause & exit /b 1)
+  for /f %%h in ('git rev-parse HEAD') do >dist\.commit echo %%h
 )
 
 echo Sirviendo TypeLight en %URL% ...
 echo Cerra esta ventana para apagar el server.
 echo.
-start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 60;$i++){ try{$null=New-Object Net.Sockets.TcpClient('localhost',%PORT%); Start-Process '%URL%'; exit}catch{Start-Sleep -Milliseconds 500} }"
+start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 120;$i++){ try{$null=New-Object Net.Sockets.TcpClient('localhost',%PORT%); Start-Process '%URL%'; exit}catch{Start-Sleep -Milliseconds 500} }"
 npm run serve
 ```
 
-(Esto reemplaza al `.bat` que corría `npm run dev -- --port 5173` sobre el árbol de trabajo. El nuevo hace `npm run build` solo si `dist/` falta o quedó vieja contra el último commit de `master`, y después `npm run serve`, que es `vite preview` — no un dev server. Copia idéntica en el repo: `scripts/TypeLight.bat`.)
+(Esto reemplaza al `.bat` que corría `npm run dev -- --port 5173` sobre el árbol de trabajo. El nuevo reconstruye solo si `dist/` falta o si `master` avanzó desde el commit guardado en `dist\.commit`, nunca si el checkout está en otra rama, y después `npm run serve`, que es `vite preview` — no un dev server. Copia idéntica en el repo: `scripts/TypeLight.bat`.)
 
 Leé, en este orden:
 - `docs/backlog.md` — Pendientes (Ola 2) e ideas sueltas.
