@@ -22,11 +22,25 @@ VOSOTROS = re.compile(r'\b(vosotros|vosotras|vuestr[oa]s?|os)\b|(áis|éis|abais
 CAPITAL = re.compile(r'[A-ZÁÉÍÓÚÜÑ]')
 WORD = re.compile(r'[a-záéíóúüñ]+')
 
+# Frequent tuteo (present-indicative tú) forms; a Rioplatense reader uses vos, not tú. Preterite/future/
+# conditional/subjunctive forms are shared with voseo and stay allowed.
+TUTEO = set("""
+tú ti contigo tuyo tuya tuyos tuyas
+eres estás tienes puedes sabes quieres haces vas dices vienes sales pones ves das oyes sientes piensas crees conoces
+necesitas debes entiendes recuerdas prefieres juegas duermes sigues vives trabajas hablas comes tomas buscas encuentras
+llevas esperas llamas miras escuchas lees escribes abres cierras empiezas terminas pierdes ganas pareces mientes sueñas
+cantas bailas corres caminas compras pagas cocinas limpias manejas conduces estudias aprendes enseñas cuentas cuidas dejas
+sacas subes bajas entras muestras cambias ayudas olvidas extrañas amas odias quedas andas vuelves traes caes ríes
+gustas sabías podrías querías tenías estabas ibas hacías decías venías
+""".split())
+
 
 def ok(s):
     if not (40 <= len(s) <= 90) or not ALLOWED.match(s):
         return False
     if not s[0].isupper() or s[-1] not in '.?!':
+        return False
+    if s.count('¿') != s.count('?') or s.count('¡') != s.count('!'):
         return False
     for m in CAPITAL.finditer(s):
         i = m.start()
@@ -38,6 +52,8 @@ def ok(s):
         return False  # a capital mid-sentence: a proper noun
     words = WORD.findall(s.lower())
     if len(set(words)) < 4 or VOSOTROS.search(s.lower()):
+        return False
+    if any(w in TUTEO for w in words):
         return False
     for w in words:
         if w in BLOCK or w in NAMES or w.translate(STRIP) not in dictionary:

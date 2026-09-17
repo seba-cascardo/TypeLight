@@ -15,6 +15,7 @@ crimen crímenes criminal criminales terrorista terroristas terrorismo bomba bom
 james ben john jack sam tom harry mike michael frank charlie max nick george peter paul david chris joe bob bill jim jason alex mary jane sarah anna emma lisa laura ryan kate lady mister
 prostituta prostitutas prostitución golpear golpeó golpes espada espadas violencia violento gay puta
 sois vosotros vosotras vuestro vuestra vuestros vuestras os
+cagar cago cagó cagás cagada cagado cagan asesinaron asesinaste asesinamos asesinan guerra guerras
 """.split())
 
 # First names that survive the dictionary check or start a sentence capitalised.
