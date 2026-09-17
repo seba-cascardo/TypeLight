@@ -1,5 +1,6 @@
 import { ONE_LETTER, WORDS } from '../corpus/words'
 import { NUMBER_SENTENCES, SENTENCES, SYMBOL_SENTENCES } from '../corpus/sentences'
+import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
 import { makeRng, weightedIndex, type Rng } from './rng'
 
 export { makeRng } from './rng'
@@ -187,16 +188,51 @@ const CORPORA: Record<SentenceCorpus, string[]> = {
   symbols: SYMBOL_SENTENCES,
 }
 
-/** Distinct real sentences typable with the pool, up to `count`. Empty when none fit. */
+const PUNCT = new Set(',.;:¿?¡!"()-')
+const PAIRS: Record<string, string> = { '¿': '?', '?': '¿', '¡': '!', '!': '¡' }
+const CAPITAL = /[A-ZÁÉÍÓÚÜÑ]/
+
+/**
+ * Adapt a sentence to what the pool can type: lower-case when no capital is known, drop the punctuation
+ * the pool lacks (question/exclamation marks go as a pair). Accents and ñ are never removed — that would
+ * change the word. Null when the result still needs keys outside the pool.
+ */
+export function fitSentence(s: string, pool: ReadonlySet<string>): string | null {
+  const hasCaps = [...pool].some((c) => CAPITAL.test(c))
+  let t = hasCaps ? s : s.toLowerCase()
+  t = [...t].filter((c) => !PUNCT.has(c) || (pool.has(c) && (!(c in PAIRS) || pool.has(PAIRS[c])))).join('')
+  t = t.replace(/\s+/g, ' ').trim()
+  return t && usesOnly(t, pool) ? t : null
+}
+
+/** Distinct real sentences typable with the pool, up to `count`; house sentences weigh 3, generated ones 1. */
 export function pickSentences(
   pool: ReadonlySet<string>,
   count: number,
   opts: GenOpts & { corpus?: SentenceCorpus } = {},
 ): string[] {
   const rng = opts.rng ?? makeRng()
-  const source = CORPORA[opts.corpus ?? 'general']
-  const fits = source.filter((s) => usesOnly(s, pool))
-  return rng.shuffle([...fits]).slice(0, count)
+  const corpus = opts.corpus ?? 'general'
+  const sources: [readonly string[], number][] = corpus === 'general' ? [[SENTENCES, 3], [GENERATED_SENTENCES, 1]] : [[CORPORA[corpus], 1]]
+  const fits: string[] = []
+  const weights: number[] = []
+  for (const [list, weight] of sources) {
+    for (const s of list) {
+      const f = fitSentence(s, pool)
+      if (f) {
+        fits.push(f)
+        weights.push(weight)
+      }
+    }
+  }
+  const out: string[] = []
+  while (out.length < count && fits.length > 0) {
+    const i = weightedIndex(weights, rng)
+    out.push(fits[i])
+    fits.splice(i, 1)
+    weights.splice(i, 1)
+  }
+  return out
 }
 
 /** Real sentences typable with the pool, joined. Returns '' if none fit, so callers can fall back. */

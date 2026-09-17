@@ -27,3 +27,8 @@ dist-ssr
 test-results
 playwright-report
 e2e/screens
+
+# Corpus build inputs (large, downloaded, not redistributed)
+scripts/spa_sentences.tsv*
+scripts/dict.json
+scripts/es_50k.txt

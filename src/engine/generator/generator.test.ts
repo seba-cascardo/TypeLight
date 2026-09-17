@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { adaptiveText, challengeText, drillText, makeRng, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
+import { buildCurriculum } from '../curriculum'
+import { LATAM } from '../layouts'
+import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
+import { adaptiveText, challengeText, drillText, fitSentence, makeRng, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
 
 const only = (text: string, allowed: Iterable<string>) => {
   const set = new Set(allowed)
@@ -99,5 +102,33 @@ describe('generators', () => {
     for (let seed = 0; seed < 25; seed++) {
       for (const min of [100, 200, 300, 420]) expect(challengeText(full, { minChars: min, rng: makeRng(seed) }).length).toBeGreaterThanOrEqual(min)
     }
+  })
+
+  it('fitSentence lowers and strips only the punctuation the pool lacks; accents are never touched', () => {
+    const lower = poolOf('abcdefghijklmnopqrstuvwxyzñ')
+    expect(fitSentence('El pulpo tiene tres corazones.', lower)).toBe('el pulpo tiene tres corazones')
+    expect(fitSentence('¿Cuántos años tenés?', lower)).toBeNull() // accents cannot be dropped
+    const withDot = poolOf('abcdefghijklmnopqrstuvwxyzñ.')
+    expect(fitSentence('¿Hay pan? Hay, y mucho.', withDot)).toBe('hay pan hay y mucho.')
+    const caps = new Set('abcdefghijklmnopqrstuvwxyzñABCDEFGHIJKLMNOPQRSTUVWXYZÑ. ')
+    expect(fitSentence('Hoy es lunes.', caps)).toBe('Hoy es lunes.')
+  })
+
+  it('offers plenty of real sentences at every stage of the LATAM path', () => {
+    const c = buildCurriculum(LATAM)
+    const poolAt = (id: string) => poolOf(c.byId.get(id)!.pool)
+    const countAt = (id: string) => pickSentences(poolAt(id), 5000, { rng: makeRng(1) }).length
+    expect(countAt('inferior-unit-review')).toBeGreaterThanOrEqual(300)
+    expect(countAt('mayusculas-unit-review')).toBeGreaterThanOrEqual(300)
+    expect(countAt('acentos-unit-review')).toBeGreaterThanOrEqual(1000)
+  })
+
+  it('weights the house sentences three to one over generated ones', () => {
+    const full = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    let house = 0
+    const generated = new Set(GENERATED_SENTENCES)
+    for (let seed = 0; seed < 200; seed++) for (const s of pickSentences(full, 1, { rng: makeRng(seed) })) if (!generated.has(s)) house++
+    // ~185 house vs ~1500 generated at weight 3:1 → roughly 27 % house; well above the unweighted 11 %.
+    expect(house).toBeGreaterThan(35)
   })
 })
