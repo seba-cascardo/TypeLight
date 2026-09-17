@@ -56,8 +56,14 @@ export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): stri
   }
 }
 
+/**
+ * The lesson to open next: the first pending one after the last completed lesson, so inserting a lesson
+ * earlier in the path never sends the learner back; only when nothing is pending ahead, the first pending one.
+ */
 export function nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | undefined {
-  return c.lessons.find((l) => !completedIds.has(l.id))
+  let lastIndex = -1
+  for (const l of c.lessons) if (completedIds.has(l.id)) lastIndex = l.index
+  return c.lessons.find((l) => l.index > lastIndex && !completedIds.has(l.id)) ?? c.lessons.find((l) => !completedIds.has(l.id))
 }
 
 export function lessonAfter(c: Curriculum, id: string): Lesson | undefined {

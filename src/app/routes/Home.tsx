@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
-import { dayKey, referenceByDay, referenceHeadline, streakAlive } from '@/engine/stats'
+import { dayKey, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
@@ -10,7 +10,7 @@ import { unitAccentClass } from '../lib/accents'
 import { backupDue } from '../lib/backup'
 
 const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral'; to: string }[] = [
-  { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '1 min', variant: 'sun', to: '/practica/calentamiento' },
+  { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '~1 min', variant: 'sun', to: '/practica/calentamiento' },
   { id: 'lesson', title: 'Lección', detail: 'La siguiente de tu ruta.', minutes: '5 min', variant: 'primary', to: '' },
   { id: 'review', title: 'Repaso', detail: 'Tus tres teclas más flojas, adrede.', minutes: '2 min', variant: 'secondary', to: '/practica/repaso' },
   { id: 'challenge', title: 'Reto', detail: 'Un minuto de texto real. Mide tu PPM.', minutes: '1 min', variant: 'coral', to: '/practica/reto' },
@@ -35,10 +35,9 @@ export function Home() {
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const activeDays = Object.values(days).filter((d) => d.seconds > 0).length
   const alive = streakAlive(streak, dayKey())
-  const recent = sessions.slice(-10)
   const reference = referenceHeadline(referenceByDay(days))
   const exercises = Object.values(days).reduce((a, d) => a + d.sessions, 0)
-  const recentAcc = recent.length ? recent.reduce((a, s) => a + s.acc, 0) / recent.length : null
+  const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
   const wordsReady = learned.includes(' ') && learned.filter((c) => /^[a-zñ]$/.test(c)).length >= 8
@@ -77,6 +76,8 @@ export function Home() {
               <Link
                 key={b.id}
                 to={to}
+                data-testid={`routine-${b.id}`}
+                data-done={done ? 'true' : 'false'}
                 className={`keycap keycap-${b.variant} flex-col items-start gap-1 px-4 py-4 text-left ${done ? 'opacity-80' : ''}`}
                 style={{ borderRadius: 16 }}
               >
@@ -166,9 +167,9 @@ export function Home() {
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-ink-mute">Precisión reciente</dt>
+              <dt className="text-xs font-bold text-ink-mute">Precisión · 7 días</dt>
               <dd className="font-display text-3xl font-extrabold">
-                {recentAcc === null ? '—' : `${Math.round(recentAcc * 100)} %`}
+                {weekly ? `${Math.round(weekly.acc * 100)} %` : '—'}
               </dd>
             </div>
             <div>

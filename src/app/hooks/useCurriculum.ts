@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { curriculumFor, type Curriculum, type Lesson } from '@/engine/curriculum'
+import { curriculumFor, nextLesson, type Curriculum, type Lesson } from '@/engine/curriculum'
 import { LAYOUTS, type Layout } from '@/engine/layouts'
 import { useStore } from '../store'
 
@@ -25,7 +25,7 @@ export function useProgress(): Progress {
     const layout = LAYOUTS[layoutId]
     const curriculum = curriculumFor(layout)
     const completed = new Set(Object.keys(results).filter((id) => curriculum.byId.has(id) && results[id].stars > 0))
-    const next = curriculum.lessons.find((l) => !completed.has(l.id))
+    const next = nextLesson(curriculum, completed)
     let last: Lesson | undefined
     for (const l of curriculum.lessons) if (completed.has(l.id)) last = l
     const learned = last ? last.pool : curriculum.lessons[1]?.pool ?? []

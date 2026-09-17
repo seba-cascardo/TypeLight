@@ -146,9 +146,9 @@ function Player({ lesson }: { lesson: Lesson }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, stepDone, nextStep, navigate, nextLesson])
 
+  // A tip is reading, not practice: it completes but does not fill the routine's Lección card.
   const completeTip = () => {
     completeLesson(lesson.id, 3, 0, 1)
-    markRoutine('lesson')
     if (nextLesson) navigate(`/leccion/${nextLesson.id}`)
     else navigate('/ruta')
   }

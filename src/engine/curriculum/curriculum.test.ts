@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeRng } from '../generator'
 import { ES, LATAM, US, canType } from '../layouts'
-import { buildCurriculum, explainChar, generateExercise } from './index'
+import { buildCurriculum, explainChar, generateExercise, nextLesson } from './index'
 
 describe('curriculum', () => {
   it('builds a full path for each layout with unique ids', () => {
@@ -76,6 +76,17 @@ describe('curriculum', () => {
     expect(explainChar(LATAM, 'á').body).toMatch(/dos pasos/)
     expect(explainChar(LATAM, '@').body).toMatch(/Alt Gr/)
     expect(explainChar(US, '4').body).toMatch(/sube 2 filas/)
+  })
+
+  it('nextLesson moves past the last completed lesson, even if an earlier one is pending', () => {
+    const c = buildCurriculum(LATAM)
+    expect(nextLesson(c, new Set())?.index).toBe(0)
+    const done = new Set([c.lessons[0].id, c.lessons[1].id, c.lessons[3].id])
+    expect(nextLesson(c, done)?.index).toBe(4)
+    const all = new Set(c.lessons.map((l) => l.id))
+    all.delete(c.lessons[2].id)
+    expect(nextLesson(c, all)?.index).toBe(2)
+    expect(nextLesson(c, new Set(c.lessons.map((l) => l.id)))).toBeUndefined()
   })
 
   it('places the games in the path with their ids', () => {
