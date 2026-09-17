@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Estado:** Ejecutado completo el 2026-09-17 y mergeado a `master` (rama `juegos-2`, ff). Desvíos: `race.ts` usa `dayKey(new Date(s.at))` en vez de `sessionDay` (tipo); `RaceGame` lleva reloj y humor en estado/efectos (React Compiler); e2e con `exact`/`level` y día local.
+
 **Goal:** Sumar los dos juegos que faltan (Globos: palabras enteras; Carrera: frases reales contra un fantasma que corre a tu mejor Reto), ubicarlos en la ruta con los tres huecos nuevos (Patrones, Velocidad ×2) y abrir el modo libre "Jugar" en Inicio cuando la rutina está completa.
 
 **Architecture:** Igual que en juegos-1: la lógica de cada ronda es un reducer puro con tests en `src/engine/games/`, y el componente React solo dibuja. Globos captura por el input oculto de la app (hook `useHiddenInput`, extraído de `TypingArea`) para que las teclas muertas sigan funcionando en el modo libre; Carrera reutiliza `useTypingSession` + `TypingArea` y por eso entrega también velocidad, ritmo y muestras por tecla (`GameResult.typing`). Un componente `Game` elige el juego por id; `LessonPlayer` y la ruta nueva `/jugar/:gameId` lo comparten, junto con `gameSession()` para grabar.
@@ -45,7 +47,7 @@
 
 ### Task 0: Rama
 
-- [ ] **Step 1**
+- [x] **Step 1**
 
 ```bash
 git -C C:/Projects/TypeLight checkout -b juegos-2
@@ -62,7 +64,7 @@ git -C C:/Projects/TypeLight checkout -b juegos-2
 **Interfaces:**
 - Produces: `GameId = 'rain' | 'rhythm' | 'balloons' | 'race'`; `Lesson.patterns?: string[]` (solo en el juego de Patrones); `game(b, u, slug, title, id): Lesson`.
 
-- [ ] **Step 1: Test que falla**
+- [x] **Step 1: Test que falla**
 
 En `curriculum.test.ts`, reemplazar el `expect(games).toEqual([...])` del test `places the games in the path with their ids` por:
 
@@ -88,12 +90,12 @@ En `curriculum.test.ts`, reemplazar el `expect(games).toEqual([...])` del test `
     expect(c.lessons.indexOf(c.byId.get('velocidad-juego-carrera-1')!)).toBe(c.lessons.indexOf(c.byId.get('velocidad-texto-4')!) + 1)
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/curriculum`
 Expected: FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `types.ts`:
 
@@ -158,7 +160,7 @@ Velocidad: dentro del `goals.forEach`, después de `l.goalWpm = goal`:
     }
 ```
 
-- [ ] **Step 4: Verificar y commitear**
+- [x] **Step 4: Verificar y commitear**
 
 Run: `npx tsc -b && npm test -- src/engine/curriculum`
 Expected: PASS (el `tsc` falla en `GameResults.tsx`/`Path.tsx`/`scoring.ts` por el `switch` no exhaustivo: es esperado hasta las Tasks 2 y 6; si molesta, hacer las Tasks 1–2 y 6 antes del primer `tsc -b`. Alternativa aceptada: commitear el currículo junto con la Task 2).
@@ -178,7 +180,7 @@ git commit -m "feat(curriculum): balloons and race slots, patterns game, two rac
 **Interfaces:**
 - Produces: `GameResult.typing?: { wpm: number; rhythm?: number; samples: KeySample[] }`; `starsForGame` para `balloons` (★★ acc ≥ 0.95 · ★★★ acc ≥ 0.97 y `detail.escaped === 0`) y `race` (★★ acc ≥ 0.95 · ★★★ `detail.won === 1` y acc ≥ 0.97); `candidateWords(pool, limit)` exportada.
 
-- [ ] **Step 1: Tests que fallan**
+- [x] **Step 1: Tests que fallan**
 
 Agregar en `scoring.test.ts`:
 
@@ -197,7 +199,7 @@ Agregar en `scoring.test.ts`:
   })
 ```
 
-- [ ] **Step 2: Implementar**
+- [x] **Step 2: Implementar**
 
 `scoring.ts`: agregar `import type { KeySample } from '../typing'`, el campo en `GameResult`:
 
@@ -222,7 +224,7 @@ y los casos:
 export function candidateWords(pool: ReadonlySet<string>, limit: number): string[] {
 ```
 
-- [ ] **Step 3: Verificar y commitear**
+- [x] **Step 3: Verificar y commitear**
 
 Run: `npm test -- src/engine/games src/engine/generator`
 Expected: PASS.
@@ -244,7 +246,7 @@ git commit -m "feat(engine): stars for balloons and race; typing details on game
 - Consumes: `candidateWords`, `pseudoWord`, `Rng` del generador; `KeySample` de typing.
 - Produces: `BALLOON_LIVES = 3`, `MAX_ALIVE = 5`, `COLUMNS = 6`; `spawnInterval(elapsedMs)`, `riseSpeed(elapsedMs)`; `balloonWords(pool, rng, patterns?)`; `Balloon { id; word; typed; bornAt; column; speed; goneAt; how }`; `BalloonRound`; `startBalloons(lives?)`, `alive(r)`, `shouldSpawn(r, now)`, `pickWord(words, r, weak, rng)`, `pickColumn(r, now, rng)`, `spawn(r, word, column, now)`, `typeChar(r, ch, now) → { round; outcome: 'hit' | 'pop' | 'wrong'; expected }`, `escape(r, ids, now)`, `prune(r, now, keepMs?)`; `KeyEvent { expected; correct; latency? }`, `samplesFrom(events): KeySample[]`.
 
-- [ ] **Step 1: Tests que fallan**
+- [x] **Step 1: Tests que fallan**
 
 `src/engine/games/balloons.test.ts`:
 
@@ -357,12 +359,12 @@ describe('samplesFrom', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/games/balloons`
 Expected: FAIL — no se resuelve `./balloons`.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `src/engine/games/balloons.ts`:
 
@@ -545,7 +547,7 @@ export function samplesFrom(events: readonly KeyEvent[]): KeySample[] {
 
 `index.ts`: `export * from './balloons'`.
 
-- [ ] **Step 4: Verificar y commitear**
+- [x] **Step 4: Verificar y commitear**
 
 Run: `npm test -- src/engine/games`
 Expected: PASS. Si el test de `pickColumn` falla por la semilla, es porque `others` incluyó la columna ocupada: revisar que `busy` mire `now - b.bornAt < 2500` (500 − 0 < 2500 → ocupada).
@@ -567,7 +569,7 @@ git commit -m "feat(engine): balloons round (word lock by initial, pops, escapes
 - Consumes: `sentencesText`, `wordsText`, `Rng` del generador; `sessionDay`, `daysBetween` de stats.
 - Produces: `ghostWpm(sessions, today, fallback)`, `raceText(pool, rng)`, `ghostPos(elapsedMs, wpm, length)`, `ghostFinishMs(wpm, length)`, `raceOutcome(playerMs, wpm, length) → { won; marginSeconds }`.
 
-- [ ] **Step 1: Tests que fallan**
+- [x] **Step 1: Tests que fallan**
 
 `src/engine/games/race.test.ts`:
 
@@ -614,12 +616,12 @@ describe('raceText', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/games/race`
 Expected: FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `src/engine/games/race.ts`:
 
@@ -662,7 +664,7 @@ export function raceOutcome(playerMs: number, wpm: number, length: number): { wo
 
 `index.ts`: `export * from './race'`.
 
-- [ ] **Step 4: Verificar y commitear**
+- [x] **Step 4: Verificar y commitear**
 
 Run: `npm test -- src/engine/games`
 Expected: PASS.
@@ -683,7 +685,7 @@ git commit -m "feat(engine): race ghost (best recent Reto), text and outcome"
 **Interfaces:**
 - Produces: `useHiddenInput({ onText, onEscape?, autoFocus?, focusKey? }) → { inputProps, focused, focus }`; `inputProps` se esparce sobre un `<input>`.
 
-- [ ] **Step 1: El hook**
+- [x] **Step 1: El hook**
 
 `src/app/hooks/useHiddenInput.ts`:
 
@@ -784,7 +786,7 @@ export function useHiddenInput({ onText, onEscape, autoFocus = true, focusKey }:
 }
 ```
 
-- [ ] **Step 2: `TypingArea` usa el hook**
+- [x] **Step 2: `TypingArea` usa el hook**
 
 Reemplazar todo lo que va desde `const inputRef = useRef<HTMLInputElement>(null)` hasta `const focus = () => inputRef.current?.focus()` (inclusive) por:
 
@@ -800,7 +802,7 @@ el `<input …/>` completo por:
 
 y el import de React por `import type { TypingState } from '@/engine/typing'` + `import { useHiddenInput } from '../hooks/useHiddenInput'` (borrar `useCallback, useEffect, useRef, useState` y los tipos de eventos que quedaron sin uso).
 
-- [ ] **Step 3: Verificar (unitarios + los e2e que tipean)**
+- [x] **Step 3: Verificar (unitarios + los e2e que tipean)**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/flow.spec.ts`
 Expected: PASS, incluido `dead keys compose accented letters through the hidden input`.
@@ -822,7 +824,7 @@ git commit -m "refactor: hidden-input capture as a hook shared by the typing are
 - Produces: `GAME_META: Record<GameId, { title; blurb; glyph; variant: KeycapVariant }>`; `<Game id {...GameProps} />`; `gameSession(r: GameResult): Omit<SessionRecord, 'at'>`; `GameProps.ghostWpm?: number`, `GameProps.patterns?: string[]`.
 - Consumes: `BalloonsGame`/`RaceGame` (Tasks 7–8): `Game.tsx` los importa; hasta que existan, dejar los dos `case` devolviendo `<RainGame …/>` con un `// TODO(juegos-2)` **no** — en su lugar crear los dos archivos vacíos-funcionales en esta misma tarea (Step 1) y rellenarlos en las Tasks 7 y 8.
 
-- [ ] **Step 1: Tipos y meta**
+- [x] **Step 1: Tipos y meta**
 
 `types.ts`, agregar a `GameProps`:
 
@@ -891,7 +893,7 @@ export function Game({ id, ...props }: GameProps & { id: GameId }) {
 }
 ```
 
-- [ ] **Step 2: `gameSession`**
+- [x] **Step 2: `gameSession`**
 
 `src/app/lib/gameSession.ts`:
 
@@ -916,7 +918,7 @@ export function gameSession(r: GameResult): Omit<SessionRecord, 'at'> {
 }
 ```
 
-- [ ] **Step 3: `GameResults` — vistas nuevas**
+- [x] **Step 3: `GameResults` — vistas nuevas**
 
 Agregar en `view()` de `GameResults.tsx`:
 
@@ -950,11 +952,11 @@ Agregar en `view()` de `GameResults.tsx`:
     }
 ```
 
-- [ ] **Step 4: `Path` usa `GAME_META`**
+- [x] **Step 4: `Path` usa `GAME_META`**
 
 En `Path.tsx`: borrar `const GAME_GLYPH …`, importar `import { GAME_META } from '../components/games/meta'` y usar `GAME_META[l.game ?? 'rain'].glyph`. Quitar `type GameId` del import de curriculum si quedó sin uso.
 
-- [ ] **Step 5: Verificar y commitear**
+- [x] **Step 5: Verificar y commitear**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: PASS, 4 advertencias de lint como antes.
@@ -976,7 +978,7 @@ git commit -m "feat(games): game meta, Game switch, session mapping and result v
 - Consumes: reducer de la Task 3, `useHiddenInput`, `Mascot`/`moods`, `GameProps.patterns`, `weak`.
 - Produces: DOM para e2e — cada globo vivo lleva `data-balloon`, `data-word`, `data-typed`; el activo además `data-active="1"`.
 
-- [ ] **Step 1: El componente**
+- [x] **Step 1: El componente**
 
 ```tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -1298,14 +1300,14 @@ export function BalloonsGame({ layout, pool, weak = [], patterns, sound = true, 
 
 Notas para quien implementa: `typing.wpm` es 0 (Globos no mide velocidad) pero `samples` alimenta el Repaso; `data-*` solo en globos vivos. El `pop` toma el globo que acaba de irse (`goneAt === now`).
 
-- [ ] **Step 2: Typecheck, lint, probar a mano**
+- [x] **Step 2: Typecheck, lint, probar a mano**
 
 Run: `npx tsc -b && npm run lint`
 Expected: sin errores; si el lint marca `void layout`, borrar `layout` de la desestructuración (`{ pool, weak = [], patterns, sound = true, durationMs = 45_000, onFinish }`) y dejar `layout` sin usar en la prop.
 
 Probar en `http://localhost:5173/leccion/superior-juego-fila-superior` (sembrar `superior-unit-review` hecho, como en el e2e).
 
-- [ ] **Step 3: e2e**
+- [x] **Step 3: e2e**
 
 `e2e/balloons.spec.ts`:
 
@@ -1388,7 +1390,7 @@ git commit -m "feat(games): Globos de palabras — lock a balloon by its initial
 - Consumes: `raceText`, `ghostPos`, `raceOutcome`; `useTypingSession`, `TypingArea`; `metrics`, `rhythm`, `keySamples`; `GameProps.ghostWpm`.
 - Produces: la frase se renderiza con `.type-char` (el e2e la lee como en `flow.spec.ts`).
 
-- [ ] **Step 1: El componente**
+- [x] **Step 1: El componente**
 
 ```tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -1523,14 +1525,14 @@ export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFi
 
 `Array.prototype.findLastIndex` existe en `lib: ES2023`; si `tsc` se queja, reemplazar por un `for` descendente.
 
-- [ ] **Step 2: Typecheck, lint, probar a mano**
+- [x] **Step 2: Typecheck, lint, probar a mano**
 
 Run: `npx tsc -b && npm run lint`
 Expected: sin errores.
 
 Probar en `http://localhost:5173/leccion/mayusculas-juego-mayusculas` (sembrar `mayusculas-unit-review` hecho).
 
-- [ ] **Step 3: e2e**
+- [x] **Step 3: e2e**
 
 `e2e/race.spec.ts`:
 
@@ -1596,7 +1598,7 @@ git commit -m "feat(games): Carrera contra tu fantasma — real sentences agains
 - Modify: `src/app/routes/LessonPlayer.tsx`, `src/app/routes/Home.tsx`, `src/main.tsx`
 - Create: `src/app/routes/Play.tsx`, `e2e/play.spec.ts`
 
-- [ ] **Step 1: `LessonPlayer`**
+- [x] **Step 1: `LessonPlayer`**
 
 Imports: reemplazar `import { RainGame } …` y `import { RhythmGame } …` por `import { Game } from '../components/games/Game'`; agregar `import { gameSession } from '../lib/gameSession'`, `import { ghostWpm } from '@/engine/games'` (sumar al import existente de `@/engine/games`), `dayKey` al import de `@/engine/stats`. Selector: `const sessions = useStore((s) => s.sessions)`.
 
@@ -1619,7 +1621,7 @@ y el render:
         <Game key={String(gameResult === null)} id={lesson.game ?? 'rain'} {...gameProps} />
 ```
 
-- [ ] **Step 2: `Play.tsx`**
+- [x] **Step 2: `Play.tsx`**
 
 ```tsx
 import { useCallback, useEffect, useState } from 'react'
@@ -1710,7 +1712,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
 
 `src/main.tsx`: `import { Play } from './app/routes/Play'` y la ruta `{ path: '/jugar/:gameId', element: <Play /> },` después de `/practica/:kind`.
 
-- [ ] **Step 3: Fila "Jugar" en Inicio**
+- [x] **Step 3: Fila "Jugar" en Inicio**
 
 `Home.tsx`: imports `import type { GameId } from '@/engine/curriculum'` y `import { GAME_META } from '../components/games/meta'`; en `Home()`, `const { curriculum, next, completed, learned } = useProgress()` y:
 
@@ -1738,7 +1740,7 @@ Después de la `<section className="mb-10">` de la rutina:
       )}
 ```
 
-- [ ] **Step 4: e2e del modo libre**
+- [x] **Step 4: e2e del modo libre**
 
 `e2e/play.spec.ts`:
 
@@ -1789,7 +1791,7 @@ test('free play appears only with the routine complete and records a game sessio
 })
 ```
 
-- [ ] **Step 5: Verificar todo y commitear**
+- [x] **Step 5: Verificar todo y commitear**
 
 Run: `npx tsc -b && npm run lint && npm test && npm run e2e`
 Expected: unitarios PASS; Playwright 10 PASS (7 previos + balloons + race + play). Si `race.spec.ts` no llega a "Le ganaste": el bot tipea a ~100 PPM contra 25; revisar que `reference: true` de la sesión sembrada llegue a `ghostWpm` (la sesión es de hoy).
@@ -1806,12 +1808,12 @@ git commit -m "feat: free play (/jugar) with a Jugar row on Home once the routin
 **Files:**
 - Modify: `docs/backlog.md`, `.serena/memories/typelight-architecture.md`, `docs/superpowers/handoffs/HANDOFF.md`
 
-- [ ] **Step 1: Build**
+- [x] **Step 1: Build**
 
 Run: `npm run build`
 Expected: OK.
 
-- [ ] **Step 2: Docs**
+- [x] **Step 2: Docs**
 
 `docs/backlog.md`: borrar el ítem 1 de "Próxima etapa" (queda "(Sin pendientes acordados por ahora.)") y dejar las ideas sueltas.
 
@@ -1819,7 +1821,7 @@ Memoria Serena, viñeta **Juegos**: sumar "**Globos** (`BalloonsGame`, reducer `
 
 `HANDOFF.md`: reescribir para la ventana siguiente (Alcance: etapa 2 cerrada; Arrancá acá: no hay pendiente acordado, preguntar a Seba tras uso real; Descartado: sin entradas nuevas de esta etapa, conservar las vigentes; Decisiones: sumar filas para Progreso opción 1, juegos por hueco, Jugar libre).
 
-- [ ] **Step 3: Commit y rama**
+- [x] **Step 3: Commit y rama**
 
 ```bash
 git add docs

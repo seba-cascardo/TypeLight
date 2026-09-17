@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Estado:** Ejecutado completo el 2026-09-16 y mergeado a `master` (rama `juegos-1`, ff). Después, por pedido de Seba: campos a pantalla completa (`.game-field`), teclas y mascota escalan con el alto, mascota con humor escalonado (`moods.ts`).
+
 **Goal:** Dejar la ruta preparada para varios juegos (id por hueco, resultado y estrellas en el motor, pantalla de resultados única, sesiones `kind: 'game'`) y estrenar el primero, **Al compás**: un metrónomo a tu meta de PPM y teclas que hay que tocar a tiempo.
 
 **Architecture:** La lógica de ronda de Al compás (notas, juicio justo/bien/fuera, rampa de tempo, conteo) es un reducer puro en `src/engine/games/rhythm.ts` con tests; el componente React solo dibuja el estado y le pasa `performance.now()` relativo al inicio. Los juegos comparten `GameProps`/`GameResult`, la mascota, `pickLetters` y una pantalla de resultados; `LessonPlayer` elige el componente por `lesson.game`.
@@ -46,7 +48,7 @@
 
 ### Task 0: Rama
 
-- [ ] **Step 1: Crear la rama desde `master`**
+- [x] **Step 1: Crear la rama desde `master`**
 
 ```bash
 git -C C:/Projects/TypeLight checkout -b juegos-1
@@ -66,7 +68,7 @@ Expected: `Switched to a new branch 'juegos-1'`.
 **Interfaces:**
 - Produces: `GameId = 'rain' | 'rhythm'`; `game(b, u, slug, title, id: GameId = 'rain')`.
 
-- [ ] **Step 1: Test que falla**
+- [x] **Step 1: Test que falla**
 
 Agregar al final del `describe('curriculum', …)` en `src/engine/curriculum/curriculum.test.ts`:
 
@@ -88,12 +90,12 @@ Agregar al final del `describe('curriculum', …)` en `src/engine/curriculum/cur
   })
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/curriculum`
 Expected: FAIL (los tres huecos siguen en `'rain'`).
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `src/engine/curriculum/types.ts`:
 
@@ -125,12 +127,12 @@ Reemplazar las tres llamadas:
   game(b, num, 'numeros', 'Juego: al compás con números', 'rhythm')
 ```
 
-- [ ] **Step 4: Verificar**
+- [x] **Step 4: Verificar**
 
 Run: `npx tsc -b && npm test -- src/engine/curriculum`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/curriculum/types.ts src/engine/curriculum/build.ts src/engine/curriculum/curriculum.test.ts
@@ -147,7 +149,7 @@ git commit -m "feat(curriculum): game ids per slot; three slots become the rhyth
 **Interfaces:**
 - Produces: `pickLetters(layout: Layout, pool: string[]): string[]`; `GameResult { gameId: GameId; score; hits; misses; wrong; bestCombo; seconds; accuracy; detail: Record<string, number> }`; `starsForGame(r: GameResult): Stars`.
 
-- [ ] **Step 1: Test que falla**
+- [x] **Step 1: Test que falla**
 
 `src/engine/games/scoring.test.ts`:
 
@@ -185,12 +187,12 @@ describe('starsForGame', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/games`
 Expected: FAIL — no se resuelve `./scoring`.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `src/engine/games/pool.ts`:
 
@@ -249,12 +251,12 @@ export * from './pool'
 export * from './scoring'
 ```
 
-- [ ] **Step 4: Verificar**
+- [x] **Step 4: Verificar**
 
 Run: `npx tsc -b && npm test -- src/engine/games`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/games
@@ -273,7 +275,7 @@ git commit -m "feat(engine): shared game result, stars per game and single-press
 - Consumes: `Rng` de `../generator` (`chance`, `pick`).
 - Produces: `Judgement = 'justo' | 'bien' | 'fuera'`; constantes `JUST_MS = 80`, `GOOD_MS = 160`, `MIN_BEAT_MS = 250`, `STRETCH_MS = 15_000`; `beatMs(goalWpm)`, `judge(offsetMs)`, `nextBeat(beat, onTime)`, `pickNote(letters, weak, prev, rng)`; `Note { id; ch; at; result; hit }`; `Round`; `startRound(beat)`, `schedule(round, now, lookaheadMs, letters, weak, rng)`, `currentNote(round)`, `press(round, ch, now) → { round, judgement }`, `advance(round, now) → { round, expired }`, `tally(round) → Tally`.
 
-- [ ] **Step 1: Tests que fallan**
+- [x] **Step 1: Tests que fallan**
 
 `src/engine/games/rhythm.test.ts`:
 
@@ -392,12 +394,12 @@ describe('round', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver que falla**
+- [x] **Step 2: Correr y ver que falla**
 
 Run: `npm test -- src/engine/games/rhythm`
 Expected: FAIL — no se resuelve `./rhythm`.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `src/engine/games/rhythm.ts`:
 
@@ -568,12 +570,12 @@ export function tally(r: Round): Tally {
 
 Y en `src/engine/games/index.ts` agregar `export * from './rhythm'`.
 
-- [ ] **Step 4: Verificar**
+- [x] **Step 4: Verificar**
 
 Run: `npx tsc -b && npm test -- src/engine/games`
 Expected: PASS. Si `pickNote` da menos de 10 `q` con la semilla 7, cambiar la semilla en el test (no la lógica) hasta que la mitad esperada aparezca.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/games
@@ -593,7 +595,7 @@ git commit -m "feat(engine): rhythm game round (beat, judgement, ramp, tally)"
 - Consumes: `GameResult`, `starsForGame`, `pickLetters` (Task 2); `GameId` (Task 1).
 - Produces: `GameProps { layout; pool; goalWpm; weak?; sound?; durationMs?; onFinish(r: GameResult) }`; `<Mascot mood combo />`; `<GameResults result stars onRetry nextLesson? />`; `metronome()`.
 
-- [ ] **Step 1: Tipos y mascota**
+- [x] **Step 1: Tipos y mascota**
 
 `src/app/components/games/types.ts`:
 
@@ -665,7 +667,7 @@ export function Mascot({ mood, combo }: { mood: Mood; combo: number }) {
 }
 ```
 
-- [ ] **Step 2: Mover y adaptar `RainGame`**
+- [x] **Step 2: Mover y adaptar `RainGame`**
 
 ```bash
 git mv src/app/components/RainGame.tsx src/app/components/games/RainGame.tsx
@@ -722,7 +724,7 @@ y reemplazar cada `lives` por `LIVES` (en `stats.current`, en `start()` y en el 
   }, [onFinish, sound])
 ```
 
-- [ ] **Step 3: Sonido de metrónomo**
+- [x] **Step 3: Sonido de metrónomo**
 
 Agregar al final de `src/app/lib/sound.ts`:
 
@@ -744,7 +746,7 @@ export function metronome() {
 }
 ```
 
-- [ ] **Step 4: Pantalla de resultados única**
+- [x] **Step 4: Pantalla de resultados única**
 
 `src/app/components/games/GameResults.tsx`:
 
@@ -839,7 +841,7 @@ export function GameResults({ result, stars, onRetry, nextLesson, backTo = { to:
 }
 ```
 
-- [ ] **Step 5: `LessonPlayer` elige el juego, puntúa con el motor y graba la sesión**
+- [x] **Step 5: `LessonPlayer` elige el juego, puntúa con el motor y graba la sesión**
 
 En `src/app/routes/LessonPlayer.tsx`:
 
@@ -925,7 +927,7 @@ Reemplazar el bloque `if (phase === 'results' && gameResult) { … }` completo p
   }
 ```
 
-- [ ] **Step 6: Glifo por juego en la ruta**
+- [x] **Step 6: Glifo por juego en la ruta**
 
 En `src/app/routes/Path.tsx`, sumar `type GameId` al import de `@/engine/curriculum` y, antes de `function legend`:
 
@@ -940,7 +942,7 @@ y el caso `'game'`:
       return { main: GAME_GLYPH[l.game ?? 'rain'], sub: 'juego' }
 ```
 
-- [ ] **Step 7: Verificar con la Lluvia**
+- [x] **Step 7: Verificar con la Lluvia**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/game.spec.ts`
 Expected: sin errores de tipos ni lint nuevo; unitarios PASS; el e2e de la Lluvia PASS (misma pantalla de resultados, ahora desde `GameResults`). Comprobar además en `localStorage` (el e2e ya lee `lessons[…]`) que `sessions` termina con `{ kind: 'game', gameId: 'rain' }`: agregar al final de `e2e/game.spec.ts`, antes de la captura:
@@ -950,7 +952,7 @@ Expected: sin errores de tipos ni lint nuevo; unitarios PASS; el e2e de la Lluvi
   expect(last).toMatchObject({ kind: 'game', gameId: 'rain' })
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A src/app/components/games src/app/lib/sound.ts src/app/routes/LessonPlayer.tsx src/app/routes/Path.tsx e2e/game.spec.ts
@@ -970,7 +972,7 @@ git commit -m "refactor(games): shared props, mascot, results screen and game se
 - Consumes: `GameProps`, `Mascot`, `metronome/click/thud/chime`, `pickLetters`, reducer de la Task 3, `FINGER_COLOR/fingerGroup`, `resolveChar`.
 - Produces: `<RhythmGame {...GameProps} />`; DOM: la nota actual lleva `data-current="1"`, `data-ch`, `data-offset` (ms hasta su momento; negativo = ya pasó).
 
-- [ ] **Step 1: El componente**
+- [x] **Step 1: El componente**
 
 `src/app/components/games/RhythmGame.tsx`:
 
@@ -1277,18 +1279,18 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
 }
 ```
 
-- [ ] **Step 2: Conectarlo en `LessonPlayer`**
+- [x] **Step 2: Conectarlo en `LessonPlayer`**
 
 Import: `import { RhythmGame } from '../components/games/RhythmGame'` y el ternario de la Task 4 Step 5 (`lesson.game === 'rhythm' ? <RhythmGame …/> : <RainGame …/>`).
 
-- [ ] **Step 3: Typecheck, lint, probar a mano**
+- [x] **Step 3: Typecheck, lint, probar a mano**
 
 Run: `npx tsc -b && npm run lint`
 Expected: sin errores.
 
 Abrir `http://localhost:5173/leccion/guia-juego-fila-guia` (con la lección anterior completa, o sembrar `guia-unit-review` en `localStorage` como hace el e2e) y jugar una ronda: el pulso suena, las notas entran en la zona, los juicios flotan, la barra de 20 toques se llena, al terminar aparece "Juego terminado" con "A tiempo".
 
-- [ ] **Step 4: e2e**
+- [x] **Step 4: e2e**
 
 `e2e/rhythm.spec.ts`:
 
@@ -1352,7 +1354,7 @@ test('rhythm game: hit the notes on the beat, finish, get stars and a game sessi
 Run: `npx playwright test e2e/rhythm.spec.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/components/games/RhythmGame.tsx src/app/routes/LessonPlayer.tsx e2e/rhythm.spec.ts
@@ -1366,12 +1368,12 @@ git commit -m "feat(games): Al compás — metronome at the goal speed, notes ju
 **Files:**
 - Modify: `docs/backlog.md`, `.serena/memories/typelight-architecture.md`
 
-- [ ] **Step 1: Todo en verde**
+- [x] **Step 1: Todo en verde**
 
 Run: `npm test && npm run e2e && npm run build`
 Expected: unitarios PASS; Playwright 7 PASS (6 previos + `rhythm`); build OK.
 
-- [ ] **Step 2: Docs**
+- [x] **Step 2: Docs**
 
 `docs/backlog.md`, ítem 1: anotar "Hecho: infraestructura de juegos + Al compás (plan `2026-09-16-juegos-1-compas.md`). Siguen Globos, Carrera y la fila Jugar (`juegos-2`)."
 
@@ -1381,7 +1383,7 @@ Expected: unitarios PASS; Playwright 7 PASS (6 previos + `rhythm`); build OK.
 - **Juegos** (`src/app/components/games/`, motor en `src/engine/games/`): lecciones `kind: 'game'` con `lesson.game: GameId`; `LessonPlayer` elige el componente. Contrato común `GameProps` → `GameResult` (`engine/games/scoring.ts` da las estrellas por juego); resultados en `GameResults`; cada juego graba una sesión `kind: 'game'` con `gameId`. Física por tiempo con rAF (se pausa en pestañas ocultas; e2e con `?dur=6000`). **Lluvia** (`RainGame`): reflejo por tecla. **Al compás** (`RhythmGame`): reducer puro `engine/games/rhythm.ts` (pulso = `beatMs(goalWpm)`, juicio ±80/±160 ms, rampa −10 % cada 15 s con ≥ 80 % a tiempo, mínimo 250 ms); graba `rhythm = fracción a tiempo`. La nota actual expone `data-current/data-ch/data-offset` para los e2e.
 ```
 
-- [ ] **Step 3: Commit y rama**
+- [x] **Step 3: Commit y rama**
 
 ```bash
 git add docs/backlog.md .serena/memories/typelight-architecture.md docs/superpowers/plans/2026-09-16-juegos-1-compas.md

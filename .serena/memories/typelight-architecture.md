@@ -27,6 +27,8 @@ App web local (Vite + React 19 + TS + Tailwind v4 + zustand persist) para aprend
 - El traspaso entre ventanas vive en docs/superpowers/handoffs/HANDOFF.md (canónico, sobrescrito; lo commitea Seba con el commit siguiente).
 
 ## Trampas
-- Heredocs con backticks en el tool Bash: fallaban el 2026-09-15, corren bien desde el 2026-09-16. Si vuelve a pasar ("unexpected EOF while looking for matching"), la salida es el tool Write o un script Python.
+- Heredocs con backticks en el tool Bash: fallan de forma intermitente (2026-09-15 sí, 09-16 no, 09-17 sí, con template strings JSX). Con backticks en el contenido, escribir el archivo —o el script Python que lo genera— con el tool Write y correrlo desde Bash.
+- Playwright en los juegos: `getByText('A tiempo')` y `getByRole('heading', { name })` chocan con el pie de resultados y con el h1 de la lección/modo libre. Usar `exact: true`, `{ level: 2 }` y los `data-*` que exponen los juegos (`data-current/ch/offset`, `data-balloon/word/typed/active`).
+- Fechas en e2e: `toISOString().slice(0,10)` es UTC; la app usa el día local (`dayKey`). Sembrar la rutina "de hoy" con un `localDay()` como en `e2e/play.spec.ts`.
 - Playwright: el key name es `Enter`, no `Return`.
 - `tsconfig.app.json` usa `paths` sin `baseUrl` (TS 6 deprecó `baseUrl`).

@@ -1,6 +1,6 @@
 # TypeLight — segunda etapa: juegos y Progreso
 
-Fecha: 2026-09-16. Autor: Claude (Opus 5). Elegido por Seba sobre la propuesta renderizada (`https://claude.ai/artifact/Fw6mUvuvXHzoG2M2L5gMM2`): los tres juegos en el orden B → A → C, la velocidad del encabezado "solo el Reto" (opción 1) y la fila "Jugar" después de la rutina.
+Fecha: 2026-09-16. **Implementado completo y mergeado a `master` el 2026-09-17** (planes en `docs/superpowers/plans/2026-09-16-progreso.md`, `2026-09-16-juegos-1-compas.md`, `2026-09-17-juegos-2-globos-carrera-jugar.md`). Autor: Claude (Opus 5). Elegido por Seba sobre la propuesta renderizada (`https://claude.ai/artifact/Fw6mUvuvXHzoG2M2L5gMM2`): los tres juegos en el orden B → A → C, la velocidad del encabezado "solo el Reto" (opción 1) y la fila "Jugar" después de la rutina.
 
 ## 1. Qué se decidió
 

@@ -1,15 +1,16 @@
 # Handoff — TypeLight: etapa "juegos y Progreso" cerrada
 
-Fecha 2026-09-17 · rama `master` · preparado sobre el último commit de la rama `juegos-2` (ver `git log -1`)
+Fecha 2026-09-17 · rama `master` · preparado sobre `0dbfb42`
 
 ## Alcance
 
 **Sí:** la etapa 2 completa está implementada, testeada y mergeada a `master`: **Progreso** nuevo (`/estadisticas`: velocidad de referencia solo de Retos, dominio por tecla, precisión 7 días, constancia, ritmo; store v2 con migración automática), **infraestructura de juegos** (id por hueco, `GameProps`/`GameResult`, estrellas en el motor, `GameResults`, mascota compartida con humor escalonado, campos a pantalla completa), tres juegos nuevos (**Al compás**, **Globos de palabras**, **Carrera contra tu fantasma**) repartidos en 12 huecos de la ruta, y el **modo libre "Jugar"** en Inicio con la rutina completa. Spec: `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md`; planes ejecutados: `docs/superpowers/plans/2026-09-16-progreso.md`, `2026-09-16-juegos-1-compas.md`, `2026-09-17-juegos-2-globos-carrera-jugar.md`.
-**No:** no hay deploy ni backend, no se optimizó bundle (524 KB de JS), no hay PWA. Seba probó Lluvia y Al compás (pidió y obtuvo alto completo + mascota escalonada); Globos, Carrera y Jugar todavía no los probó en uso real.
+Seba probó los cuatro juegos, Progreso y la fila Jugar en uso real y los dio por correctos ("ahora están correctos", 2026-09-17).
+**No:** no hay deploy ni backend, no se optimizó bundle (524 KB de JS), no hay PWA. Remoto: `origin` = `https://github.com/seba-cascardo/TypeLight` (privado, creado con `gh` el 2026-09-17); `master` pusheado hasta `0dbfb42`.
 
 ## Arrancá acá
 
-**Primera acción:** no hay pendiente acordado (`docs/backlog.md` solo tiene ideas sueltas). Preguntale a Seba qué le pareció Globos, Carrera y la fila Jugar en uso real, y arreglá lo que reporte. Si pide cambios visuales grandes, mostrale 2-3 opciones renderizadas antes de tocar la app (le funcionó tres veces: diseño, tipografía, juegos/métricas).
+**Primera acción:** no hay pendiente acordado (`docs/backlog.md` solo tiene ideas sueltas). Preguntale a Seba qué sigue; si trae feedback de uso real, arreglalo. Si pide cambios visuales grandes, mostrale 2-3 opciones renderizadas antes de tocar la app (le funcionó tres veces: diseño, tipografía, juegos/métricas). Commit y push van cuando él lo pide ("commit, push"): `git push` a `origin master`.
 
 Verificá con: `npm test` (81 unitarios) · `npm run e2e` (10 Playwright; arranca su propio dev server en :5174) · `npm run build`. Lint: `npm run lint` tiene 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`, React Compiler sobre memoización manual): no sumar ninguna.
 Dev server: `npm run dev` (:5173). Capturas con progreso sembrado: `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]`.
@@ -23,11 +24,15 @@ Leé, en este orden:
 
 **Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque un plan lo liste como pendiente: este handoff es más reciente que los planes. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
-Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho, con el dev server en :5173 levantado desde `C:\Users\seba_\Desktop\TypeLight.bat` (sirve el árbol de trabajo: si trabajás en una rama checkouteada en la misma carpeta, él ya la ve). Cada edición dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. El navegador integrado no puede capturar `file://` ni ver artifacts de claude.ai; para capturas usá Playwright desde `scripts/` (los scripts fuera del proyecto no resuelven `@playwright/test`). Heredocs con backticks en el tool Bash rompen el parser: para archivos con template strings usá el tool Write o un script Python escrito con Write.
+Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho, con el dev server en :5173 levantado desde `C:\Users\seba_\Desktop\TypeLight.bat` (sirve el árbol de trabajo: si trabajás en una rama checkouteada en la misma carpeta, él ya la ve). Cada edición dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. El navegador integrado no puede capturar `file://` ni ver artifacts de claude.ai; para capturas usá Playwright desde `scripts/` (los scripts fuera del proyecto no resuelven `@playwright/test`). Trampas del entorno (heredocs con backticks, selectores Playwright, fechas UTC vs. locales en e2e): en la memoria Serena § Trampas.
 
 ## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque el plan lo liste como pendiente: este handoff es más reciente que el plan. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
 Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html { font-size: clamp(16px, 0.55vw + 9px, 21px) }` y contenedor `max-w-[86rem]`, ambos con su OK ("bien la letra"). Mientras usa la app, cada edición tuya dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. Otra sesión de Claude puede tener el dev server en :5173 (el hook lo avisa): las capturas con `scripts/shot.mjs` sirven igual porque apuntan a ese puerto; el navegador integrado no puede capturar archivos `file://` ni ver artifacts de claude.ai (no tiene sesión).
+
+## Estado
+
+Sobre `0dbfb42` quedaron sin commitear, todos dejados por el cierre EOS de la ventana del 2026-09-17 y ninguno en uso: este `HANDOFF.md`; los tres planes de `docs/superpowers/plans/` con sus pasos tildados y una línea `> **Estado:**` bajo el encabezado; el spec `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md` con la marca "Implementado completo" en la línea de fecha; `.serena/memories/typelight-architecture.md` con tres viñetas nuevas en § Trampas (consentidas por Seba). Van en el próximo commit normal de Seba.
 
 ## Descartado y confirmado
 
@@ -43,11 +48,6 @@ Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html {
 - **Corpus de OpenSubtitles sin filtrar**: trae nombres en inglés ("jules", "ford"), palabras violentas/vulgares y formas de vosotros. Lo que quedó: filtro contra diccionario (`words/an-array-of-spanish-words`, sin tildes: comparar con acentos quitados) + blocklist en `scripts/build-corpus.py`. Caduca si `git log -1 --format=%h -- scripts/build-corpus.py` deja de dar `7c5c16e`.
 - **Sondear el puerto de Vite desde un `.bat` con `New-Object Net.Sockets.TcpClient` sin argumentos + `.Connect('localhost', 5173)`** da siempre "cerrado": Windows PowerShell 5.1 crea el socket IPv4 y Vite escucha solo en `[::1]`. Funciona el constructor con host: `New-Object Net.Sockets.TcpClient('localhost',5173)` (resuelve las dos familias). Además, `%errorlevel%` en la misma línea de `cmd /c` se expande antes de correr el comando: probarlo en un `.bat` con el `if` en línea aparte. Caduca si `powershell -NoProfile -Command "try{(New-Object Net.Sockets.TcpClient).Connect('localhost',5173); 'ok'}catch{'fail'}"` imprime `ok` con el dev server levantado.
 - **Tipografía**: se mostraron tres parejas con contenido real (artifact `https://claude.ai/artifact/FktdvPVBNM2jv5sbBqN4vR`). Rechazadas por Seba al elegir la B: **Fraunces + Atkinson Hyperlegible Next** (serif cálida + sans hiperlegible) y **Chivo + Asap** (argentinas, sobrias); antes había rechazado **Bricolage Grotesque + Nunito Sans** ("no me gusta") e **IBM Plex Mono** en el ejercicio. Caduca: hasta que Seba pida cambiar la tipografía.
-- **Heredocs con backticks en el tool Bash** volvieron a romper el parser el 2026-09-17 (`unexpected EOF while looking for matching`) al escribir un `.py` con template strings JSX. Salida: tool Write para el archivo (o para el script Python) y correrlo desde Bash. Caduca si `bash -c 'cat <<EOF
-\`x\`
-EOF'` corre sin error desde el tool Bash.
-- **Selectores Playwright por texto en los juegos**: `getByText('A tiempo')` y `getByRole('heading', { name })` chocan con el pie de resultados y con el h1 de la lección/modo libre. Lo que funciona: `exact: true`, `{ level: 2 }`, y los `data-*` que exponen los juegos. Caduca: nunca (es convención).
-- **Fechas en e2e**: `new Date().toISOString().slice(0,10)` es UTC y la app usa el día local (`dayKey`); de noche difieren y la rutina "de hoy" no coincide. Usar un `localDay()` como en `e2e/play.spec.ts`. Caduca: nunca.
 
 ## Decisiones
 
