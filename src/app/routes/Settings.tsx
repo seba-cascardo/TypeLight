@@ -30,6 +30,12 @@ function downloadBackup(setSettings: (patch: { lastBackupAt: string }) => void) 
   setSettings({ lastBackupAt: now.toISOString() })
 }
 
+/** Format an ISO date for display, falling back to a plain label when it can't be parsed. */
+function fechaCopia(iso: string): string {
+  const d = new Date(iso)
+  return iso && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('es-AR') : 'sin fecha'
+}
+
 function BackupCard() {
   const lastBackupAt = useStore((s) => s.settings.lastBackupAt)
   const setSettings = useStore((s) => s.setSettings)
@@ -46,13 +52,21 @@ function BackupCard() {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    const parsed = parseBackup(await file.text())
+    let text: string
+    try {
+      text = await file.text()
+    } catch {
+      setPending(null)
+      setMessage('No se pudo leer el archivo.')
+      return
+    }
+    const parsed = parseBackup(text)
     if (!parsed.ok) {
+      setPending(null)
       setMessage(parsed.error)
       return
     }
-    const when = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleDateString('es-AR') : 'sin fecha'
-    setPending({ state: parsed.state, when })
+    setPending({ state: parsed.state, when: fechaCopia(parsed.exportedAt) })
     setMessage(null)
   }
 
@@ -63,7 +77,7 @@ function BackupCard() {
     setPending(null)
   }
 
-  const last = lastBackupAt ? `Última copia: ${new Date(lastBackupAt).toLocaleDateString('es-AR')}.` : 'Todavía no guardaste ninguna copia.'
+  const last = lastBackupAt ? `Última copia: ${fechaCopia(lastBackupAt)}.` : 'Todavía no guardaste ninguna copia.'
 
   return (
     <div className="rounded-xl bg-paper px-4 py-3" data-testid="backup-card">
