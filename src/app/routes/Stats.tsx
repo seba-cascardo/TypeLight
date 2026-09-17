@@ -1,8 +1,11 @@
 import { useMemo, type ReactNode } from 'react'
 import {
+  BIGRAM_CLASS_NAME,
   activeWeeks,
+  bigramClasses,
   calendar,
   constancy,
+  forecast,
   dayKey,
   fingerDominance,
   keySpeed,
@@ -18,8 +21,14 @@ import {
   unitMarks,
   weekActiveDays,
   weaknessScore,
+  weaknessQualities,
+  weakestBigrams,
+  weakestWords,
   weeklyAccuracy,
+  type BigramClass,
 } from '@/engine/stats'
+import { poolOf } from '@/engine/generator'
+import { Link } from 'react-router'
 import { Hands } from '../components/Hands'
 import { Keyboard } from '../components/Keyboard'
 import { Calendar } from '../components/stats/Calendar'
@@ -71,6 +80,8 @@ export function Stats() {
   const streak = useStore((s) => s.streak)
   const legacy = useStore((s) => s.legacy)
   const blindSince = useStore((s) => s.blindSince)
+  const bigrams = useStore((s) => s.bigrams)
+  const words = useStore((s) => s.words)
   const weeklyGoal = useStore((s) => s.settings.weeklyGoal)
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
@@ -93,6 +104,21 @@ export function Stats() {
   const fluid = fluidity(sessions, today)
   const form = formHeadline(sessions)
   const best = useMemo(() => records(days, sessions), [days, sessions])
+  const trend = forecast(points, goalWpm, today)
+  const classes = useMemo(() => bigramClasses(bigrams, layout), [bigrams, layout])
+  const slowBigrams = useMemo(() => weakestBigrams(bigrams, poolOf(learned), 3), [bigrams, learned])
+  const qualities = useMemo(() => weaknessQualities(keys, bigrams, layout, learned), [keys, bigrams, layout, learned])
+  const weakWords = useMemo(() => weakestWords(words, 6), [words])
+  const dead = useMemo(() => {
+    const recent = sessions.filter((s) => s.dead).slice(-30)
+    if (recent.length === 0) return null
+    const n = recent.reduce((a, s) => a + (s.dead?.n ?? 0), 0)
+    const lat = recent.filter((s) => s.dead?.latency != null && (s.dead?.n ?? 0) > 0)
+    const latency = lat.length ? Math.round(lat.reduce((a, s) => a + (s.dead?.latency ?? 0) * (s.dead?.n ?? 0), 0) / Math.max(1, lat.reduce((a, s) => a + (s.dead?.n ?? 0), 0))) : null
+    const plainVowels = ['a', 'e', 'i', 'o', 'u'].filter((c) => keys[c]).map((c) => keys[c].latencyEma)
+    const plain = plainVowels.length ? Math.round(plainVowels.reduce((a, b) => a + b, 0) / plainVowels.length) : null
+    return { n, latency, plain, missed: recent.reduce((a, s) => a + (s.dead?.missed ?? 0), 0), loose: recent.reduce((a, s) => a + (s.dead?.loose ?? 0), 0) }
+  }, [sessions, keys])
   const weekDays = weekActiveDays(days, today)
   const weeksMet = activeWeeks(days, weeklyGoal)
   const alive = streakAlive(streak, today)
@@ -188,6 +214,13 @@ export function Stats() {
           {blindSince && <Swatch className="bg-ink" label="desde acá, sin ayuda" />}
           {legacy && <Swatch className="bg-ink-mute" label="tu velocidad de antes" />}
         </div>
+        {trend && (
+          <p className="mt-3 text-sm font-bold text-ink-soft" data-testid="forecast">
+            {trend.reached
+              ? `Ya estás por encima de la meta de la unidad (${goalWpm} PPM).`
+              : `A este ritmo (+${trend.slope.toFixed(1).replace('.', ',')} PPM por día), la meta de la unidad (${goalWpm} PPM) llega en ~${trend.daysToGoal} ${trend.daysToGoal === 1 ? 'día' : 'días'}.`}
+          </p>
+        )}
         <details className="mt-3 text-sm text-ink-soft">
           <summary className="cursor-pointer font-bold text-ink">¿Por qué este número y no otro?</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -270,6 +303,69 @@ export function Stats() {
                 : 'Aparece con ejercicios de veinte teclas o más en los últimos 7 días.'}
             </p>
           </div>
+        </Card>
+
+        <Card title="Transiciones" sub="El bigrama es la unidad que predice la velocidad: cuánto tardás en pasar de una tecla a la siguiente, según qué manos y dedos se turnan. Lo alimentan las lecciones, el Repaso, el Reto y el examen.">
+          {Object.keys(classes).length === 0 ? (
+            <p className="text-ink-soft">Con unos ejercicios más aparecen acá.</p>
+          ) : (
+            <div data-testid="transitions">
+              <ul className="grid gap-2">
+                {(['alt', 'hand', 'finger', 'repeat'] as BigramClass[]).map((cls) => {
+                  const c = classes[cls]
+                  if (!c) return null
+                  return (
+                    <li key={cls} className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
+                      <span className="font-bold">{BIGRAM_CLASS_NAME[cls]}</span>
+                      <span className="text-sm text-ink-soft">
+                        <span className="font-display text-lg font-extrabold text-ink">{c.latency}</span> ms · {c.samples} muestras
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+              {slowBigrams.length > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-bold text-ink-soft">
+                  <span>Las que más cuestan:</span>
+                  {slowBigrams.map((g) => (
+                    <span key={g} className="keycap keycap-sm">
+                      {g} <span className="text-ink-mute">{Math.round(bigrams[g].latencyEma)} ms</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {qualities.length > 0 && (
+                <p className="mt-3 text-sm font-bold text-ink-soft" data-testid="qualities">
+                  Hoy pesa: {qualities.join(' y ')}.
+                </p>
+              )}
+              {dead && (
+                <p className="mt-3 text-sm text-ink-soft" data-testid="dead-keys">
+                  <span className="font-bold text-ink">Tildes</span> · {dead.latency !== null ? `${dead.latency} ms con tilde` : 'sin latencia todavía'}
+                  {dead.plain !== null ? ` vs. ${dead.plain} ms sin tilde` : ''} · {dead.missed} {dead.missed === 1 ? 'tilde olvidada' : 'tildes olvidadas'} · {dead.loose} {dead.loose === 1 ? 'suelta' : 'sueltas'} (últimas {Math.min(30, sessions.filter((s) => s.dead).length)} sesiones con tildes).
+                </p>
+              )}
+            </div>
+          )}
+        </Card>
+
+        <Card title="Palabras que piden práctica" sub="Las que más veces salieron con error o lentas, sobre las que ya viste al menos dos veces.">
+          {weakWords.length === 0 ? (
+            <p className="text-ink-soft">Con unos Retos más aparecen acá.</p>
+          ) : (
+            <div data-testid="weak-words">
+              <ul className="flex flex-wrap gap-2">
+                {weakWords.map((w) => (
+                  <li key={w} className="keycap keycap-sm">
+                    {w} <span className="text-ink-mute">{Math.round(words[w].errorEma * 100)} %</span>
+                  </li>
+                ))}
+              </ul>
+              <Link to={`/practica/palabras?w=${encodeURIComponent(weakWords.join(','))}`} className="mt-3 inline-block text-sm font-bold text-mod-edge underline">
+                Practicar estas →
+              </Link>
+            </div>
+          )}
         </Card>
 
         <Card title="Récords" sub="Solo sobre medidas que un drill fácil no infla: el mejor Reto, la mejor mediana de 7 días, la mejor semana de precisión (500 caracteres o más) y la racha de rutinas completas.">

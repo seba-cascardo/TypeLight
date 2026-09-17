@@ -4,7 +4,7 @@ import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
 import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
 import { dayKey, newRollover, rolloverRatio, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
-import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
+import { bigramSamples, deadKeyStats, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { Game } from '../components/games/Game'
@@ -94,6 +94,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       const m = metrics(state)
       if (m.chars === 0) return
       const samples = keySamples(state)
+      const dead = deadKeyStats(state)
       recordSession(
         {
           kind: 'lesson',
@@ -106,8 +107,10 @@ function Player({ lesson }: { lesson: Lesson }) {
           rhythm: rhythm(state),
           rollover,
           ...(lesson.kind === 'text' && { reference: true as const }),
+          ...(dead && { dead }),
         },
         samples.values(),
+        { bigrams: bigramSamples(state).values(), words: wordSamples(state).values() },
       )
       const prev = totalsRef.current
       const errorsByKey = { ...prev.errorsByKey }

@@ -1,10 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { warmupGame } from '@/engine/curriculum'
 import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
 import { starsForGame, type GameResult } from '@/engine/games'
-import { dayKey, dayOfYear, keyReason, median, monthKey, newRollover, records, referenceByDay, rolloverRatio, weakestKeys } from '@/engine/stats'
-import { keySamples, metrics, repairMetrics, rhythm, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
+import {
+  dayKey,
+  dayOfYear,
+  keyReason,
+  median,
+  monthKey,
+  newRollover,
+  records,
+  referenceByDay,
+  resistedWords,
+  rolloverRatio,
+  weakestBigrams,
+  weakestKeys,
+  weaknessQualities,
+} from '@/engine/stats'
+import { bigramSamples, deadKeyStats, keySamples, metrics, repairMetrics, rhythm, wordSamples, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
 import { FormCheck } from '../components/FormCheck'
 import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
@@ -19,7 +33,7 @@ import { handsOpacityFor } from '../lib/fingers'
 import { gameSession } from '../lib/gameSession'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
-type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes'
+type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes' | 'palabras'
 
 interface Meta {
   title: string
@@ -80,13 +94,28 @@ const META: Record<Kind, Meta> = {
     timed: 60_000,
     mode: 'stop',
   },
+  palabras: {
+    title: 'Palabras que se resistieron',
+    blurb: 'Las que te costaron, tres veces cada una. No cuenta para la referencia ni para la rutina: es práctica dirigida.',
+    session: 'review',
+    variant: 'secondary',
+    mode: 'stop',
+  },
+}
+
+/** Words for `/practica/palabras`, from `?w=a,b,c`. */
+function wordsParam(search: string): string[] {
+  const raw = new URLSearchParams(search).get('w') ?? ''
+  return [...new Set(raw.split(',').map((w) => w.trim().toLowerCase()).filter((w) => w.length >= 2))].slice(0, 12)
 }
 
 export function Practice() {
   const { kind = '' } = useParams()
+  const [search] = useSearchParams()
   if (!(kind in META)) return <Navigate to="/" replace />
   if (kind === 'calentamiento') return <WarmupOrGame />
-  return <PracticeRun key={kind} kind={kind as Kind} />
+  if (kind === 'palabras' && wordsParam(search.toString()).length === 0) return <Navigate to="/" replace />
+  return <PracticeRun key={`${kind}-${search.get('w') ?? ''}`} kind={kind as Kind} />
 }
 
 /** One day in three the warm-up is a game (decided once per mount, like the bigram day). */
@@ -178,12 +207,16 @@ interface Result {
   at: string | null
   /** Faster than every reference session before it. */
   record: boolean
+  /** Words that carried an error or came out slow, for "practicar estas". */
+  resisted: string[]
 }
 
 function PracticeRun({ kind }: { kind: Kind }) {
   const meta = META[kind]
   const { layout, learned, goalWpm, curriculum } = useProgress()
   const keyStats = useStore((s) => s.keys)
+  const bigramStats = useStore((s) => s.bigrams)
+  const [search] = useSearchParams()
   const sound = useStore((s) => s.settings.sound)
   const showHands = useStore((s) => s.settings.showHands)
   const recordSession = useStore((s) => s.recordSession)
@@ -219,6 +252,9 @@ function PracticeRun({ kind }: { kind: Kind }) {
     [kind, curriculum, learned],
   )
   const weak = useMemo(() => weakestKeys(keyStats, learned, 3, dayKey()), [keyStats, learned])
+  const weakBigrams = useMemo(() => weakestBigrams(bigramStats, pool, 3), [bigramStats, pool])
+  const qualities = useMemo(() => weaknessQualities(keyStats, bigramStats, layout, learned), [keyStats, bigramStats, layout, learned])
+  const practiceWords = useMemo(() => wordsParam(search.toString()), [search])
   // Odd days warm up on the bigrams that lean on the weakest keys, once there are enough keys to make bigrams; even days (or fewer keys) use real words.
   const bigramWarmup = kind === 'calentamiento' && bigramDay && learned.length >= 6
 
@@ -228,6 +264,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     // Until the space bar has been taught, drills are continuous runs.
     const joined = !learned.includes(' ')
     if (kind === 'antes') return challengeText(pool, { rng })
+    if (kind === 'palabras') return rng.shuffle(practiceWords.flatMap((w) => [w, w, w])).join(' ')
     if (kind === 'examen') return joined ? drillText(learned, 40, { rng, joined }) : examText(pool, month)
     if (kind === 'calentamiento') {
       if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
@@ -235,11 +272,11 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     if (kind === 'repaso') {
       if (learned.length < 5) return drillText(learned, joined ? 8 : 16, { rng, joined })
-      return adaptiveText(pool, weak, 18, { rng })
+      return adaptiveText(pool, weak, 18, { rng, bigrams: weakBigrams })
     }
     if (joined) return drillText(learned, 12, { rng, joined })
     return challengeText(pool, { rng })
-  }, [kind, pool, weak, learned, round, bigramWarmup, month])
+  }, [kind, pool, weak, weakBigrams, learned, round, bigramWarmup, month, practiceWords])
 
   const onFinish = useCallback(
     (state: TypingState) => {
@@ -248,9 +285,11 @@ function PracticeRun({ kind }: { kind: Kind }) {
       const repair = repairMetrics(state)
       if (kind === 'antes') {
         setLegacy({ wpm: m.wpm, acc: m.accuracy, at: new Date().toISOString() })
-        setResult({ m, repair, at: null, record: false })
+        setResult({ m, repair, at: null, record: false, resisted: [] })
         return
       }
+      const words = wordSamples(state)
+      const dead = deadKeyStats(state)
       // A personal best is judged against everything recorded before this session.
       const previousBest = meta.reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
       const record = m.wpm > previousBest
@@ -267,12 +306,14 @@ function PracticeRun({ kind }: { kind: Kind }) {
           ...(meta.reference && { reference: true as const }),
           ...(meta.blind && { blind: true as const }),
           ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
+          ...(dead && { dead }),
         },
         keySamples(state).values(),
+        { bigrams: bigramSamples(state).values(), words: words.values() },
       )
-      markRoutine(meta.block!)
+      if (meta.block) markRoutine(meta.block)
       if (kind === 'examen') setLastExamDay(dayKey())
-      setResult({ m, repair, at, record })
+      setResult({ m, repair, at, record, resisted: meta.reference ? resistedWords(words.values()) : [] })
     },
     [kind, meta, recordSession, markRoutine, setLegacy, setLastExamDay],
   )
@@ -314,6 +355,11 @@ function PracticeRun({ kind }: { kind: Kind }) {
                 </li>
               ))}
             </ul>
+            {qualities.length > 0 && (
+              <p className="mt-1.5 text-xs font-semibold text-ink-mute" data-testid="qualities">
+                Hoy pesa: {qualities.join(' y ')}.
+              </p>
+            )}
           </div>
         )}
         {remaining !== null && (
@@ -368,6 +414,19 @@ function PracticeRun({ kind }: { kind: Kind }) {
           )}
           {kind === 'antes' && (
             <p className="mt-4 text-sm text-ink-soft">Guardado como tu velocidad de antes. Cuando la mediana de tus Retos la supere, te aviso en Inicio.</p>
+          )}
+          {result.resisted.length > 0 && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm font-bold text-ink-soft" data-testid="resisted">
+              <span>Se te resistieron:</span>
+              {result.resisted.map((w) => (
+                <span key={w} className="keycap keycap-sm">
+                  {w}
+                </span>
+              ))}
+              <Keycap to={`/practica/palabras?w=${encodeURIComponent(result.resisted.join(','))}`} variant="secondary" size="sm">
+                Practicar estas →
+              </Keycap>
+            </div>
           )}
           {asksForm && (
             <FormCheck
