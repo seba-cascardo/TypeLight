@@ -11,9 +11,9 @@ import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
-type Kind = 'calentamiento' | 'repaso' | 'reto'
+type Kind = 'calentamiento' | 'repaso' | 'reto' | 'antes'
 
-const META: Record<Kind, { title: string; blurb: string; block: RoutineBlock; session: SessionKind; variant: 'sun' | 'secondary' | 'coral'; timed?: number }> = {
+const META: Record<Kind, { title: string; blurb: string; block?: RoutineBlock; session?: SessionKind; variant: 'sun' | 'secondary' | 'coral'; timed?: number }> = {
   calentamiento: {
     title: 'Calentamiento',
     blurb: 'Las teclas que ya conocés, sin apuro. Buscá el ritmo, no la velocidad.',
@@ -36,6 +36,12 @@ const META: Record<Kind, { title: string; blurb: string; block: RoutineBlock; se
     variant: 'coral',
     timed: 60_000,
   },
+  antes: {
+    title: 'Como antes',
+    blurb: 'Un minuto tipeando como tipeabas antes de TypeLight, sin pensar en los dedos. Es la vara que vas a superar.',
+    variant: 'sun',
+    timed: 60_000,
+  },
 }
 
 export function Practice() {
@@ -46,31 +52,35 @@ export function Practice() {
 
 function PracticeRun({ kind }: { kind: Kind }) {
   const meta = META[kind]
-  const { layout, learned, goalWpm } = useProgress()
+  const { layout, learned, goalWpm, curriculum } = useProgress()
   const keyStats = useStore((s) => s.keys)
   const sound = useStore((s) => s.settings.sound)
   const showHands = useStore((s) => s.settings.showHands)
   const recordSession = useStore((s) => s.recordSession)
   const markRoutine = useStore((s) => s.markRoutine)
+  const setLegacy = useStore((s) => s.setLegacy)
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<ReturnType<typeof metrics> | null>(null)
   const navigate = useNavigate()
   const bigramDay = dayOfYear() % 2 === 1
 
-  // Enter on the result card goes back to the routine.
+  // Enter on the result card goes back to the routine (or, after "antes", to Progreso).
   useEffect(() => {
     if (!result) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault()
-        navigate('/')
+        navigate(kind === 'antes' ? '/estadisticas' : '/')
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [result, navigate])
+  }, [result, navigate, kind])
 
-  const pool = useMemo(() => poolOf(learned.length >= 2 ? learned : ['f', 'j']), [learned])
+  const pool = useMemo(
+    () => (kind === 'antes' ? poolOf(curriculum.lessons[curriculum.lessons.length - 1].pool) : poolOf(learned.length >= 2 ? learned : ['f', 'j'])),
+    [kind, curriculum, learned],
+  )
   const weak = useMemo(() => weakestKeys(keyStats, learned, 3), [keyStats, learned])
 
   const text = useMemo(() => {
@@ -78,6 +88,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     void round
     // Until the space bar has been taught, drills are continuous runs.
     const joined = !learned.includes(' ')
+    if (kind === 'antes') return challengeText(pool, { rng })
     if (kind === 'calentamiento') {
       if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
       // Odd days warm up on the bigrams that lean on the weakest keys; even days on real words.
@@ -95,9 +106,14 @@ function PracticeRun({ kind }: { kind: Kind }) {
     (state: TypingState) => {
       const m = metrics(state)
       if (m.chars === 0) return
+      if (kind === 'antes') {
+        setLegacy({ wpm: m.wpm, acc: m.accuracy, at: new Date().toISOString() })
+        setResult(m)
+        return
+      }
       recordSession(
         {
-          kind: meta.session,
+          kind: meta.session!,
           wpm: m.wpm,
           acc: m.accuracy,
           chars: m.chars,
@@ -108,10 +124,10 @@ function PracticeRun({ kind }: { kind: Kind }) {
         },
         keySamples(state).values(),
       )
-      markRoutine(meta.block)
+      markRoutine(meta.block!)
       setResult(m)
     },
-    [kind, meta.session, meta.block, recordSession, markRoutine],
+    [kind, meta.session, meta.block, recordSession, markRoutine, setLegacy],
   )
 
   const session = useTypingSession(text, { sound, onFinish, timeLimitMs: meta.timed })
@@ -128,7 +144,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     <div className="animate-rise">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="eyebrow mb-1">Rutina de hoy</div>
+          <div className="eyebrow mb-1">{kind === 'antes' ? 'Ajustes · tu velocidad de antes' : 'Rutina de hoy'}</div>
           <h1 className="text-3xl md:text-4xl">{kind === 'calentamiento' && bigramDay ? 'Calentamiento · bigramas' : meta.title}</h1>
           <p className="mt-1 text-ink-soft">{meta.blurb}</p>
         </div>
@@ -157,12 +173,15 @@ function PracticeRun({ kind }: { kind: Kind }) {
             <Stat label="Precisión" value={`${Math.round(result.accuracy * 100)} %`} tone={result.accuracy >= 0.97 ? 'enter' : result.accuracy >= 0.95 ? 'ink' : 'esc'} />
             <Stat label="Errores" value={result.errors} tone={result.errors === 0 ? 'enter' : 'ink'} />
           </div>
+          {kind === 'antes' && (
+            <p className="mt-4 text-sm text-ink-soft">Guardado como tu velocidad de antes. Cuando la mediana de tus Retos la supere, te aviso en Inicio.</p>
+          )}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Keycap variant="ghost" onClick={again}>
               Otra vez
             </Keycap>
-            <Keycap to="/" variant="primary" size="lg">
-              Volver a la rutina <span className="opacity-70">(Enter)</span> →
+            <Keycap to={kind === 'antes' ? '/estadisticas' : '/'} variant="primary" size="lg">
+              {kind === 'antes' ? 'Ver progreso' : 'Volver a la rutina'} <span className="opacity-70">(Enter)</span> →
             </Keycap>
           </div>
         </div>

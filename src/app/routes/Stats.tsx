@@ -62,6 +62,7 @@ export function Stats() {
   const results = useStore((s) => s.lessons)
   const days = useStore((s) => s.days)
   const streak = useStore((s) => s.streak)
+  const legacy = useStore((s) => s.legacy)
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
 
@@ -144,12 +145,17 @@ export function Stats() {
         sub="Solo los Retos de un minuto, los textos de la unidad Velocidad y las Carreras. Las lecciones, los drills y los otros juegos no mueven esta línea. Un punto por día (la mediana si hubo varios); los días sin Reto quedan vacíos."
         className="mt-4"
       >
-        {points.length === 0 ? <p className="text-ink-soft">Tu primer Reto pone el primer punto.</p> : <ReferenceChart points={points} goal={goalWpm} marks={marks} today={today} />}
+        {points.length === 0 ? (
+          <p className="text-ink-soft">Tu primer Reto pone el primer punto.</p>
+        ) : (
+          <ReferenceChart points={points} goal={goalWpm} marks={marks} today={today} legacy={legacy?.wpm} />
+        )}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-ink-soft">
           <Swatch className="rounded-full bg-mod" label="Reto del día (mediana)" />
           <Swatch className="bg-mod opacity-50" label="tendencia (3 retos)" />
           <Swatch className="bg-sun-edge" label="meta de la unidad" />
           <Swatch className="bg-ink-mute" label="llegaron teclas nuevas" />
+          {legacy && <Swatch className="bg-ink-mute" label="tu velocidad de antes" />}
         </div>
         <details className="mt-3 text-sm text-ink-soft">
           <summary className="cursor-pointer font-bold text-ink">¿Por qué este número y no otro?</summary>

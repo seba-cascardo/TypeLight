@@ -1,6 +1,7 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
-import { dayKey, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
+import { dayKey, legacyBeaten, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
@@ -29,19 +30,26 @@ export function Home() {
   const days = useStore((s) => s.days)
   const results = useStore((s) => s.lessons)
   const lastBackupAt = useStore((s) => s.settings.lastBackupAt)
+  const legacy = useStore((s) => s.legacy)
+  const setLegacy = useStore((s) => s.setLegacy)
   const routine = useRoutine()
   const { curriculum, next, completed, learned } = useProgress()
 
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
   const activeDays = Object.values(days).filter((d) => d.seconds > 0).length
   const alive = streakAlive(streak, dayKey())
-  const reference = referenceHeadline(referenceByDay(days))
+  const points = referenceByDay(days)
+  const reference = referenceHeadline(points)
   const exercises = Object.values(days).reduce((a, d) => a + d.sessions, 0)
   const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
   const wordsReady = learned.includes(' ') && learned.filter((c) => /^[a-zñ]$/.test(c)).length >= 8
   const playable: GameId[] = wordsReady ? ['rain', 'rhythm', 'balloons', 'race'] : ['rain', 'rhythm']
+
+  useEffect(() => {
+    if (legacy && !legacy.beatenAt && legacyBeaten(points, legacy.wpm)) setLegacy({ ...legacy, beatenAt: dayKey() })
+  }, [legacy, points, setLegacy])
 
   return (
     <div className="animate-rise">
@@ -56,6 +64,21 @@ export function Home() {
               : `${doneCount} de 4. Seguimos.`}
         </p>
       </header>
+
+      {legacy?.beatenAt && !legacy.beatenSeen && (
+        <section className="card mb-8 flex flex-wrap items-center justify-between gap-3 border-2 border-enter p-5" data-testid="legacy-beaten">
+          <div>
+            <div className="eyebrow mb-1">Hito</div>
+            <p className="font-display text-xl font-extrabold">Superaste tu forma vieja.</p>
+            <p className="text-ink-soft">
+              La mediana de tus Retos ya está en {reference?.value ?? legacy.wpm} PPM con los dedos correctos, contra {legacy.wpm} de antes.
+            </p>
+          </div>
+          <Keycap variant="ghost" size="sm" onClick={() => setLegacy({ ...legacy, beatenSeen: true })}>
+            Cerrar
+          </Keycap>
+        </section>
+      )}
 
       {backupDue(lastBackupAt, dayKey(), activeDays) && (
         <p className="mb-6 rounded-xl bg-sun-soft/60 px-4 py-2 text-sm font-semibold text-ink-soft" data-testid="backup-reminder">
@@ -183,6 +206,12 @@ export function Home() {
               <dd className="font-display text-3xl font-extrabold">{exercises}</dd>
             </div>
           </dl>
+          {!legacy && (
+            <Link to="/ajustes" className="mt-3 block text-sm font-bold text-ink-soft underline">
+              Medí tu velocidad de antes →
+            </Link>
+          )}
+          {legacy && <p className="mt-3 text-sm text-ink-soft">Tu velocidad de antes: {legacy.wpm} PPM.</p>}
           <Link to="/estadisticas" className="mt-4 inline-block text-sm font-bold text-mod-edge underline">
             Ver progreso completo
           </Link>

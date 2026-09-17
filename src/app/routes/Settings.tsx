@@ -110,6 +110,25 @@ function BackupCard() {
   )
 }
 
+function LegacyCard() {
+  const legacy = useStore((s) => s.legacy)
+  return (
+    <div className="rounded-xl bg-paper px-4 py-3" data-testid="legacy-card">
+      <span className="block font-bold">Tu velocidad de antes</span>
+      <span className="block text-sm text-ink-soft">
+        {legacy
+          ? `Medida el ${new Date(legacy.at).toLocaleDateString('es-AR')}: ${legacy.wpm} PPM con ${Math.round(legacy.acc * 100)} % de precisión. Es la línea gris de Progreso.`
+          : 'Un minuto tipeando como tipeabas antes de TypeLight. Cuanto antes la midas, más fiel es: los dedos viejos se van olvidando.'}
+      </span>
+      <div className="mt-3">
+        <Keycap to="/practica/antes" variant={legacy ? 'ghost' : 'secondary'} size="sm">
+          {legacy ? 'Medir de nuevo' : 'Medir ahora'}
+        </Keycap>
+      </div>
+    </div>
+  )
+}
+
 export function Settings() {
   const settings = useStore((s) => s.settings)
   const setSettings = useStore((s) => s.setSettings)
@@ -150,6 +169,7 @@ export function Settings() {
             </div>
           </div>
           <BackupCard />
+          <LegacyCard />
           <div className="rounded-xl border-2 border-esc-soft bg-esc-soft/40 px-4 py-3">
             <span className="block font-bold">Reiniciar progreso</span>
             <span className="block text-sm text-ink-soft">Borra lecciones, estadísticas y racha. No se puede deshacer.</span>

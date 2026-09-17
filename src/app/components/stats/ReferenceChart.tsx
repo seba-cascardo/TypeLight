@@ -6,6 +6,8 @@ interface Props {
   goal: number
   marks: UnitMark[]
   today: string
+  /** The one-minute speed typed "the old way", if measured. */
+  legacy?: number
   /** Days shown, ending today. */
   span?: number
 }
@@ -20,11 +22,11 @@ function dayLabel(day: string): string {
 }
 
 /** One dot per day with reference sessions, a faint trend, the unit goal and the days new keys arrived. */
-export function ReferenceChart({ points, goal, marks, today, span = 14 }: Props) {
+export function ReferenceChart({ points, goal, marks, today, legacy, span = 14 }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   const days = Array.from({ length: span }, (_, i) => shiftDay(today, i - (span - 1)))
   const shown = points.filter((p) => days.includes(p.day))
-  const top = Math.max(goal, 10, ...shown.map((p) => p.wpm)) * 1.15
+  const top = Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => p.wpm)) * 1.15
   const x = (day: string) => PAD.l + (days.indexOf(day) / (span - 1)) * (W - PAD.l - PAD.r)
   const y = (wpm: number) => PAD.t + (1 - wpm / top) * (H - PAD.t - PAD.b)
   const trend = movingAverage(shown.map((p) => p.wpm))
@@ -52,6 +54,14 @@ export function ReferenceChart({ points, goal, marks, today, span = 14 }: Props)
         <text x={W - PAD.r} y={y(goal) - 6} textAnchor="end" fontSize="11" fontWeight="600" fill="var(--color-sun-edge)">
           meta · {goal}
         </text>
+        {legacy !== undefined && (
+          <>
+            <line x1={PAD.l} x2={W - PAD.r} y1={y(legacy)} y2={y(legacy)} stroke="var(--color-ink-mute)" strokeWidth="1.5" strokeDasharray="2 5" />
+            <text x={PAD.l + 4} y={y(legacy) - 5} fontSize="11" fontWeight="600" fill="var(--color-ink-mute)">
+              antes · {legacy}
+            </text>
+          </>
+        )}
         {marks
           .filter((m) => days.includes(m.day))
           .map((m) => (
