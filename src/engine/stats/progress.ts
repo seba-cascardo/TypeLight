@@ -126,6 +126,21 @@ export function mastery(stat: KeyStat | undefined, goalWpm: number): Mastery {
   return 1
 }
 
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+
+/**
+ * How owned a key is, 0..1: the weakest of three terms — samples (10 = full), error rate (≤ 3 % full,
+ * ≥ 15 % none) and latency (≤ the goal gap full, ≥ twice it none). Drives the fading of the guide hands.
+ */
+export function dominance(stat: KeyStat | undefined, goalWpm: number): number {
+  if (!stat) return 0
+  const target = 60000 / (goalWpm * 5)
+  const samples = clamp01(stat.samples / 10)
+  const error = clamp01(1 - (stat.errorEma - 0.03) / 0.12)
+  const latency = clamp01(1 - (stat.latencyEma - target) / target)
+  return Math.min(samples, error, latency)
+}
+
 /** Mastery of every learned character (space included); unlearned keys are simply absent. */
 export function masteryMap(keys: KeyStats, learned: Iterable<string>, goalWpm: number): Record<string, Mastery> {
   const out: Record<string, Mastery> = {}

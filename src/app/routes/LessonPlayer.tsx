@@ -14,6 +14,7 @@ import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { gameSession } from '../lib/gameSession'
+import { handsOpacityFor } from '../lib/fingers'
 import { useStore } from '../store'
 import { unitAccentClass } from '../lib/accents'
 
@@ -250,7 +251,13 @@ function Player({ lesson }: { lesson: Lesson }) {
             </div>
           </div>
           <div className="card flex flex-col justify-center p-4 md:p-5">
-            <KeyGuide layout={layout} nextChar={c.highlight.length === 1 ? c.highlight[0] : null} highlight={c.highlight} showHands={showHands} />
+            <KeyGuide
+              layout={layout}
+              nextChar={c.highlight.length === 1 ? c.highlight[0] : null}
+              highlight={c.highlight}
+              showHands={showHands}
+              handsOpacity={handsOpacityFor(keyStats, c.highlight.length === 1 ? c.highlight[0] : null, lesson.goalWpm)}
+            />
           </div>
         </div>
       </div>
@@ -369,6 +376,7 @@ interface ExerciseProps {
 
 export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm }: ExerciseProps) {
   const { layout } = useProgress()
+  const keyStats = useStore((s) => s.keys)
   const session = useTypingSession(text, { sound, onFinish })
   const nextChar = session.finished ? null : session.state.target[session.state.pos]
   const m = session.live
@@ -389,15 +397,11 @@ export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalW
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between px-1 text-sm font-bold text-ink-mute">
-        <span>
-          <span className="text-ink">{m.wpm}</span> PPM · <span className={m.accuracy < 0.95 ? 'text-esc-edge' : 'text-ink'}>{Math.round(m.accuracy * 100)} %</span> precisión
-          · <span className="text-ink">{m.errors}</span> {m.errors === 1 ? 'error' : 'errores'}
-        </span>
+      <div className="flex items-center justify-end px-1 text-sm font-bold text-ink-mute">
         <span>meta {goalWpm} PPM · Esc reinicia</span>
       </div>
       <div className="card p-4 md:p-5">
-        <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} />
+        <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} handsOpacity={handsOpacityFor(keyStats, nextChar, goalWpm)} />
       </div>
     </div>
   )

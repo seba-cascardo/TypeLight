@@ -5,6 +5,7 @@ import {
   constancy,
   legacyBeaten,
   mastery,
+  dominance,
   masteryCounts,
   masteryMap,
   median,
@@ -135,6 +136,16 @@ describe('mastery', () => {
     expect(mastery({ latencyEma: 1200, errorEma: 0.05, samples: 20 }, 15)).toBe(2)
     expect(mastery({ latencyEma: 1300, errorEma: 0.05, samples: 20 }, 15)).toBe(1)
     expect(mastery({ latencyEma: 300, errorEma: 0.2, samples: 20 }, 15)).toBe(1)
+  })
+
+  it('dominance is a 0..1 blend of samples, error rate and latency', () => {
+    // goal 15 PPM → target gap 800 ms
+    expect(dominance(undefined, 15)).toBe(0)
+    expect(dominance({ latencyEma: 800, errorEma: 0, samples: 10 }, 15)).toBe(1)
+    expect(dominance({ latencyEma: 800, errorEma: 0.09, samples: 10 }, 15)).toBeCloseTo(0.5)
+    expect(dominance({ latencyEma: 1200, errorEma: 0, samples: 10 }, 15)).toBeCloseTo(0.5)
+    expect(dominance({ latencyEma: 800, errorEma: 0, samples: 5 }, 15)).toBeCloseTo(0.5)
+    expect(dominance({ latencyEma: 3000, errorEma: 0.5, samples: 50 }, 15)).toBe(0)
   })
 
   it('maps and counts only learned keys', () => {

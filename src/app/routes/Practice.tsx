@@ -10,6 +10,7 @@ import { TypingArea } from '../components/TypingArea'
 import { Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
+import { handsOpacityFor } from '../lib/fingers'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
 type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes'
@@ -289,7 +290,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
           </div>
           {kind !== 'antes' && !meta.blind && (
             <div className="card p-4 md:p-5">
-              <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} />
+              <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} handsOpacity={handsOpacityFor(keyStats, nextChar, goalWpm)} />
             </div>
           )}
         </div>
