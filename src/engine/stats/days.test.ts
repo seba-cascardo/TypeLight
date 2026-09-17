@@ -11,6 +11,15 @@ describe('days', () => {
     expect(days['2026-09-17'].seconds).toBe(10)
   })
 
+  it('addSession keeps the exam speed apart from the reference list', () => {
+    let d: Days = {}
+    d = addSession(d, '2026-09-14', 180, 28, 28)
+    expect(d['2026-09-14'].exam).toBe(28)
+    expect(d['2026-09-14'].reference).toEqual([28])
+    d = addSession(d, '2026-09-14', 60, 31)
+    expect(d['2026-09-14'].exam).toBe(28)
+  })
+
   it('addSession sums seconds, counts the session and keeps reference speeds', () => {
     let d: Days = {}
     d = addSession(d, '2026-09-17', 40)

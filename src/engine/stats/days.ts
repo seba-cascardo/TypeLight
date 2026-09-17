@@ -10,14 +10,16 @@ export interface DaySummary {
   reference: number[]
   /** Sessions recorded that day. */
   sessions: number
+  /** WPM of the weekly exam, when it was taken that day (also listed in `reference`). */
+  exam?: number
 }
 
 export type Days = Record<string, DaySummary>
 
 const empty = (): DaySummary => ({ seconds: 0, blocks: 0, learned: 0, mastered: 0, reference: [], sessions: 0 })
 
-/** Fold one finished session into its day; `referenceWpm` is given only for reference sessions. */
-export function addSession(days: Days, day: string, seconds: number, referenceWpm?: number): Days {
+/** Fold one finished session into its day; `referenceWpm` is given only for reference sessions, `examWpm` only for the weekly exam. */
+export function addSession(days: Days, day: string, seconds: number, referenceWpm?: number, examWpm?: number): Days {
   const prev = days[day] ?? empty()
   return {
     ...days,
@@ -26,6 +28,7 @@ export function addSession(days: Days, day: string, seconds: number, referenceWp
       seconds: prev.seconds + Math.max(0, seconds),
       sessions: prev.sessions + 1,
       reference: referenceWpm === undefined ? prev.reference : [...prev.reference, referenceWpm],
+      ...(examWpm !== undefined && { exam: examWpm }),
     },
   }
 }

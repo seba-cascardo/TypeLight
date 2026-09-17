@@ -3,7 +3,7 @@ import { backupDue, backupFilename, parseBackup, serializeBackup } from './backu
 import type { PersistedState } from '../store'
 
 const state: PersistedState = {
-  settings: { name: 'Seba', layoutId: 'latam', sound: true, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null },
+  settings: { name: 'Seba', layoutId: 'latam', sound: true, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: true },
   lessons: { 'guia-tip-intro': { stars: 3, bestWpm: 0, bestAcc: 1, attempts: 1, completedAt: '2026-09-15T12:00:00.000Z' } },
   keys: { f: { latencyEma: 300, errorEma: 0, samples: 12 } },
   sessions: [],
@@ -11,6 +11,8 @@ const state: PersistedState = {
   routine: { day: '2026-09-17', warmup: true, lesson: false, review: false, challenge: false },
   days: { '2026-09-17': { seconds: 40, blocks: 1, learned: 3, mastered: 1, reference: [], sessions: 1 } },
   legacy: null,
+  lastExamDay: null,
+  blindSince: '2026-09-17',
 }
 
 describe('backup', () => {
@@ -37,7 +39,16 @@ describe('backup', () => {
     const v2 = JSON.stringify({ app: 'typelight', version: 2, exportedAt: 'x', state: v2state })
     const parsed = parseBackup(v2)
     expect(parsed.ok).toBe(true)
-    if (parsed.ok) expect(parsed.state.legacy).toBeNull()
+    if (parsed.ok) {
+      expect(parsed.state.legacy).toBeNull()
+      expect(parsed.state.lastExamDay).toBeNull()
+      expect(parsed.state.settings.anchor).toBe('')
+    }
+  })
+
+  it('rejects a v4 state with a malformed blind mark', () => {
+    const bad = JSON.stringify({ app: 'typelight', version: 4, exportedAt: 'x', state: { ...state, blindSince: 3 } })
+    expect(parseBackup(bad).ok).toBe(false)
   })
 
   it('rejects things that are not a TypeLight backup', () => {
@@ -47,7 +58,7 @@ describe('backup', () => {
   })
 
   it('rejects a malformed state instead of crashing on import', () => {
-    const withDays = (days: unknown) => JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: { ...state, days } })
+    const withDays = (days: unknown) => JSON.stringify({ app: 'typelight', version: 4, exportedAt: 'x', state: { ...state, days } })
 
     // A `days` map that isn't an object at all.
     expect(parseBackup(withDays(null)).ok).toBe(false)
@@ -65,12 +76,12 @@ describe('backup', () => {
     expect(parseBackup(v2).ok).toBe(false)
 
     // A layout that doesn't exist.
-    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: { ...state, settings: { ...state.settings, layoutId: 'dvorak' } } })).ok).toBe(false)
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 4, exportedAt: 'x', state: { ...state, settings: { ...state.settings, layoutId: 'dvorak' } } })).ok).toBe(false)
 
     // Missing a required top-level key entirely.
     const withoutLegacy: Record<string, unknown> = { ...state }
     delete withoutLegacy.legacy
-    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 3, exportedAt: 'x', state: withoutLegacy })).ok).toBe(false)
+    expect(parseBackup(JSON.stringify({ app: 'typelight', version: 4, exportedAt: 'x', state: withoutLegacy })).ok).toBe(false)
   })
 
   it('names the file by local day', () => {

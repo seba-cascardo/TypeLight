@@ -34,4 +34,40 @@ describe('store', () => {
     useStore.getState().resetProgress()
     expect(useStore.getState().legacy).toBeNull()
   })
+
+  it('the first blind reference session fixes blindSince, once', () => {
+    const rec = { kind: 'challenge' as const, wpm: 30, acc: 0.95, chars: 150, errors: 5, seconds: 60 }
+    useStore.getState().recordSession({ ...rec, reference: true })
+    expect(useStore.getState().blindSince).toBeNull()
+    useStore.getState().recordSession({ ...rec, reference: true, blind: true, mode: 'free' })
+    const since = useStore.getState().blindSince
+    expect(since).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    useStore.setState({ blindSince: '2026-01-01' })
+    useStore.getState().recordSession({ ...rec, reference: true, blind: true })
+    expect(useStore.getState().blindSince).toBe('2026-01-01')
+  })
+
+  it('recordSession returns the timestamp and setSessionForm patches that session', () => {
+    const rec = { kind: 'challenge' as const, wpm: 30, acc: 0.95, chars: 150, errors: 5, seconds: 60 }
+    useStore.getState().recordSession({ ...rec, wpm: 10 })
+    const at = useStore.getState().recordSession(rec)
+    useStore.getState().setSessionForm(at, 'si')
+    const { sessions } = useStore.getState()
+    expect(sessions[1].form).toBe('si')
+    expect(sessions[0].form).toBeUndefined()
+  })
+
+  it('an exam session writes the exam speed of its day', () => {
+    useStore.getState().recordSession({ kind: 'exam', wpm: 28, acc: 0.97, chars: 400, errors: 5, seconds: 180, reference: true, blind: true })
+    const day = Object.values(useStore.getState().days)[0]
+    expect(day.exam).toBe(28)
+    expect(day.reference).toEqual([28])
+  })
+
+  it('resetProgress clears the exam day and the blind mark', () => {
+    useStore.setState({ lastExamDay: '2026-09-14', blindSince: '2026-09-10' })
+    useStore.getState().resetProgress()
+    expect(useStore.getState().lastExamDay).toBeNull()
+    expect(useStore.getState().blindSince).toBeNull()
+  })
 })

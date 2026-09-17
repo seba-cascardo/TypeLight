@@ -3,7 +3,7 @@ import { LAYOUTS } from '@/engine/layouts'
 import { migrateState } from '../store/migrate'
 import { PERSISTED_KEYS, type PersistedState } from '../store'
 
-export const BACKUP_VERSION = 3
+export const BACKUP_VERSION = 4
 
 export interface Backup {
   app: 'typelight'
@@ -64,6 +64,9 @@ export function isPersistedState(x: unknown): x is PersistedState {
 
   const legacy = x.legacy
   if (legacy !== null && (!isPlainObject(legacy) || typeof legacy.wpm !== 'number')) return false
+
+  if (x.lastExamDay !== null && typeof x.lastExamDay !== 'string') return false
+  if (x.blindSince !== null && typeof x.blindSince !== 'string') return false
 
   return true
 }

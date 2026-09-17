@@ -17,6 +17,10 @@ export interface Settings {
   theme: Theme
   /** ISO of the last downloaded backup, for the reminder. */
   lastBackupAt: string | null
+  /** Implementation intention: "Después de ___, practico." Empty = none. */
+  anchor: string
+  /** The converso card in Inicio was closed. */
+  conversoSeen: boolean
 }
 
 /** The one-minute test typed "the old way", before TypeLight: the bar the new fingering has to beat. */
@@ -38,7 +42,10 @@ export interface LessonResult {
   completedAt: string
 }
 
-export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge' | 'game'
+export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge' | 'exam' | 'game'
+
+/** The form self-check after a Reto, exam or race: home row and correct fingers? */
+export type FormAnswer = 'si' | 'medio' | 'no'
 
 export interface SessionRecord {
   at: string
@@ -54,6 +61,18 @@ export interface SessionRecord {
   /** 0..1, how even the gaps between keys were (`rhythm` in engine/typing). */
   rhythm?: number
   gameId?: GameId
+  /** `free` = text mode with Backspace (the Reto). Absent = stop-on-error. */
+  mode?: 'free'
+  /** Typed without keyboard, hands or next-key hint. */
+  blind?: true
+  /** Free mode: wrong keystrokes, keystrokes per final character, repaired errors and reaction time to the first Backspace. */
+  firstTryErrors?: number
+  kspc?: number
+  repaired?: number
+  repairMs?: number | null
+  /** Share of keystrokes that began before the previous key was released (0..1). */
+  rollover?: number
+  form?: FormAnswer
 }
 
 export type RoutineBlock = 'warmup' | 'lesson' | 'review' | 'challenge'
@@ -75,12 +94,19 @@ interface State {
   routine: Routine
   days: Days
   legacy: Legacy | null
+  /** Day of the last weekly exam (one per ISO week). */
+  lastExamDay: string | null
+  /** Day of the first reference session typed without help: the chart's discontinuity. */
+  blindSince: string | null
   setSettings: (patch: Partial<Settings>) => void
-  recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => void
+  /** Records the session and returns its timestamp, so it can be annotated afterwards. */
+  recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>) => string
+  setSessionForm: (at: string, form: FormAnswer | null) => void
   completeLesson: (id: string, stars: Stars, wpm: number, acc: number) => void
   markRoutine: (block: RoutineBlock) => void
   snapshotDay: (learned: number, mastered: number) => void
   setLegacy: (legacy: Legacy | null) => void
+  setLastExamDay: (day: string | null) => void
   resetProgress: () => void
 }
 
@@ -93,27 +119,44 @@ const initialProgress = () => ({
   streak: { count: 0, lastDay: null } as Streak,
   routine: emptyRoutine(dayKey()),
   days: {} as Days,
+  lastExamDay: null as string | null,
+  blindSince: null as string | null,
 })
 
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null },
+      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: false },
       legacy: null,
       ...initialProgress(),
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
-      recordSession: (rec, samples) =>
+      recordSession: (rec, samples) => {
+        const at = new Date().toISOString()
         set((s) => {
           const today = dayKey()
-          const sessions = [...s.sessions, { ...rec, at: new Date().toISOString() }].slice(-1000)
+          const sessions = [...s.sessions, { ...rec, at }].slice(-1000)
           return {
             sessions,
             keys: samples ? updateKeyStats(s.keys, samples) : s.keys,
             streak: bumpStreak(s.streak, today),
-            days: addSession(s.days, today, rec.seconds, rec.reference ? rec.wpm : undefined),
+            days: addSession(s.days, today, rec.seconds, rec.reference ? rec.wpm : undefined, rec.kind === 'exam' ? rec.wpm : undefined),
+            blindSince: s.blindSince ?? (rec.reference && rec.blind ? today : null),
           }
+        })
+        return at
+      },
+
+      // Patches the newest session with that timestamp (two in the same millisecond would share it).
+      setSessionForm: (at, form) =>
+        set((s) => {
+          if (!form) return {}
+          const i = s.sessions.findLastIndex((r) => r.at === at)
+          if (i === -1) return {}
+          const sessions = s.sessions.slice()
+          sessions[i] = { ...sessions[i], form }
+          return { sessions }
         }),
 
       completeLesson: (id, stars, wpm, acc) =>
@@ -144,6 +187,8 @@ export const useStore = create<State>()(
 
       setLegacy: (legacy) => set({ legacy }),
 
+      setLastExamDay: (day) => set({ lastExamDay: day }),
+
       resetProgress: () =>
         set((s) => ({
           ...initialProgress(),
@@ -152,7 +197,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'typelight.v1',
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -169,7 +214,7 @@ export function useSettings(): Settings {
   return useStore((s) => s.settings)
 }
 
-export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy'] as const
+export const PERSISTED_KEYS = ['settings', 'lessons', 'keys', 'sessions', 'streak', 'routine', 'days', 'legacy', 'lastExamDay', 'blindSince'] as const
 export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 
 /** The data half of the store, exactly what persist writes. */

@@ -17,19 +17,14 @@ describe('store migration v1 → v2', () => {
       days: Record<string, { seconds: number; blocks: number; learned: number; mastered: number; reference: number[]; sessions: number }>
       settings: { name: string; lastBackupAt: string | null }
     }
-    expect(v2.settings).toEqual({ name: 'Seba', lastBackupAt: null })
+    expect(v2.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false })
     expect(v2.days).toEqual({ '2026-09-10': { seconds: 0, blocks: 0, learned: 0, mastered: 0, reference: [22], sessions: 2 } })
     expect(v2.sessions[0].reference).toBeUndefined()
     expect(v2.sessions[1].reference).toBe(true)
   })
 
-  it('leaves a current state untouched', () => {
-    const v3 = { sessions: [], days: {}, legacy: null, settings: { lastBackupAt: null } }
-    expect(migrateState(v3, 3)).toBe(v3)
-  })
-
   it('tolerates an empty persisted state', () => {
-    expect(migrateState(undefined, 1)).toEqual({ sessions: [], days: {}, legacy: null, settings: { lastBackupAt: null } })
+    expect(migrateState(undefined, 1)).toEqual({ sessions: [], days: {}, legacy: null, lastExamDay: null, blindSince: null, settings: { lastBackupAt: null, anchor: '', conversoSeen: false } })
   })
 })
 
@@ -64,8 +59,29 @@ describe('store migration v2 → v3', () => {
     expect(v3.days['2026-09-10'].reference).toEqual([22])
   })
 
-  it('leaves a v3 state untouched', () => {
+  it('chains into v4', () => {
     const v3 = { sessions: [], days: {}, legacy: null, settings: { lastBackupAt: null } }
-    expect(migrateState(v3, 3)).toBe(v3)
+    const v4 = migrateState(v3, 3) as { lastExamDay: unknown; blindSince: unknown; settings: Record<string, unknown> }
+    expect(v4.lastExamDay).toBeNull()
+    expect(v4.blindSince).toBeNull()
+    expect(v4.settings).toEqual({ lastBackupAt: null, anchor: '', conversoSeen: false })
+  })
+})
+
+describe('store migration v3 → v4', () => {
+  it('adds the weekly exam day, the blind mark and the converso settings, keeping everything else', () => {
+    const v3 = { sessions: [{ at: 'x', kind: 'challenge', wpm: 30 }], days: { d: { reference: [30] } }, legacy: { wpm: 45 }, settings: { name: 'Seba', lastBackupAt: null } }
+    const v4 = migrateState(v3, 3) as typeof v3 & { lastExamDay: null; blindSince: null; settings: { anchor: string; conversoSeen: boolean } }
+    expect(v4.sessions).toBe(v3.sessions)
+    expect(v4.days).toBe(v3.days)
+    expect(v4.legacy).toBe(v3.legacy)
+    expect(v4.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false })
+    expect(v4.lastExamDay).toBeNull()
+    expect(v4.blindSince).toBeNull()
+  })
+
+  it('leaves a v4 state untouched', () => {
+    const v4 = { sessions: [], days: {}, legacy: null, lastExamDay: null, blindSince: null, settings: { lastBackupAt: null, anchor: '', conversoSeen: false } }
+    expect(migrateState(v4, 4)).toBe(v4)
   })
 })
