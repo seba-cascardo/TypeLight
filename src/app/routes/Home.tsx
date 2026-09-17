@@ -28,10 +28,11 @@ const GAME_BLOCK: Record<'rhythm' | 'balloons', Block> = {
   balloons: { id: 'warmup', title: 'Globos', detail: 'Hoy el Calentamiento es un juego: palabras enteras antes de que se escapen.', minutes: '~1 min · juego', variant: 'mint', to: '/practica/calentamiento' },
 }
 
-/** "Después de ___, practico." — the sentence reads with a lower-case anchor. */
+/** "Después de ___, practico." — lower-case anchor, and "de el" contracts to "del". */
 function anchorSentence(anchor: string): string {
   const a = anchor.trim()
-  return `Después de ${a.charAt(0).toLowerCase()}${a.slice(1)}, practico.`
+  const lower = `${a.charAt(0).toLowerCase()}${a.slice(1)}`
+  return lower.startsWith('el ') ? `Después del ${lower.slice(3)}, practico.` : `Después de ${lower}, practico.`
 }
 
 /**

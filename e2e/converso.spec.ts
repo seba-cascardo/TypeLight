@@ -160,7 +160,7 @@ test('the converso card shows once; the anchor lives under the greeting and in A
   await card.getByLabel('Tu ancla').fill('El mate de la mañana')
   await card.getByRole('button', { name: /Listo/ }).click()
   await expect(card).toHaveCount(0)
-  await expect(page.getByTestId('anchor')).toHaveText('Después de el mate de la mañana, practico.')
+  await expect(page.getByTestId('anchor')).toHaveText('Después del mate de la mañana, practico.')
   await page.reload()
   await expect(page.getByTestId('converso-card')).toHaveCount(0)
   await expect(page.getByTestId('anchor')).toBeVisible()
