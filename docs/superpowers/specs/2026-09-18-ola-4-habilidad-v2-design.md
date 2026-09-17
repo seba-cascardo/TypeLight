@@ -2,7 +2,7 @@
 
 Fecha 2026-09-18 · sesión nocturna: decisiones del agente sobre el roadmap aprobado (`docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 4, puntos 22–27; §2.5; §6 insights 3, 4 y 6). Seba las revisa cuando vuelve.
 
-**Estado:** en implementación (rama `ola-4`).
+**Estado:** implementado completo (rama `ola-4`, mergeada fast-forward a `master` el 2026-09-18). Desvíos: piso de α = 0.05 (no 0.1); las tildes se muestran dentro de la tarjeta Transiciones como una línea, con la latencia sin tilde tomada de `keys[a,e,i,o,u]`; la Carrera no alimenta bigramas/palabras; `weaknessQualities` usa prioridad fija (mano → fila → mismo dedo → dobles → tecla muerta) y devuelve como máximo dos.
 
 ## 0. Qué es
 
@@ -11,7 +11,7 @@ El modelo deja de ser «una EMA por tecla que nunca olvida»: pondera por muestr
 ## 1. EMA ponderada por muestras + olvido (punto 22)
 
 - `KeyStat` suma `halfLife: number` (días, default 3) y `daysSeen: number` (días distintos con intentos). `updateKeyStats(stats, samples, today)`:
-  - α efectivo = `clamp(attempts / (prev.samples + attempts), 0.1, 0.5)`: una `x` que falla una vez entre cien muestras mueve `errorEma` ~1 %, no 25 %; el piso 0.1 mantiene recencia.
+  - α efectivo = `clamp(attempts / (prev.samples + attempts), 0.05, 0.5)`: una `x` que falla una vez entre cien muestras mueve `errorEma` 5 % (queda «en camino», no «floja»), no 25 %; el piso 0.05 mantiene recencia.
   - `halfLife`: sesión limpia (0 errores y ≥ 3 aciertos) → `min(30, halfLife × 1.5)`; sesión con error → `max(3, halfLife / 2)`.
   - `daysSeen + 1` cuando `lastSeen` cambia de día.
 - **Olvido:** `weaknessScore(stat, today?)` suma `min(2, gap / halfLife)` (gap = días desde `lastSeen`); las teclas raras vuelven solas al Repaso. `mastery(stat, goalWpm, today?)`: nivel 3 exige `daysSeen ≥ 2`; con `today`, un gap > `2 × halfLife` baja un nivel (3→2, 2→1). `masteryMap(..., today?)` lo propaga (Progreso e Inicio pasan `today`; el snapshot diario también).
