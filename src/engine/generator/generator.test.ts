@@ -3,7 +3,7 @@ import { buildCurriculum } from '../curriculum'
 import { LATAM } from '../layouts'
 import { SENTENCES } from '../corpus/sentences'
 import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
-import { adaptiveText, challengeText, drillText, fitSentence, makeRng, ngramText, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
+import { adaptiveText, challengeText, drillText, examText, fitSentence, makeRng, ngramText, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
 
 const only = (text: string, allowed: Iterable<string>) => {
   const set = new Set(allowed)
@@ -86,6 +86,19 @@ describe('generators', () => {
     const fj = challengeText(poolOf('fj'), { rng: makeRng(13) })
     expect(only(fj, 'fj ')).toBe(true)
     expect(fj.length).toBeGreaterThanOrEqual(420)
+  })
+
+  it('examText is fixed for a month and long enough for three minutes', () => {
+    const full = new Set('abcdefghijklmnopqrstuvwxyzáéíóúüñABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ.,:;¿?¡!"()-% ')
+    const a = examText(full, '2026-09')
+    expect(a).toBe(examText(full, '2026-09'))
+    expect(a).not.toBe(examText(full, '2026-10'))
+    expect(a.length).toBeGreaterThanOrEqual(1500)
+    const sentences = a.split(/(?<=[.?!]) /)
+    expect(new Set(sentences).size).toBe(sentences.length)
+    const fj = examText(poolOf('fj'), '2026-09')
+    expect(only(fj, 'fj ')).toBe(true)
+    expect(fj.length).toBeGreaterThanOrEqual(1500)
   })
 
   it('challengeText tops up with words when the sentences that fit fall short of minChars', () => {

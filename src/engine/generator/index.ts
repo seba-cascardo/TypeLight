@@ -264,6 +264,34 @@ export function challengeText(pool: ReadonlySet<string>, opts: GenOpts & { minCh
   return out.join(' ')
 }
 
+/** FNV-1a over a string, for reproducible seeds. */
+function seedOf(key: string): number {
+  let h = 0x811c9dc5
+  for (const c of key) {
+    h ^= c.codePointAt(0) ?? 0
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h
+}
+
+/** The weekly exam's text: the same all month for a given pool. Sentences first, words when they run out. */
+export function examText(pool: ReadonlySet<string>, monthKey: string, minChars = 1500): string {
+  const rng = makeRng(seedOf(monthKey))
+  const out: string[] = []
+  let total = 0
+  const push = (chunk: string) => {
+    total += (out.length ? 1 : 0) + chunk.length
+    out.push(chunk)
+  }
+  for (const s of pickSentences(pool, 60, { rng })) {
+    if (total >= minChars) break
+    push(s)
+  }
+  let guard = 0
+  while (total < minChars && guard++ < 40) push(wordsText(pool, 20, { rng }))
+  return out.join(' ')
+}
+
 /** Text for the adaptive review: words heavy on the weakest keys. */
 export function adaptiveText(
   pool: ReadonlySet<string>,

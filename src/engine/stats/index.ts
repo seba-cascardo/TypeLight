@@ -116,3 +116,4 @@ export function formatAccuracy(acc: number): string {
 export * from './days'
 export * from './progress'
 export * from './rollover'
+export * from './exam'
