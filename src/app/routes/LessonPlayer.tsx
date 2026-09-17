@@ -272,7 +272,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       layout,
       pool: lesson.pool,
       goalWpm: lesson.goalWpm,
-      weak: weakestKeys(keyStats, lesson.pool, 3),
+      weak: weakestKeys(keyStats, lesson.pool, 3, dayKey()),
       ghostWpm: ghostWpm(sessions, dayKey(), lesson.goalWpm),
       patterns: lesson.patterns,
       sound,

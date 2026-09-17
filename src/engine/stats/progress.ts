@@ -1,5 +1,5 @@
 import type { Days, DaySummary } from './days'
-import { dayKey, daysBetween, type KeyStat, type KeyStats } from './index'
+import { dayKey, daysBetween, forgetting, type KeyStat, type KeyStats } from './index'
 
 /** The slice of a stored session that Progreso reads; the store's SessionRecord satisfies it. */
 export interface SessionLike {
@@ -118,14 +118,17 @@ export type Mastery = 1 | 2 | 3
 
 /**
  * 3 = mastered, 2 = on track, 1 = weak. `target` is the gap between keys at the unit's goal speed,
- * so the bar rises along the path.
+ * so the bar rises along the path. Mastery has to hold on two distinct days, and with `today` a
+ * key not seen for twice its half-life drops a level: nothing stays mastered by absence.
  */
-export function mastery(stat: KeyStat | undefined, goalWpm: number): Mastery {
+export function mastery(stat: KeyStat | undefined, goalWpm: number, today?: string): Mastery {
   if (!stat) return 1
   const target = 60000 / (goalWpm * 5)
-  if (stat.samples >= 10 && stat.errorEma <= 0.03 && stat.latencyEma <= target) return 3
-  if (stat.samples >= 5 && stat.errorEma <= 0.08 && stat.latencyEma <= 1.6 * target) return 2
-  return 1
+  let level: Mastery = 1
+  if (stat.samples >= 10 && stat.errorEma <= 0.03 && stat.latencyEma <= target && (stat.daysSeen ?? 0) >= 2) level = 3
+  else if (stat.samples >= 5 && stat.errorEma <= 0.08 && stat.latencyEma <= 1.6 * target) level = 2
+  if (level > 1 && forgetting(stat, today) > 2) level = (level - 1) as Mastery
+  return level
 }
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
@@ -173,9 +176,9 @@ export function fingerDominance<F extends string>(
 }
 
 /** Mastery of every learned character (space included); unlearned keys are simply absent. */
-export function masteryMap(keys: KeyStats, learned: Iterable<string>, goalWpm: number): Record<string, Mastery> {
+export function masteryMap(keys: KeyStats, learned: Iterable<string>, goalWpm: number, today?: string): Record<string, Mastery> {
   const out: Record<string, Mastery> = {}
-  for (const c of learned) out[c] = mastery(keys[c], goalWpm)
+  for (const c of learned) out[c] = mastery(keys[c], goalWpm, today)
   return out
 }
 

@@ -131,13 +131,24 @@ describe('weekly accuracy', () => {
 
 describe('mastery', () => {
   // goal 15 PPM → target gap 800 ms
-  it('grades a key by samples, error rate and latency against the goal speed', () => {
+  it('grades a key by samples, error rate and latency against the goal speed; level 3 needs two distinct days', () => {
     expect(mastery(undefined, 15)).toBe(1)
-    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 12 }, 15)).toBe(3)
-    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 9 }, 15)).toBe(2)
-    expect(mastery({ latencyEma: 1200, errorEma: 0.05, samples: 20 }, 15)).toBe(2)
-    expect(mastery({ latencyEma: 1300, errorEma: 0.05, samples: 20 }, 15)).toBe(1)
-    expect(mastery({ latencyEma: 300, errorEma: 0.2, samples: 20 }, 15)).toBe(1)
+    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 12, halfLife: 3, daysSeen: 2 }, 15)).toBe(3)
+    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 12, halfLife: 3, daysSeen: 1 }, 15)).toBe(2)
+    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 12 }, 15)).toBe(2) // legacy stat without daysSeen
+    expect(mastery({ latencyEma: 700, errorEma: 0.02, samples: 9, halfLife: 3, daysSeen: 2 }, 15)).toBe(2)
+    expect(mastery({ latencyEma: 1200, errorEma: 0.05, samples: 20, halfLife: 3, daysSeen: 2 }, 15)).toBe(2)
+    expect(mastery({ latencyEma: 1300, errorEma: 0.05, samples: 20, halfLife: 3, daysSeen: 2 }, 15)).toBe(1)
+    expect(mastery({ latencyEma: 300, errorEma: 0.2, samples: 20, halfLife: 3, daysSeen: 2 }, 15)).toBe(1)
+  })
+
+  it('a mastered key not seen for twice its half-life drops a level', () => {
+    const stat = { latencyEma: 700, errorEma: 0.02, samples: 12, halfLife: 3, daysSeen: 2, lastSeen: '2026-09-10' }
+    expect(mastery(stat, 15, '2026-09-15')).toBe(3)
+    expect(mastery(stat, 15, '2026-09-17')).toBe(2)
+    expect(mastery({ ...stat, latencyEma: 1200 }, 15, '2026-09-17')).toBe(1)
+    expect(mastery({ ...stat, halfLife: 30 }, 15, '2026-10-17')).toBe(3)
+    expect(masteryMap({ f: stat }, ['f'], 15, '2026-09-17')).toEqual({ f: 2 })
   })
 
   it('dominance is a 0..1 blend of samples, error rate and latency', () => {
@@ -168,9 +179,9 @@ describe('mastery', () => {
 
   it('maps and counts only learned keys', () => {
     const keys = {
-      f: { latencyEma: 500, errorEma: 0, samples: 30 },
-      j: { latencyEma: 1000, errorEma: 0.05, samples: 6 },
-      q: { latencyEma: 200, errorEma: 0, samples: 50 }, // not learned: ignored
+      f: { latencyEma: 500, errorEma: 0, samples: 30, halfLife: 3, daysSeen: 3 },
+      j: { latencyEma: 1000, errorEma: 0.05, samples: 6, halfLife: 3, daysSeen: 1 },
+      q: { latencyEma: 200, errorEma: 0, samples: 50, halfLife: 3, daysSeen: 3 }, // not learned: ignored
     }
     const map = masteryMap(keys, ['f', 'j', 'd', ' '], 15)
     expect(map).toEqual({ f: 3, j: 2, d: 1, ' ': 1 })

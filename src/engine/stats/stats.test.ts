@@ -1,14 +1,50 @@
 import { describe, expect, it } from 'vitest'
-import { FREEZE_EVERY, MAX_FREEZES, bumpStreak, daysBetween, emptyStreak, starsFor, streakAlive, streakAtRisk, streakGap, updateKeyStats, weakestKeys } from './index'
+import { FREEZE_EVERY, MAX_FREEZES, bumpStreak, daysBetween, emptyStreak, starsFor, streakAlive, streakAtRisk, streakGap, updateKeyStats, weakestKeys, weaknessScore } from './index'
 
 describe('key stats', () => {
-  it('creates and smooths per-key stats', () => {
+  it('creates per-key stats and smooths them with a sample-weighted step (floor 0.05, cap 0.5)', () => {
     let stats = updateKeyStats({}, [{ char: 'f', latencies: [400, 600], errors: 1, occurrences: 2 }])
-    expect(stats.f).toEqual({ latencyEma: 500, errorEma: 1 / 3, samples: 3 })
+    expect(stats.f).toEqual({ latencyEma: 500, errorEma: 1 / 3, samples: 3, halfLife: 3, daysSeen: 0 })
+    // 1 new attempt over 3 old ones → step 0.25 (above the floor)
     stats = updateKeyStats(stats, [{ char: 'f', latencies: [100], errors: 0, occurrences: 1 }])
     expect(stats.f.latencyEma).toBeCloseTo(400)
     expect(stats.f.errorEma).toBeCloseTo(0.25)
     expect(stats.f.samples).toBe(4)
+    // 4 new over 4 old → capped at 0.5
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [800, 800, 800, 800], errors: 0, occurrences: 4 }])
+    expect(stats.f.latencyEma).toBeCloseTo(600)
+    // one error among a hundred samples barely moves the error rate
+    const many = updateKeyStats({ x: { latencyEma: 300, errorEma: 0, samples: 100, halfLife: 3, daysSeen: 5 } }, [{ char: 'x', latencies: [], errors: 1, occurrences: 0 }])
+    expect(many.x.errorEma).toBeCloseTo(0.05) // floor 0.05 × 1: still "on track", not weak
+    const manyClean = updateKeyStats({ x: { latencyEma: 300, errorEma: 0.2, samples: 100, halfLife: 3, daysSeen: 5 } }, [{ char: 'x', latencies: [300], errors: 0, occurrences: 1 }])
+    expect(manyClean.x.errorEma).toBeCloseTo(0.19)
+  })
+
+  it('half-life grows with clean sessions and halves on errors; daysSeen counts distinct days', () => {
+    let stats = updateKeyStats({}, [{ char: 'f', latencies: [400, 400, 400], errors: 0, occurrences: 3 }], '2026-09-18')
+    expect(stats.f.halfLife).toBe(4.5)
+    expect(stats.f.daysSeen).toBe(1)
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [400, 400, 400], errors: 0, occurrences: 3 }], '2026-09-18')
+    expect(stats.f.daysSeen).toBe(1)
+    expect(stats.f.halfLife).toBeCloseTo(6.75)
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [400], errors: 1, occurrences: 1 }], '2026-09-19')
+    expect(stats.f.daysSeen).toBe(2)
+    expect(stats.f.halfLife).toBeCloseTo(3.375)
+    for (let i = 0; i < 10; i++) stats = updateKeyStats(stats, [{ char: 'f', latencies: [400, 400, 400], errors: 0, occurrences: 3 }])
+    expect(stats.f.halfLife).toBe(30)
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [], errors: 3, occurrences: 0 }])
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [], errors: 3, occurrences: 0 }])
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [], errors: 3, occurrences: 0 }])
+    stats = updateKeyStats(stats, [{ char: 'f', latencies: [], errors: 3, occurrences: 0 }])
+    expect(stats.f.halfLife).toBe(3)
+  })
+
+  it('weaknessScore forgets: a key not seen for a while climbs', () => {
+    const stat = { latencyEma: 400, errorEma: 0, samples: 20, halfLife: 3, daysSeen: 4, lastSeen: '2026-09-10' }
+    expect(weaknessScore(stat)).toBeCloseTo(1)
+    expect(weaknessScore(stat, '2026-09-13')).toBeCloseTo(2)
+    expect(weaknessScore(stat, '2026-09-30')).toBeCloseTo(3) // capped at +2
+    expect(weaknessScore({ ...stat, halfLife: 30 }, '2026-09-13')).toBeCloseTo(1.1)
   })
 
   it('ranks the weakest keys, treating unknown keys as medium', () => {

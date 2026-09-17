@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { masteryCounts, masteryMap } from '@/engine/stats'
+import { dayKey, masteryCounts, masteryMap } from '@/engine/stats'
 import { useStore } from '../store'
 import { useProgress } from './useCurriculum'
 
@@ -12,7 +12,7 @@ export function useDaySnapshot(): void {
   const snapshotDay = useStore((s) => s.snapshotDay)
   const { learned, goalWpm } = useProgress()
   useEffect(() => {
-    const counts = masteryCounts(masteryMap(keys, learned, goalWpm))
+    const counts = masteryCounts(masteryMap(keys, learned, goalWpm, dayKey()))
     snapshotDay(counts.learned, counts.mastered)
   }, [keys, learned, goalWpm, snapshotDay])
 }

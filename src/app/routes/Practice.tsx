@@ -161,7 +161,7 @@ function WarmupGame({ game }: { game: 'rhythm' | 'balloons' }) {
           layout={layout}
           pool={learned}
           goalWpm={game === 'rhythm' ? beatWpm : goalWpm}
-          weak={weakestKeys(keyStats, learned, 3)}
+          weak={weakestKeys(keyStats, learned, 3, dayKey())}
           sound={sound}
           onFinish={onFinish}
           durationMs={Number(new URLSearchParams(window.location.search).get('dur')) || 60_000}
@@ -218,7 +218,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     () => (kind === 'antes' ? poolOf(curriculum.lessons[curriculum.lessons.length - 1].pool) : poolOf(learned.length >= 2 ? learned : ['f', 'j'])),
     [kind, curriculum, learned],
   )
-  const weak = useMemo(() => weakestKeys(keyStats, learned, 3), [keyStats, learned])
+  const weak = useMemo(() => weakestKeys(keyStats, learned, 3, dayKey()), [keyStats, learned])
   // Odd days warm up on the bigrams that lean on the weakest keys, once there are enough keys to make bigrams; even days (or fewer keys) use real words.
   const bigramWarmup = kind === 'calentamiento' && bigramDay && learned.length >= 6
 

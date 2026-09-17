@@ -79,7 +79,7 @@ export function Stats() {
   const headline = referenceHeadline(points)
   const marks = useMemo(() => unitMarks(days), [days])
   const weekly = weeklyAccuracy(sessions, today)
-  const levels = useMemo(() => masteryMap(keys, learned, goalWpm), [keys, learned, goalWpm])
+  const levels = masteryMap(keys, learned, goalWpm, today)
   const fingers = useMemo(() => fingerDominance(keys, learned, goalWpm, (ch) => typingFinger(layout, ch)), [keys, learned, goalWpm, layout])
   const fingerTints = Object.fromEntries(Object.entries(fingers).map(([f, d]) => [f, 0.12 + 0.78 * d!.value]))
   const fingerLabels = Object.fromEntries(Object.entries(fingers).map(([f, d]) => [f, `${Math.round(d!.value * 100)} %`]))
@@ -107,15 +107,11 @@ export function Stats() {
     return out
   }, [keys, learned])
 
-  const weakest = useMemo(
-    () =>
-      learned
-        .filter((c) => c !== ' ' && keys[c] && keys[c].samples >= 3)
-        .map((c) => ({ c, stat: keys[c], score: weaknessScore(keys[c]) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 6),
-    [keys, learned],
-  )
+  const weakest = learned
+    .filter((c) => c !== ' ' && keys[c] && keys[c].samples >= 3)
+    .map((c) => ({ c, stat: keys[c], score: weaknessScore(keys[c], today) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6)
 
   if (sessions.length === 0) {
     return (

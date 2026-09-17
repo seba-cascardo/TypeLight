@@ -75,7 +75,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
           layout={layout}
           pool={learned}
           goalWpm={goalWpm}
-          weak={weakestKeys(keyStats, learned, 3)}
+          weak={weakestKeys(keyStats, learned, 3, dayKey())}
           ghostWpm={ghostWpm(sessions, dayKey(), goalWpm)}
           sound={sound}
           onFinish={onFinish}

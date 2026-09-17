@@ -1,19 +1,42 @@
 import type { KeySample, Metrics } from '../typing'
 
-/** Rolling stats for one key. Latency in ms, error rate 0..1. */
+/**
+ * Rolling stats for one key. Latency in ms, error rate 0..1. The smoothing step is weighted by
+ * samples (a rare key's single slip barely moves it), and each key carries a forgetting half-life
+ * that grows with clean sessions and halves on errors: what is not seen slides back into the Repaso.
+ */
 export interface KeyStat {
   latencyEma: number
   errorEma: number
   samples: number
   /** Local day the key was last typed (attempted), for "hace N días que no la ves". */
   lastSeen?: string
+  /** Forgetting half-life in days (default `HALF_LIFE_MIN`). */
+  halfLife?: number
+  /** Distinct days with attempts: "dominada" needs at least two. */
+  daysSeen?: number
 }
 
 export type KeyStats = Record<string, KeyStat>
 
-const ALPHA = 0.25
+export const ALPHA_FLOOR = 0.05
+export const ALPHA_CAP = 0.5
+export const HALF_LIFE_MIN = 3
+export const HALF_LIFE_MAX = 30
 
-/** Fold a finished session's per-key samples into the rolling stats; `today` stamps `lastSeen`. */
+/** Smoothing step for `attempts` new samples over `prevSamples` old ones. */
+export function alphaFor(attempts: number, prevSamples: number): number {
+  return Math.max(ALPHA_FLOOR, Math.min(ALPHA_CAP, attempts / (prevSamples + attempts)))
+}
+
+/** Longer after a clean session (≥ 3 hits, no error), halved by any error. */
+export function nextHalfLife(halfLife: number, errors: number, occurrences: number): number {
+  if (errors > 0) return Math.max(HALF_LIFE_MIN, halfLife / 2)
+  if (occurrences >= 3) return Math.min(HALF_LIFE_MAX, halfLife * 1.5)
+  return halfLife
+}
+
+/** Fold a finished session's per-key samples into the rolling stats; `today` stamps `lastSeen` and counts the day. */
 export function updateKeyStats(stats: KeyStats, samples: Iterable<KeySample>, today?: string): KeyStats {
   const next: KeyStats = { ...stats }
   for (const s of samples) {
@@ -23,34 +46,52 @@ export function updateKeyStats(stats: KeyStats, samples: Iterable<KeySample>, to
     const meanLatency = s.latencies.length
       ? s.latencies.reduce((a, b) => a + b, 0) / s.latencies.length
       : undefined
-    const seen = today ? { lastSeen: today } : {}
     const prev = next[s.char]
+    const newDay = today !== undefined && prev?.lastSeen !== today
+    const seen = today ? { lastSeen: today } : {}
     if (!prev) {
-      next[s.char] = { latencyEma: meanLatency ?? 600, errorEma: errRate, samples: attempts, ...seen }
+      next[s.char] = {
+        latencyEma: meanLatency ?? 600,
+        errorEma: errRate,
+        samples: attempts,
+        halfLife: nextHalfLife(HALF_LIFE_MIN, s.errors, s.occurrences),
+        daysSeen: newDay ? 1 : 0,
+        ...seen,
+      }
       continue
     }
+    const a = alphaFor(attempts, prev.samples)
     next[s.char] = {
       ...prev,
-      latencyEma: meanLatency === undefined ? prev.latencyEma : prev.latencyEma + ALPHA * (meanLatency - prev.latencyEma),
-      errorEma: prev.errorEma + ALPHA * (errRate - prev.errorEma),
+      latencyEma: meanLatency === undefined ? prev.latencyEma : prev.latencyEma + a * (meanLatency - prev.latencyEma),
+      errorEma: prev.errorEma + a * (errRate - prev.errorEma),
       samples: prev.samples + attempts,
+      halfLife: nextHalfLife(prev.halfLife ?? HALF_LIFE_MIN, s.errors, s.occurrences),
+      daysSeen: (prev.daysSeen ?? 0) + (newDay ? 1 : 0),
       ...seen,
     }
   }
   return next
 }
 
-/** Higher = weaker. Unknown keys score as "medium" so they get some exposure. */
-export function weaknessScore(stat: KeyStat | undefined): number {
+/** Days since the key was last seen, as a multiple of its half-life (0 without a date). */
+export function forgetting(stat: KeyStat, today?: string): number {
+  if (!today || !stat.lastSeen) return 0
+  const gap = daysBetween(stat.lastSeen, today)
+  return gap <= 0 ? 0 : gap / (stat.halfLife ?? HALF_LIFE_MIN)
+}
+
+/** Higher = weaker. Unknown keys score as "medium" so they get some exposure; unseen keys climb (up to +2). */
+export function weaknessScore(stat: KeyStat | undefined, today?: string): number {
   if (!stat) return 1
-  return stat.latencyEma / 400 + stat.errorEma * 4
+  return stat.latencyEma / 400 + stat.errorEma * 4 + Math.min(2, forgetting(stat, today))
 }
 
 /** The `n` weakest keys among `pool` (letters only, no space). */
-export function weakestKeys(stats: KeyStats, pool: Iterable<string>, n = 3): string[] {
+export function weakestKeys(stats: KeyStats, pool: Iterable<string>, n = 3, today?: string): string[] {
   const keys = [...pool].filter((c) => c !== ' ')
   return keys
-    .map((c) => ({ c, score: weaknessScore(stats[c]) }))
+    .map((c) => ({ c, score: weaknessScore(stats[c], today) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, n)
     .map((x) => x.c)
