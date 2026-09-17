@@ -149,6 +149,21 @@ export function Settings() {
               className="card mt-1 w-full px-4 py-2.5 font-bold outline-none focus:border-mod"
             />
           </label>
+          <label className="block">
+            <span className="eyebrow">Tu ancla</span>
+            <span className="mt-1 flex flex-wrap items-center gap-2 font-bold">
+              Después de
+              <input
+                value={settings.anchor}
+                onChange={(e) => setSettings({ anchor: e.target.value })}
+                placeholder="el mate de la mañana"
+                aria-label="Tu ancla"
+                className="card w-56 px-3 py-2 font-semibold outline-none focus:border-mod"
+              />
+              , practico.
+            </span>
+            <span className="mt-1 block text-sm text-ink-soft">Se muestra en Inicio, debajo del saludo. Vacío = sin ancla.</span>
+          </label>
           <Toggle checked={settings.sound} onChange={(v) => setSettings({ sound: v })} label="Sonido" hint="Un clic suave por tecla y un golpe seco por error." />
           <Toggle checked={settings.showHands} onChange={(v) => setSettings({ showHands: v })} label="Manos guía" hint="Las manos debajo del teclado, con el dedo que toca." />
           <div className="rounded-xl bg-paper px-4 py-3">

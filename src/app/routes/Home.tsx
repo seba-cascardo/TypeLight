@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
 import { dayKey, examDue, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
@@ -20,6 +20,54 @@ const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string
 /** Once a week the coral card is the exam: three minutes, no help, no Backspace. */
 const EXAM_BLOCK: (typeof BLOCKS)[number] = { id: 'challenge', title: 'Examen semanal', detail: 'Sin ayuda ni Backspace. Tu velocidad limpia.', minutes: '3 min', variant: 'coral', to: '/practica/examen' }
 
+/** "Después de ___, practico." — the sentence reads with a lower-case anchor. */
+function anchorSentence(anchor: string): string {
+  const a = anchor.trim()
+  return `Después de ${a.charAt(0).toLowerCase()}${a.slice(1)}, practico.`
+}
+
+/**
+ * One-time card for the typist who already typed before TypeLight: what to expect and the
+ * implementation intention that anchors the habit. Closes for good with "Listo".
+ */
+function ConversoCard() {
+  const anchor = useStore((s) => s.settings.anchor)
+  const setSettings = useStore((s) => s.setSettings)
+  const [draft, setDraft] = useState(anchor)
+  return (
+    <section className="card mb-8 border-2 border-sun p-5 md:p-6" data-testid="converso-card">
+      <div className="eyebrow mb-1">Antes de seguir</div>
+      <h2 className="text-2xl md:text-3xl">Diez minutos, cinco días, unas diez semanas.</h2>
+      <p className="mt-2 max-w-2xl text-ink-soft">
+        Las primeras dos o tres semanas vas a ser más lento que con los dedos de antes. Es esperado: la precisión hace la velocidad. Lo que más ayuda a
+        sostenerlo es decidir ahora cuándo practicás.
+      </p>
+      <form
+        className="mt-4 flex flex-wrap items-center gap-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setSettings({ anchor: draft.trim(), conversoSeen: true })
+        }}
+      >
+        <label className="flex flex-wrap items-center gap-2 font-bold">
+          Después de
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="el mate de la mañana"
+            aria-label="Tu ancla"
+            className="card w-56 px-3 py-2 font-semibold outline-none focus:border-mod"
+          />
+          , practico.
+        </label>
+        <Keycap variant="primary" type="submit">
+          Listo →
+        </Keycap>
+      </form>
+    </section>
+  )
+}
+
 function greeting(name: string): string {
   const h = new Date().getHours()
   const when = h < 5 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'
@@ -36,6 +84,8 @@ export function Home() {
   const legacy = useStore((s) => s.legacy)
   const setLegacy = useStore((s) => s.setLegacy)
   const lastExamDay = useStore((s) => s.lastExamDay)
+  const anchor = useStore((s) => s.settings.anchor)
+  const conversoSeen = useStore((s) => s.settings.conversoSeen)
   const routine = useRoutine()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const blocks = examToday ? BLOCKS.map((b) => (b.id === 'challenge' ? EXAM_BLOCK : b)) : BLOCKS
@@ -70,7 +120,15 @@ export function Home() {
               ? 'Cuatro teclas para hoy. Diez minutos, no más.'
               : `${doneCount} de 4. Seguimos.`}
         </p>
+        {anchor && (
+          <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-ink-soft" data-testid="anchor">
+            <span className="inline-block h-2 w-2 rounded-full bg-enter" aria-hidden="true" />
+            {anchorSentence(anchor)}
+          </p>
+        )}
       </header>
+
+      {!conversoSeen && <ConversoCard />}
 
       {legacy?.beatenAt && !legacy.beatenSeen && (
         <section className="card mb-8 flex flex-wrap items-center justify-between gap-3 border-2 border-enter p-5" data-testid="legacy-beaten">
