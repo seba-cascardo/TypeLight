@@ -2,7 +2,7 @@
 
 Fecha 2026-09-18 · sesión nocturna: decisiones tomadas por el agente sobre el roadmap aprobado (`docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 3, puntos 15–21; §6 insight 7; §7 «lo que no haría»). Seba las revisa cuando vuelve; cada una lleva su porqué.
 
-**Estado:** en implementación (rama `ola-3`).
+**Estado:** implementado completo (rama `ola-3`, mergeada fast-forward a `master` el 2026-09-18). Desvíos: la mascota dice «N de 4. Seguimos.» mientras la rutina está a medias (por encima del examen/juego/racha); el récord se juzga contra `records(days).bestReference` previo (solo sesiones de referencia); `keyReason` no distingue «lenta» por meta de unidad sino por umbral fijo de 700 ms.
 
 ## 0. Qué es
 
