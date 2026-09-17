@@ -292,20 +292,23 @@ export function examText(pool: ReadonlySet<string>, monthKey: string, minChars =
   return out.join(' ')
 }
 
-/** Text for the adaptive review: words heavy on the weakest keys. */
+/** Text for the adaptive review: words heavy on the weakest keys, and on the weakest bigrams when given. */
 export function adaptiveText(
   pool: ReadonlySet<string>,
   weak: readonly string[],
   count = 16,
-  opts: GenOpts = {},
+  opts: GenOpts & { bigrams?: readonly string[] } = {},
 ): string {
   const rng = opts.rng ?? makeRng()
   const focus = new Set(weak)
   const letters = pseudoLetters(pool, weak)
-  const words = candidateWords(pool, 1500).filter((w) => [...w].some((c) => focus.has(c)))
+  const candidates = candidateWords(pool, 1500)
+  const words = candidates.filter((w) => [...w].some((c) => focus.has(c)))
+  const bigramWords = opts.bigrams?.length ? candidates.filter((w) => opts.bigrams!.some((g) => w.includes(g))) : []
   const out: string[] = []
   for (let i = 0; i < count; i++) {
-    if (words.length >= 6 && rng.chance(0.7)) out.push(rng.pick(words))
+    if (bigramWords.length >= 6 && rng.chance(0.4)) out.push(rng.pick(bigramWords))
+    else if (words.length >= 6 && rng.chance(0.7)) out.push(rng.pick(words))
     else out.push(pseudoWord(letters, focus, rng))
   }
   return out.join(' ')

@@ -65,6 +65,14 @@ describe('generators', () => {
     expect(hits).toBeGreaterThanOrEqual(12)
   })
 
+  it('adaptive text leans on the weak bigrams when given some', () => {
+    const pool = poolOf('abcdefghijklmnopqrstuvwxyzñ')
+    const t = adaptiveText(pool, ['x'], 20, { rng: makeRng(8), bigrams: ['tr', 'pr'] })
+    expect(only(t, pool)).toBe(true)
+    const withBigram = t.split(' ').filter((w) => /tr|pr/.test(w)).length
+    expect(withBigram).toBeGreaterThanOrEqual(7)
+  })
+
   it('is deterministic for a given seed', () => {
     const pool = poolOf('asdfjklñ')
     expect(wordsText(pool, 10, { rng: makeRng(9) })).toBe(wordsText(pool, 10, { rng: makeRng(9) }))

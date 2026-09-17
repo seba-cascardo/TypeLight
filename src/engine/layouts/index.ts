@@ -100,3 +100,12 @@ export function keyLegend(key: KeyDef): string {
 export function getLayout(id: LayoutId): Layout {
   return LAYOUTS[id]
 }
+
+/** Row of the key that types `ch` (final press): 0 = numbers, 1 = top, 2 = home, 3 = bottom, 4 = space row; null if untypeable. */
+export function rowFor(layout: Layout, ch: string): number | null {
+  const seq = resolveChar(layout, ch)
+  if (!seq) return null
+  const code = seq[seq.length - 1].code
+  const i = layout.rows.findIndex((row) => row.some((k) => k.code === code))
+  return i === -1 ? null : i
+}
