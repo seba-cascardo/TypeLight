@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildCurriculum } from '../curriculum'
 import { LATAM } from '../layouts'
+import { SENTENCES } from '../corpus/sentences'
 import { GENERATED_SENTENCES } from '../corpus/sentences.generated'
 import { adaptiveText, challengeText, drillText, fitSentence, makeRng, ngramText, pickSentences, poolOf, reviewText, sentencesText, wordsText } from './index'
 
@@ -128,8 +129,12 @@ describe('generators', () => {
     let house = 0
     const generated = new Set(GENERATED_SENTENCES)
     for (let seed = 0; seed < 200; seed++) for (const s of pickSentences(full, 1, { rng: makeRng(seed) })) if (!generated.has(s)) house++
-    // ~185 house vs ~1500 generated at weight 3:1 → roughly 27 % house; well above the unweighted 11 %.
+    // ~184 house vs ~1500 generated at weight 3:1 → roughly 27 % house; well above the unweighted 11 %.
     expect(house).toBeGreaterThan(35)
+  })
+
+  it('has no duplicate house sentences', () => {
+    expect(new Set(SENTENCES).size).toBe(SENTENCES.length)
   })
 
   it('ngramText repeats the chosen n-grams consecutively, inside the pool, and leans on weak keys', () => {

@@ -61,3 +61,13 @@ python scripts/build-corpus.py <es_50k.txt> <dict.json>
 
 - `es_50k.txt`: [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (`content/2018/es/es_50k.txt`, CC-BY-SA 4.0).
 - `dict.json`: [words/an-array-of-spanish-words](https://github.com/words/an-array-of-spanish-words) (`index.json`), usado como lista blanca para sacar nombres propios y basura de subtítulos.
+
+## Regenerar las frases y los n-gramas
+
+```bash
+python scripts/build-sentences.py   # scripts/spa_sentences.tsv.bz2 + dict.json -> src/engine/corpus/sentences.generated.ts
+python scripts/build-ngrams.py      # sin inputs, lee words.ts -> src/engine/corpus/ngrams.ts
+```
+
+- `spa_sentences.tsv.bz2`: [descarga de Tatoeba](https://downloads.tatoeba.org/exports/per_language/spa/spa_sentences.tsv.bz2) (CC BY 2.0 FR), filtrado contra `dict.json` y contra formas de tuteo/vosotros y vocabulario peninsular (`scripts/corpus_common.py`).
+- `build-ngrams.py` no necesita descargar nada: arma la tabla de bigramas y trigramas a partir de `words.ts`, ya en el repo.

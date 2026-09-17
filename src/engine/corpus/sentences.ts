@@ -105,7 +105,6 @@ export const SENTENCES: string[] = [
   'Un error no se borra: se respira, se corrige y se sigue adelante.',
   'Los meñiques trabajan poco al principio, pero con paciencia se vuelven fuertes.',
   'El anular es un dedo tranquilo que aprende de a poco a moverse solo.',
-  'Las tortugas marinas vuelven a poner huevos en la playa donde nacieron.',
   'Escribir sin mirar es como andar en bicicleta: de pronto sale solo.',
   'El asado se cocina despacio, con brasas parejas y sin apurar el fuego.',
   'Los perros mueven la cola hacia un lado cuando ven a alguien conocido.',

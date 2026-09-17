@@ -34,6 +34,14 @@ sacas subes bajas entras muestras cambias ayudas olvidas extrañas amas odias qu
 gustas sabías podrías querías tenías estabas ibas hacías decías venías
 """.split())
 
+# Peninsular Spanish vocabulary/register: a Rioplatense reader doesn't say these. "vale" and "conducir" also
+# exist in Rioplatense usage but are much rarer there; losing them from the pool is an accepted trade-off.
+PENINSULAR = set("""
+ordenador ordenadores peli pelis mola molan molaba guarro guarra guarros enhorabuena friegues friega vale coche
+coches patata patatas zumo zumos móvil móviles piso pisos gafas tío tía tíos tías chaval chavala chavales curro
+currar flipar flipo flipas guay follón majo maja majos majas conducir aparcar aparcamiento vosotros
+""".split())
+
 
 def ok(s):
     if not (40 <= len(s) <= 90) or not ALLOWED.match(s):
@@ -54,6 +62,8 @@ def ok(s):
     if len(set(words)) < 4 or VOSOTROS.search(s.lower()):
         return False
     if any(w in TUTEO for w in words):
+        return False
+    if any(w in PENINSULAR for w in words):
         return False
     for w in words:
         if w in BLOCK or w in NAMES or w.translate(STRIP) not in dictionary:
