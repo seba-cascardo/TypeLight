@@ -1,6 +1,6 @@
 # TypeLight — tercera etapa: proteger, contenido y "tu velocidad de antes"
 
-Fecha: 2026-09-17. Autora: Clara (Opus 5). Deriva del reporte `docs/research/2026-09-17-auditoria-y-roadmap.md` (Ola 0 + Ola 1 + el ítem 13b del §10), aprobado entero por Seba el 2026-09-17 ("aprobado todo").
+Fecha: 2026-09-17. **Implementado completo el 2026-09-17** (plan `docs/superpowers/plans/2026-09-17-proteger-y-contenido.md`, rama `proteger-contenido`, todavía sin mergear a `master`). Autora: Clara (Opus 5). Deriva del reporte `docs/research/2026-09-17-auditoria-y-roadmap.md` (Ola 0 + Ola 1 + el ítem 13b del §10), aprobado entero por Seba el 2026-09-17 ("aprobado todo").
 
 ## 1. Qué se decidió
 

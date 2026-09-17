@@ -1,38 +1,92 @@
-# Handoff — TypeLight: etapa "juegos y Progreso" cerrada
+# Handoff — TypeLight: etapa "proteger y contenido" cerrada
 
-Fecha 2026-09-17 · rama `master` · preparado sobre `0dbfb42`
+Fecha 2026-09-17 · rama `proteger-contenido` (checkouteada sobre `master` en la misma carpeta, encima de `0dbfb42`) · **todavía sin mergear**
 
 ## Alcance
 
-**Sí:** la etapa 2 completa está implementada, testeada y mergeada a `master`: **Progreso** nuevo (`/estadisticas`: velocidad de referencia solo de Retos, dominio por tecla, precisión 7 días, constancia, ritmo; store v2 con migración automática), **infraestructura de juegos** (id por hueco, `GameProps`/`GameResult`, estrellas en el motor, `GameResults`, mascota compartida con humor escalonado, campos a pantalla completa), tres juegos nuevos (**Al compás**, **Globos de palabras**, **Carrera contra tu fantasma**) repartidos en 12 huecos de la ruta, y el **modo libre "Jugar"** en Inicio con la rutina completa. Spec: `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md`; planes ejecutados: `docs/superpowers/plans/2026-09-16-progreso.md`, `2026-09-16-juegos-1-compas.md`, `2026-09-17-juegos-2-globos-carrera-jugar.md`.
-Seba probó los cuatro juegos, Progreso y la fila Jugar en uso real y los dio por correctos ("ahora están correctos", 2026-09-17).
-**No:** no hay deploy ni backend, no se optimizó bundle (524 KB de JS), no hay PWA. Remoto: `origin` = `https://github.com/seba-cascardo/TypeLight` (privado, creado con `gh` el 2026-09-17); `master` pusheado hasta `0dbfb42`.
+**Sí:** la etapa 3 completa (Ola 0 "proteger" + Ola 1 "contenido" del reporte, más el ítem 13b adelantado desde la Ola 2) está implementada y testeada en la rama `proteger-contenido`: **build estable** para el uso diario (`npm run serve` sirve `dist/` en :5173 con fallback SPA; el launcher reconstruye solo cuando `master` avanza), **store v3** (`days[d].reference[]` y `.sessions` escritos por `recordSession`, migración v2→v3 con backfill, `legacy`, `settings.lastBackupAt`), **exportar/importar progreso** (copia JSON descargable, importar con confirmación de dos pasos, recordatorio en Inicio), **fixes** de severidad A/M del reporte (Reto sin frases repetidas, un tip ya no llena la tarjeta Lección, precisión 7 días en Inicio, "~1 min" en el Calentamiento, el reloj no corre con la pestaña oculta, `nextLesson` no retrocede), **corpus de frases por etapa** (Tatoeba filtrado + ~200 frases de la casa con más peso, `fitSentence` normaliza por pool sin tocar tildes), **n-gramas del español** (tabla generada, dos lecciones nuevas en Velocidad, Calentamiento de bigramas en días impares), **sello "velocidad honesta"** en Progreso, y **"tu velocidad de antes"** (test único de 1 minuto, línea punteada en el chart, hito al superarla). Spec: `docs/superpowers/specs/2026-09-17-proteger-y-contenido-design.md` (marcada "Implementado completo"); plan ejecutado: `docs/superpowers/plans/2026-09-17-proteger-y-contenido.md` (línea `> **Estado:**` con los desvíos).
+
+Verificación de cierre corrida el 2026-09-17: `npx tsc -b` limpio · `npm run lint` con las 4 advertencias previas de siempre (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`) y ninguna más · `npm test` 108 unitarios en 14 archivos, todo verde · `npm run e2e` 14 Playwright, todo verde (arranca su propio server en :5174) · `npm run build` OK (`dist/assets/index-*.js` 626 KB, gzip 215 KB — sigue sin code-splitting, es una advertencia de Vite, no un error).
+
+**No:** todavía no está mergeada a `master` ni pusheada — el merge lo pide Seba ("merge local a master", fast-forward) y recién ahí se reemplaza el `.bat` de escritorio (ver abajo). No se tocó la Ola 2 del reporte (el converso): Reto sin ayuda, Backspace, manos por dominio, rollover, onboarding, dominio por dedo, auto-chequeo de forma — quedan en `docs/backlog.md` → Pendientes. No hay deploy, backend ni PWA (sigue fuera de alcance hasta que exista export/import en producción, que ahora sí existe en local).
 
 ## Arrancá acá
 
-**Primera acción:** no hay pendiente acordado (`docs/backlog.md` solo tiene ideas sueltas). Preguntale a Seba qué sigue; si trae feedback de uso real, arreglalo. Si pide cambios visuales grandes, mostrale 2-3 opciones renderizadas antes de tocar la app (le funcionó tres veces: diseño, tipografía, juegos/métricas). Commit y push van cuando él lo pide ("commit, push"): `git push` a `origin master`.
+**Primera acción:** preguntale a Seba si ya mergeó `proteger-contenido` a `master` (`git log master` — el HEAD debería dejar de ser `0dbfb42`) y si ya reemplazó `C:\Users\seba_\Desktop\TypeLight.bat` por el contenido de más abajo. Si trae feedback de haber usado el corpus nuevo, los n-gramas o la copia de seguridad, arreglá eso primero. Si no hay nada pendiente, el siguiente paso es la **Ola 2 del reporte** (el converso): armar una propuesta renderizada (artifact) con 2-3 variantes para que Seba elija, como le funcionó las últimas veces (diseño, tipografía, juegos/métricas) — cubre Reto sin ayuda + modo con Backspace en una sola discontinuidad del chart, manos guía por dominio, rollover, onboarding de converso, juego dentro de la rutina, dominio por dedo, auto-chequeo de forma. Detalle en `docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 2 y en `docs/backlog.md` → Pendientes.
 
-Verificá con: `npm test` (81 unitarios) · `npm run e2e` (10 Playwright; arranca su propio dev server en :5174) · `npm run build`. Lint: `npm run lint` tiene 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`, React Compiler sobre memoización manual): no sumar ninguna.
-Dev server: `npm run dev` (:5173). Capturas con progreso sembrado: `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]`.
+Verificá con: `npm test` (108 unitarios) · `npm run e2e` (14 Playwright, arranca su propio dev server en :5174) · `npm run build`. Lint: `npm run lint` tiene 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`, React Compiler sobre memoización manual): no sumar ninguna.
+
+**Puertos desde ahora** (cambiaron en esta etapa): `:5173` = `npm run serve` (`vite preview` de `dist/`, el build estable — donde Seba practica todos los días); `:5175` = `npm run dev -- --port 5175` para probar una rama sin dispararle HMR al build estable; `:5174` = e2e (no cambia). **Hasta que Seba reemplace el `.bat` de escritorio**, éste sigue levantando el dev server en :5173 sobre el árbol de trabajo: como la rama está checkouteada en la misma carpeta, cualquier edición dispara HMR y puede resetear una lección a mitad de camino — avisale antes de que pruebe. Una vez reemplazado el `.bat`, :5173 sirve siempre el build de `master` y las ramas se prueban en :5175 sin tocarlo.
+
+**Reemplazo del `.bat` — pegale esto a Seba para que lo guarde tal cual en `C:\Users\seba_\Desktop\TypeLight.bat` (reemplaza el archivo entero, sin abrir el repo):**
+
+```bat
+@echo off
+title TypeLight
+set "APP=C:\Projects\TypeLight"
+set "PORT=5173"
+set "URL=http://localhost:%PORT%/"
+
+cd /d "%APP%" || (echo No encuentro %APP% & pause & exit /b 1)
+
+rem Si el server ya esta corriendo, solo abrimos el navegador.
+powershell -NoProfile -Command "try{$null=New-Object Net.Sockets.TcpClient('localhost',%PORT%); exit 0}catch{exit 1}"
+if %errorlevel%==0 (
+  echo El server ya esta corriendo. Abriendo %URL%
+  start "" "%URL%"
+  exit /b 0
+)
+
+if not exist node_modules (
+  echo Instalando dependencias...
+  call npm install || (pause & exit /b 1)
+)
+
+rem Reconstruye dist/ si falta o si master tiene un commit mas nuevo que el build.
+rem (Sin bloques entre parentesis: las variables que se setean adentro no se leen en el mismo bloque.)
+set "NEEDS_BUILD=0"
+set "COMMIT_TS="
+set "BUILD_TS="
+if not exist dist\index.html set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto build
+git log -1 --format=%%ct master > "%TEMP%\typelight-commit.txt"
+set /p COMMIT_TS=<"%TEMP%\typelight-commit.txt"
+if not defined COMMIT_TS set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto build
+powershell -NoProfile -Command "[int]((Get-Item 'dist\index.html').LastWriteTimeUtc - [datetime]'1970-01-01').TotalSeconds" > "%TEMP%\typelight-build.txt"
+set /p BUILD_TS=<"%TEMP%\typelight-build.txt"
+if not defined BUILD_TS set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto build
+if %BUILD_TS% LSS %COMMIT_TS% set "NEEDS_BUILD=1"
+:build
+if "%NEEDS_BUILD%"=="1" (
+  echo Construyendo TypeLight...
+  call npm run build || (pause & exit /b 1)
+)
+
+echo Sirviendo TypeLight en %URL% ...
+echo Cerra esta ventana para apagar el server.
+echo.
+start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -lt 60;$i++){ try{$null=New-Object Net.Sockets.TcpClient('localhost',%PORT%); Start-Process '%URL%'; exit}catch{Start-Sleep -Milliseconds 500} }"
+npm run serve
+```
+
+(Esto reemplaza al `.bat` que corría `npm run dev -- --port 5173` sobre el árbol de trabajo. El nuevo hace `npm run build` solo si `dist/` falta o quedó vieja contra el último commit de `master`, y después `npm run serve`, que es `vite preview` — no un dev server. Copia idéntica en el repo: `scripts/TypeLight.bat`.)
 
 Leé, en este orden:
-- `docs/backlog.md` — ideas sueltas.
-- `.serena/memories/typelight-architecture.md` — decisiones con porqué (Progreso, juegos, trampas del entorno) y lo que Seba rechazó (no volver a proponerlo).
-- `src/engine/games/` — reducers puros de los juegos con tests; `src/app/components/games/` — componentes, `Game.tsx`, `meta.ts`, `GameResults.tsx`, `Mascot.tsx` + `moods.ts`.
-- `src/engine/stats/progress.ts` y `days.ts` — las métricas; `src/app/routes/Stats.tsx` — la pantalla.
-- `src/app/routes/Play.tsx` y la fila "Jugar" en `Home.tsx`.
+- `docs/backlog.md` — Pendientes (Ola 2) e ideas sueltas.
+- `.serena/memories/typelight-architecture.md` — decisiones con porqué (store v3, copia JSON, corpus por etapa, n-gramas, `nextLesson`, pausa por pestaña oculta, puertos) y las trampas nuevas de esta etapa.
+- `src/app/lib/backup.ts` (`serializeBackup`/`parseBackup`/`backupDue`) y la tarjeta "Tu progreso" en `src/app/routes/Settings.tsx`.
+- `scripts/build-sentences.py`, `scripts/corpus_common.py`, `scripts/build-ngrams.py` — generadores de Python; `src/engine/corpus/sentences.generated.ts` y `ngrams.ts` — su salida (no editar a mano).
+- `src/engine/curriculum/` (`nextLesson`), `src/app/hooks/useTypingSession.ts` (pausa por pestaña oculta), `src/engine/stats/progress.ts` (`referenceByDay`, `legacyBeaten`).
 
 **Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque un plan lo liste como pendiente: este handoff es más reciente que los planes. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
-Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho, con el dev server en :5173 levantado desde `C:\Users\seba_\Desktop\TypeLight.bat` (sirve el árbol de trabajo: si trabajás en una rama checkouteada en la misma carpeta, él ya la ve). Cada edición dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. El navegador integrado no puede capturar `file://` ni ver artifacts de claude.ai; para capturas usá Playwright desde `scripts/` (los scripts fuera del proyecto no resuelven `@playwright/test`). Trampas del entorno (heredocs con backticks, selectores Playwright, fechas UTC vs. locales en e2e): en la memoria Serena § Trampas.
-
-## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque el plan lo liste como pendiente: este handoff es más reciente que el plan. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
-
-Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho; `html { font-size: clamp(16px, 0.55vw + 9px, 21px) }` y contenedor `max-w-[86rem]`, ambos con su OK ("bien la letra"). Mientras usa la app, cada edición tuya dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. Otra sesión de Claude puede tener el dev server en :5173 (el hook lo avisa): las capturas con `scripts/shot.mjs` sirven igual porque apuntan a ese puerto; el navegador integrado no puede capturar archivos `file://` ni ver artifacts de claude.ai (no tiene sesión).
+Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho (`html { font-size: clamp(16px, 0.55vw + 9px, 21px) }`, contenedor `max-w-[86rem]`, ambos con su OK). Mientras se trabaja sobre una rama checkouteada en la misma carpeta que el `.bat` de escritorio sirve, cada edición dispara HMR y puede resetear una lección a mitad de camino: avisale cuando termines una tanda antes de que pruebe. El navegador integrado no puede capturar `file://` ni ver artifacts de claude.ai; para capturas usá `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]` — el script siembra progreso de muestra y apunta su primera navegación a :5173 siempre, así que las URLs que se le pasan también van a :5173 (el build estable, o la rama si está checkouteada ahí encima). Trampas del entorno nuevas (sin `window.confirm`, cómo mockear `document.hidden`, `getByText` contra `<text>` de SVG, fixtures de `/estadisticas` con al menos una sesión, consola de Windows con Python, variables en bloques `( )` de `.bat`) están en la memoria Serena § Trampas, junto con las de la etapa anterior.
 
 ## Estado
 
-Sobre `0dbfb42` quedaron sin commitear, todos dejados por el cierre EOS de la ventana del 2026-09-17 y ninguno en uso: este `HANDOFF.md`; los tres planes de `docs/superpowers/plans/` con sus pasos tildados y una línea `> **Estado:**` bajo el encabezado; el spec `docs/superpowers/specs/2026-09-16-juegos-y-progreso-design.md` con la marca "Implementado completo" en la línea de fecha; `.serena/memories/typelight-architecture.md` con tres viñetas nuevas en § Trampas (consentidas por Seba). Van en el próximo commit normal de Seba.
+Sobre `0dbfb42` (`master`), la rama `proteger-contenido` tiene los 12 commits de esta etapa (`build:`/`feat:`/`fix:` uno por tarea, más este cierre de documentación) y el árbol de trabajo queda limpio: no hay nada sin commitear. Capturas para Seba en `e2e/screens/ajustes-copia.png` y `e2e/screens/stats-antes.png` (gitignored, tomadas contra :5173 con progreso de muestra — no van en ningún commit, son para mirar). El merge a `master` y el reemplazo del `.bat` de escritorio quedan pendientes de que Seba los pida.
 
 ## Descartado y confirmado
 
@@ -48,6 +102,11 @@ Sobre `0dbfb42` quedaron sin commitear, todos dejados por el cierre EOS de la ve
 - **Corpus de OpenSubtitles sin filtrar**: trae nombres en inglés ("jules", "ford"), palabras violentas/vulgares y formas de vosotros. Lo que quedó: filtro contra diccionario (`words/an-array-of-spanish-words`, sin tildes: comparar con acentos quitados) + blocklist en `scripts/build-corpus.py`. Caduca si `git log -1 --format=%h -- scripts/build-corpus.py` deja de dar `7c5c16e`.
 - **Sondear el puerto de Vite desde un `.bat` con `New-Object Net.Sockets.TcpClient` sin argumentos + `.Connect('localhost', 5173)`** da siempre "cerrado": Windows PowerShell 5.1 crea el socket IPv4 y Vite escucha solo en `[::1]`. Funciona el constructor con host: `New-Object Net.Sockets.TcpClient('localhost',5173)` (resuelve las dos familias). Además, `%errorlevel%` en la misma línea de `cmd /c` se expande antes de correr el comando: probarlo en un `.bat` con el `if` en línea aparte. Caduca si `powershell -NoProfile -Command "try{(New-Object Net.Sockets.TcpClient).Connect('localhost',5173); 'ok'}catch{'fail'}"` imprime `ok` con el dev server levantado.
 - **Tipografía**: se mostraron tres parejas con contenido real (artifact `https://claude.ai/artifact/FktdvPVBNM2jv5sbBqN4vR`). Rechazadas por Seba al elegir la B: **Fraunces + Atkinson Hyperlegible Next** (serif cálida + sans hiperlegible) y **Chivo + Asap** (argentinas, sobrias); antes había rechazado **Bricolage Grotesque + Nunito Sans** ("no me gusta") e **IBM Plex Mono** en el ejercicio. Caduca: hasta que Seba pida cambiar la tipografía.
+- **El corpus generado desde Tatoeba puede dejar pasar un nombre al inicio de frase o violencia leve** (p. ej. "Luisa", "fusil"): los filtros de `scripts/corpus_common.py` no son perfectos. Seba ojea una muestra por encima; si algo le molesta de verdad, la cuota de Tatoeba o el peso de la casa se ajustan (el mecanismo ya está armado, spec §12). Caduca: si Seba pide bajar la cuota o subir el peso de la casa, ahí se hace y esta entrada se actualiza.
+- **`TUTEO` (filtro del corpus generado) es una lista finita de formas de tú frecuentes**, no un detector morfológico: una forma rara puede colarse igual. Caduca: si Seba encuentra tuteo en una frase generada, se agrega esa forma a la lista y se regenera.
+- **Los encabezados de los archivos de corpus generados quedan en español** (cita a Tatoeba/OpenSubtitles), igual que en `words.ts`: no se tradujeron a inglés solo por consistencia con el resto del código, que sí es en inglés. Caduca: si Seba pide encabezados en inglés.
+- **`restart()` de `useTypingSession` no resetea `hiddenFrom`**: reiniciar justo con la pestaña oculta deja un estado de pausa colgado; benigno (se resuelve solo al volver a mostrar la pestaña) y no se reprodujo en uso real. Caduca: si aparece un reloj que no arranca después de un restart con la pestaña recién oculta.
+- **`dayOfYear` puede desfasarse un día en una transición de horario de verano**: es un cálculo de calendario, no de reloj; solo afecta a qué día el Calentamiento usa bigramas (par/impar), nunca a una métrica de progreso. Argentina no tiene DST hoy, así que no debería notarse. Caduca: si Seba lo reporta.
 
 ## Decisiones
 
@@ -65,3 +124,9 @@ Sobre `0dbfb42` quedaron sin commitear, todos dejados por el cierre EOS de la ve
 | Campos de juego a pantalla completa (`clamp(420px, 100dvh − 19rem, 900px)`) y mascota con reacciones escalonadas por racha de errores | Seba: "ocupa muy poco espacio vertical"; "la mascota necesita animaciones que varíen si le erramos cada vez más" | alto fijo 420 px; una sola cara triste | usuario | decidida | hasta que Seba pida otro alto o quitar la mascota |
 | Tema oscuro automático + grano + rebote + brillo en keycaps | Seba aprobó los seis retoques | — | usuario | decidida | hasta que Seba desactive alguno |
 | Escala fluida de fuente (`clamp`) y contenedor `max-w-[86rem]` | Seba: "a 125 % se ve muy pequeño"; después "bien la letra, los objetos podrían ocupar más ancho" | ancho fijo 1024 px; `max-w-6xl` | usuario | decidida | hasta que Seba pida otro tamaño |
+| Build estable en :5173 (`vite preview` de `dist/`) para el uso diario; dev de rama en :5175; el launcher reconstruye solo si `master` avanza | cada edición en una rama sobre el dev server le reseteaba una lección a mitad de camino | seguir practicando sobre el dev server; un solo puerto para todo | usuario (spec §3, aprobado en el research §2.1) | decidida | hasta que Seba pida volver a un solo puerto |
+| Copia de progreso = archivo JSON descargado a mano; importar reemplaza todo el estado, no mergea | el progreso vive solo en `localStorage`; reemplazar es más simple y predecible (Entertrained hace lo mismo) | sincronizar a una cuenta/backend; mezclar campo por campo al importar | usuario (spec §5, research §2.1) | decidida | hasta que Seba pida cuenta/sync o merge al importar |
+| La velocidad de referencia se lee de `days` (resumen por día), no de `sessions`: sobrevive el tope de 1000 sesiones guardadas | el resumen diario no debería perderse solo porque la sesión cruda se descartó por el tope | subir el tope de sesiones guardadas en vez de resumir por día | inferencia del agente | decidida | hasta que el resumen por día tampoco alcance |
+| Corpus de frases por etapa: Tatoeba filtrado (1500) + frases de la casa (~200) con ×3 de peso | 85 frases de la casa se repetían rápido en el Reto; Tatoeba solo trae "translationese" ("Tom fue a la tienda") | usar solo casa ampliada, sin Tatoeba | usuario (research §2.2, spec §7) | decidida | hasta que Seba pida bajar la cuota de Tatoeba o subir el peso de la casa |
+| N-gramas pesados por rango en `words.ts` (`1/√(i+20)`), no por la frecuencia cruda de `es_50k.txt` | evita depender de un archivo que no está en el repo y no hace falta descargarlo | descargar `es_50k.txt` y pesar por frecuencia cruda como pide el spec | inferencia del agente (desvío declarado) | decidida | hasta que la aproximación por rango se note distinta del objetivo en uso real |
+| "Tu velocidad de antes" capturada ya, adelantada desde la Ola 2 | el mapeo viejo (dedos mal puestos) se degrada con cada día de práctica nueva: hay que medirlo antes de que se borre | esperar a la Ola 2, donde estaba originalmente | usuario ("aprobado todo" 2026-09-17; research §10 addendum, spec §10) | decidida | no caduca — es una medición de una vez, no un ajuste revisable |

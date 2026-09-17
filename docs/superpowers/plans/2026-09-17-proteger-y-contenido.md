@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Estado:** Ejecutado completo el 2026-09-17 sobre `master` (`0dbfb42`), rama `proteger-contenido`, todavía sin mergear. Desvíos: el `.bat` guarda las lecturas de `git log`/mtime en variables y reconstruye si vienen vacías en vez de tirar un error de parseo; en Ajustes, importar una copia limpia una confirmación pendiente si un archivo posterior falla, y `fechaCopia()` guarda contra fechas inválidas; `challengeText` cuenta la longitud exacta del texto ya unido (+ tests de límite y de la rama de relleno con palabras); la aserción de versión de `e2e/flow.spec.ts` pasa de 2 a 3; en los scripts de corpus, el regex de `VOSOTROS` se amplía (`abais|asteis|isteis|íais`) y se suma un filtro `TUTEO` (formas de tú frecuentes rechazadas, porque Seba lee en rioplatense), se exige `¿?`/`¡!` pareados, y `BLOCK` gana `cagar…/asesinaron…/guerra`; el corpus final quedó en 1500 frases (526 sin tildes, 302 con ¿¡?!), cobertura 603/603/1685 por etapa; los n-gramas quedaron pesados por rango en `words.ts` (`1/√(i+20)`) en vez de la frecuencia cruda de `es_50k.txt` (evita la descarga, `words.ts` no se toca); `ngramText` quedó total (clampa `combination` y cae a palabras si no entra nada); el e2e de "tu velocidad de antes" usa `locator('svg text')` y una sesión de fixture (Progreso muestra un estado vacío con `sessions.length === 0`); el botón de resultados dice "Ver progreso (Enter) →"; la tarjeta de hito queda arriba del recordatorio de copia.
+
 **Goal:** Que el progreso de Seba tenga copia, que use un build estable en vez del dev server, cerrar los issues de severidad A/M del reporte, darle al Reto frases reales desde la tercera unidad (corpus por etapa), sumar n-gramas del español y capturar "tu velocidad de antes" como la vara que el mapeo nuevo tiene que superar.
 
 **Architecture:** Todo lo testeable sigue en `src/engine/` (puro, sin React): resumen de referencia por día en `days`, `challengeText`/`pickSentences`/`fitSentence`/`ngramText` en el generador, `nextLesson` robusto en el currículo, pausa por pestaña oculta en el motor de tipeo (`afterPause`). La UI solo consume: `Settings` gana dos tarjetas (copia, velocidad de antes), `Practice` gana el kind `antes` y el Calentamiento de bigramas, `Stats` lee la referencia de `days` y dibuja la línea "antes". El corpus generado y la tabla de n-gramas los producen scripts de Python en `scripts/` y se commitean como `.ts`.
@@ -58,7 +60,7 @@
 
 ### Task 0: Rama
 
-- [ ] **Step 1**
+- [x] **Step 1**
 
 ```bash
 git -C C:/Projects/TypeLight checkout -b proteger-contenido
@@ -75,7 +77,7 @@ git -C C:/Projects/TypeLight checkout -b proteger-contenido
 **Interfaces:**
 - Produces: `npm run serve` sirve `dist/` en `http://localhost:5173/` con fallback SPA.
 
-- [ ] **Step 1: Agregar el script `serve`**
+- [x] **Step 1: Agregar el script `serve`**
 
 En `package.json`, dentro de `"scripts"`, después de `"preview"`:
 
@@ -83,7 +85,7 @@ En `package.json`, dentro de `"scripts"`, después de `"preview"`:
     "serve": "vite preview --port 5173 --strictPort",
 ```
 
-- [ ] **Step 2: Verificar que el build se sirve con fallback SPA**
+- [x] **Step 2: Verificar que el build se sirve con fallback SPA**
 
 Run (en dos terminales o con `run_in_background` para el segundo):
 
@@ -98,7 +100,7 @@ npm run serve
 Run: `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/estadisticas`
 Expected: `200` (si :5173 está tomado por el dev server de Seba, parar ese dev server primero o probar con `--port 5176` solo para esta verificación; el script queda en 5173).
 
-- [ ] **Step 3: Escribir el `.bat` nuevo (copia en el repo; el de escritorio lo reemplaza Seba)**
+- [x] **Step 3: Escribir el `.bat` nuevo (copia en el repo; el de escritorio lo reemplaza Seba)**
 
 Crear `scripts/TypeLight.bat` con el tool Write:
 
@@ -147,12 +149,12 @@ start "" /min powershell -NoProfile -WindowStyle Hidden -Command "for($i=0;$i -l
 npm run serve
 ```
 
-- [ ] **Step 4: Probar el `.bat` desde el repo (sin tocar el del escritorio)**
+- [x] **Step 4: Probar el `.bat` desde el repo (sin tocar el del escritorio)**
 
 Run: `cmd /c scripts\TypeLight.bat` en una terminal aparte, esperar a que el navegador abra, cerrar la ventana.
 Expected: imprime "Construyendo TypeLight..." solo si `dist/` faltaba; después "Sirviendo TypeLight en http://localhost:5173/".
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json scripts/TypeLight.bat
@@ -174,7 +176,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `DaySummary { seconds; blocks; learned; mastered; reference: number[]; sessions: number }`; `addSession(days: Days, day: string, seconds: number, referenceWpm?: number): Days`; `Legacy { wpm: number; acc: number; at: string; beatenAt?: string; beatenSeen?: true }`; store `legacy: Legacy | null`, `setLegacy(l: Legacy | null)`; `Settings.lastBackupAt: string | null`; `PersistedState`, `persistedState(s)`, `importState(state)`.
 
-- [ ] **Step 1: Test de `addSession` y de los campos nuevos**
+- [x] **Step 1: Test de `addSession` y de los campos nuevos**
 
 En `src/engine/stats/days.test.ts`, reemplazar los usos de `addSeconds` por `addSession` y agregar:
 
@@ -194,12 +196,12 @@ it('setBlocks and setSnapshot create a day with empty reference and zero session
 })
 ```
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/stats/days.test.ts`
 Expected: FAIL (`addSession` no existe).
 
-- [ ] **Step 3: Implementar en `days.ts`**
+- [x] **Step 3: Implementar en `days.ts`**
 
 ```ts
 /** One row per local day (see `dayKey`). Written by the store as things happen; read by Progreso. */
@@ -237,7 +239,7 @@ export function addSession(days: Days, day: string, seconds: number, referenceWp
 
 Borrar `addSeconds`. `setBlocks` y `setSnapshot` quedan igual (usan `empty()`).
 
-- [ ] **Step 4: Tests de la migración v3**
+- [x] **Step 4: Tests de la migración v3**
 
 En `src/app/store/migrate.test.ts`, agregar. La migración ahora es en cadena, así que los tests v1 → v2 existentes cambian sus expectativas: el primero (`marks challenge sessions as reference…`) pasa a esperar `v2.settings` igual a `{ name: 'Seba', lastBackupAt: null }` y `v2.days` igual a `{ '2026-09-10': { seconds: 0, blocks: 0, learned: 0, mastered: 0, reference: [22], sessions: 2 } }` (las dos sesiones son del 2026-09-10 a las 15:00Z: en zonas horarias de UTC−11 a UTC+8 el día local es el mismo; para que el test no dependa de la zona, cambiar sus `at` a mediodía local con el helper `noon` de abajo). El de `leaves a current state untouched` pasa a usar `version: 3` con un estado v3, y el de `tolerates an empty persisted state` espera `{ sessions: [], days: {}, legacy: null, settings: { lastBackupAt: null } }`.
 
@@ -281,12 +283,12 @@ describe('store migration v2 → v3', () => {
 
 Cambiar el test existente `'leaves a current state untouched'` para que pase `version: 3` con un estado v3, y el de `'tolerates an empty persisted state'` para esperar `{ sessions: [], days: {}, legacy: null, settings: { lastBackupAt: null } }`.
 
-- [ ] **Step 5: Correr y ver fallar**
+- [x] **Step 5: Correr y ver fallar**
 
 Run: `npx vitest run src/app/store/migrate.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 6: Implementar `migrate.ts`**
+- [x] **Step 6: Implementar `migrate.ts`**
 
 ```ts
 import { dayKey } from '@/engine/stats'
@@ -344,7 +346,7 @@ export function migrateState(persisted: unknown, version: number): unknown {
 }
 ```
 
-- [ ] **Step 7: Store `index.ts`**
+- [x] **Step 7: Store `index.ts`**
 
 Cambios en `src/app/store/index.ts`:
 
@@ -409,7 +411,7 @@ export function importState(state: PersistedState): void {
 }
 ```
 
-- [ ] **Step 8: e2e `stats.spec.ts`: la versión guardada es 3**
+- [x] **Step 8: e2e `stats.spec.ts`: la versión guardada es 3**
 
 Cambiar `expect(stored.version).toBe(2)` por `expect(stored.version).toBe(3)` y agregar debajo:
 
@@ -419,12 +421,12 @@ Cambiar `expect(stored.version).toBe(2)` por `expect(stored.version).toBe(3)` y 
 
 (`today` ya está en el spec como ISO al mediodía local; `slice(0, 10)` del ISO es UTC — reemplazar por el día local: agregar arriba del test `const localDay = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }` y usar `localDay(today)`.)
 
-- [ ] **Step 9: Verificar**
+- [x] **Step 9: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: todo verde (los tests de `progress.test.ts` siguen pasando porque `referenceByDay` todavía lee sesiones; cambia en la Task 3).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/engine/stats/days.ts src/engine/stats/days.test.ts src/app/store e2e/stats.spec.ts
@@ -445,7 +447,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `Days`/`DaySummary` de la Task 2.
 - Produces: `referenceByDay(days: Days): DayPoint[]`; `legacyBeaten(points: DayPoint[], legacyWpm: number): boolean`.
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 En `progress.test.ts`, reemplazar el `describe` de `referenceByDay` para que reciba `days`:
 
@@ -481,12 +483,12 @@ describe('legacyBeaten', () => {
 
 Ajustar los tests de `referenceHeadline` que construían puntos vía `referenceByDay(sessions)` para construir los `DayPoint` a mano o vía `days`.
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/stats/progress.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 En `progress.ts`, reemplazar `referenceByDay`:
 
@@ -509,7 +511,7 @@ export function legacyBeaten(points: DayPoint[], legacyWpm: number): boolean {
 
 `SessionLike` deja de necesitar `reference` para este cálculo pero se conserva (lo usan `weeklyAccuracy` y `rhythmHeadline`).
 
-- [ ] **Step 4: Consumidores**
+- [x] **Step 4: Consumidores**
 
 `Stats.tsx`: `const points = useMemo(() => referenceByDay(days), [days])`. `Home.tsx`: `const days = useStore((s) => s.days)`, `const reference = referenceHeadline(referenceByDay(days))`, y "Ejercicios":
 
@@ -519,12 +521,12 @@ export function legacyBeaten(points: DayPoint[], legacyWpm: number): boolean {
               <dd className="font-display text-3xl font-extrabold">{exercises}</dd>
 ```
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/engine/stats src/app/routes/Stats.tsx src/app/routes/Home.tsx
@@ -546,7 +548,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `PersistedState`, `persistedState`, `importState`, `migrateState`.
 - Produces: `BACKUP_VERSION = 3`; `serializeBackup(state, now?)`; `parseBackup(text)`; `backupFilename(now?)`; `backupDue(lastBackupAt, today, activeDays)`; `downloadText(filename, text)`.
 
-- [ ] **Step 1: Tests de la lib**
+- [x] **Step 1: Tests de la lib**
 
 `src/app/lib/backup.test.ts`:
 
@@ -603,12 +605,12 @@ describe('backup', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/app/lib/backup.test.ts`
 Expected: FAIL (módulo inexistente).
 
-- [ ] **Step 3: Implementar `backup.ts`**
+- [x] **Step 3: Implementar `backup.ts`**
 
 ```ts
 import { dayKey, daysBetween } from '@/engine/stats'
@@ -672,12 +674,12 @@ export function downloadText(filename: string, text: string): void {
 }
 ```
 
-- [ ] **Step 4: Correr tests**
+- [x] **Step 4: Correr tests**
 
 Run: `npx vitest run src/app/lib/backup.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Tarjeta "Tu progreso" en Ajustes**
+- [x] **Step 5: Tarjeta "Tu progreso" en Ajustes**
 
 En `Settings.tsx`, imports nuevos: `useRef, type ChangeEvent` de react; `backupFilename, downloadText, parseBackup, serializeBackup` de `../lib/backup`; `importState, persistedState, type PersistedState` de `../store`. Componente (fuera de `Settings`):
 
@@ -763,7 +765,7 @@ Insertar `<BackupCard />` justo antes del bloque "Reiniciar progreso". En ese bl
 
 (`dayKey` importado de `@/engine/stats`.)
 
-- [ ] **Step 6: Recordatorio en Inicio**
+- [x] **Step 6: Recordatorio en Inicio**
 
 En `Home.tsx`: `const lastBackupAt = useStore((s) => s.settings.lastBackupAt)`, `const activeDays = Object.values(days).filter((d) => d.seconds > 0).length`, y debajo del `<header>`:
 
@@ -778,7 +780,7 @@ En `Home.tsx`: `const lastBackupAt = useStore((s) => s.settings.lastBackupAt)`, 
       )}
 ```
 
-- [ ] **Step 7: e2e**
+- [x] **Step 7: e2e**
 
 `e2e/backup.spec.ts`:
 
@@ -828,12 +830,12 @@ test('backup: download → reset → import restores the progress', async ({ pag
 })
 ```
 
-- [ ] **Step 8: Verificar**
+- [x] **Step 8: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/backup.spec.ts`
 Expected: verde.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/app/lib/backup.ts src/app/lib/backup.test.ts src/app/routes/Settings.tsx src/app/routes/Home.tsx e2e/backup.spec.ts
@@ -854,7 +856,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `typeChar(s, ch, t, afterPause = false)`, `typeText(s, text, t, afterPause = false)` — con `afterPause`, la latencia del primer carácter es `MAX_LATENCY`.
 
-- [ ] **Step 1: Test del motor**
+- [x] **Step 1: Test del motor**
 
 En `typing.test.ts`:
 
@@ -868,12 +870,12 @@ it('caps the latency of the first key after a pause', () => {
 })
 ```
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/typing/typing.test.ts`
 Expected: FAIL (tipos: `typeText` no acepta un cuarto argumento).
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 ```ts
 /** Feed one character (may be a multi-char string; processed sequentially). `afterPause` caps the first latency. */
@@ -897,7 +899,7 @@ export function typeChar(s: TypingState, ch: string, t: number, afterPause = fal
   …resto igual
 ```
 
-- [ ] **Step 4: Test del hook**
+- [x] **Step 4: Test del hook**
 
 `src/app/hooks/useTypingSession.test.ts`:
 
@@ -936,12 +938,12 @@ describe('useTypingSession', () => {
 })
 ```
 
-- [ ] **Step 5: Correr y ver fallar**
+- [x] **Step 5: Correr y ver fallar**
 
 Run: `npx vitest run src/app/hooks/useTypingSession.test.ts`
 Expected: FAIL (`seconds` ≈ 5.4).
 
-- [ ] **Step 6: Implementar en el hook**
+- [x] **Step 6: Implementar en el hook**
 
 En `useTypingSession.ts`, después de `const limit = opts.timeLimitMs`:
 
@@ -968,12 +970,12 @@ En `useTypingSession.ts`, después de `const limit = opts.timeLimitMs`:
 
 En el efecto del reloj: `const t = clock()` en vez de `performance.now()` (y `clock` en las dependencias). En `input`: `const now = clock()` y `const next = typeText(s, text, now, resumed.current); resumed.current = false`. En `restart`: antes de `setState`, `hiddenMs.current = 0; resumed.current = false`.
 
-- [ ] **Step 7: Verificar**
+- [x] **Step 7: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: verde, sin advertencias nuevas de lint.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/engine/typing src/app/hooks/useTypingSession.ts src/app/hooks/useTypingSession.test.ts
@@ -993,7 +995,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `pickSentences(pool, count, opts?): string[]` (distintas); `sentencesText` la usa; `challengeText(pool, opts?: GenOpts & { minChars?: number }): string`.
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 En `generator.test.ts`:
 
@@ -1017,12 +1019,12 @@ En `generator.test.ts`:
   })
 ```
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/generator/generator.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 Reemplazar `sentencesText` en `generator/index.ts` por:
 
@@ -1071,7 +1073,7 @@ export function challengeText(pool: ReadonlySet<string>, opts: GenOpts & { minCh
 
 (`pickSentences` se re-escribe en la Task 8 para ponderar y normalizar; acá alcanza con "distintas".)
 
-- [ ] **Step 4: Usarlo en `Practice.tsx`**
+- [x] **Step 4: Usarlo en `Practice.tsx`**
 
 Reemplazar el bloque del Reto en el `useMemo` de `text`:
 
@@ -1082,12 +1084,12 @@ Reemplazar el bloque del Reto en el `useMemo` de `text`:
 
 Importar `challengeText` y quitar `sentencesText` del import si queda sin uso.
 
-- [ ] **Step 5: Verificar**
+- [x] **Step 5: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: verde.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/engine/generator src/app/routes/Practice.tsx
@@ -1110,7 +1112,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | undefined` — primera no completada con índice mayor al de la última completada; si no hay, la primera no completada.
 
-- [ ] **Step 1: Test de `nextLesson`**
+- [x] **Step 1: Test de `nextLesson`**
 
 En `curriculum.test.ts`:
 
@@ -1129,12 +1131,12 @@ En `curriculum.test.ts`:
 
 (`nextLesson` se importa desde `./index`.)
 
-- [ ] **Step 2: Correr y ver fallar**
+- [x] **Step 2: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/curriculum/curriculum.test.ts`
 Expected: FAIL en el segundo `expect` (hoy devuelve el índice 2).
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 En `curriculum/index.ts`:
 
@@ -1152,7 +1154,7 @@ export function nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | u
 
 En `useCurriculum.ts`: `import { curriculumFor, nextLesson, … }` y `const next = nextLesson(curriculum, completed)`.
 
-- [ ] **Step 4: Tip sin bloque; Home**
+- [x] **Step 4: Tip sin bloque; Home**
 
 `LessonPlayer.tsx`, `completeTip`:
 
@@ -1173,7 +1175,7 @@ En `useCurriculum.ts`: `import { curriculumFor, nextLesson, … }` y `const next
 
 y en el `<dd>` correspondiente `{weekly ? `${Math.round(weekly.acc * 100)} %` : '—'}` con `<dt>` "Precisión · 7 días" (importar `weeklyAccuracy` de `@/engine/stats`; borrar `recent`/`recentAcc`). En el `<Link>` de cada tarjeta de la rutina agregar `data-testid={`routine-${b.id}`}` y `data-done={done ? 'true' : 'false'}`.
 
-- [ ] **Step 5: e2e del tip**
+- [x] **Step 5: e2e del tip**
 
 `e2e/tip.spec.ts`:
 
@@ -1207,12 +1209,12 @@ test('a tip completes but does not fill the routine Lección card', async ({ pag
 })
 ```
 
-- [ ] **Step 6: Verificar**
+- [x] **Step 6: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/tip.spec.ts e2e/flow.spec.ts`
 Expected: verde (`flow.spec.ts` sigue pasando: el tip auto-avanza igual que antes).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/app/routes/LessonPlayer.tsx src/app/routes/Home.tsx src/engine/curriculum src/app/hooks/useCurriculum.ts e2e/tip.spec.ts
@@ -1235,7 +1237,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `GENERATED_SENTENCES: string[]`; `fitSentence(s: string, pool: ReadonlySet<string>): string | null`; `pickSentences` ponderado (casa ×3) y normalizado.
 
-- [ ] **Step 1: `corpus_common.py`**
+- [x] **Step 1: `corpus_common.py`**
 
 Crear `scripts/corpus_common.py`: mover ahí, **textualmente**, el bloque `BLOCK = set("""…""".split())` de `build-corpus.py` y `STRIP`, y agregar:
 
@@ -1262,7 +1264,7 @@ def load_dictionary(path):
 
 En `build-corpus.py`: borrar el bloque `BLOCK` y `STRIP`, agregar `from corpus_common import BLOCK, STRIP, load_dictionary` y `dictionary = load_dictionary(dict_path)`. (Esto cambia el hash del script que menciona el handoff como condición de caducidad del filtro del corpus; la condición sigue valiendo en espíritu: el filtro es el mismo.)
 
-- [ ] **Step 2: `build-sentences.py`**
+- [x] **Step 2: `build-sentences.py`**
 
 ```python
 """Builds src/engine/corpus/sentences.generated.ts from Tatoeba's Spanish sentences.
@@ -1362,7 +1364,7 @@ print(len(chosen), 'sentences;', sum(1 for s in chosen if not ACCENT.search(s)),
       sum(1 for s in chosen if QUESTION.search(s)), 'questions/exclamations ->', os.path.normpath(out_path))
 ```
 
-- [ ] **Step 3: Descargar las entradas y correr**
+- [x] **Step 3: Descargar las entradas y correr**
 
 Run (en `scripts/`; si `dict.json` ya existe, saltear esa línea):
 
@@ -1380,12 +1382,12 @@ python scripts/build-sentences.py
 
 Expected: `1500 sentences; ≥ 400 without accents; ≥ 300 questions/exclamations -> src\engine\corpus\sentences.generated.ts`. Si da menos de 1500, bajar `QUOTA` al número reportado (no inventar). Verificar que `scripts/*.tsv*` y `scripts/dict.json` estén en `.gitignore` (agregar `scripts/spa_sentences.tsv*` y `scripts/dict.json` y `scripts/es_50k.txt` si faltan).
 
-- [ ] **Step 4: Revisar una muestra**
+- [x] **Step 4: Revisar una muestra**
 
 Run: `python -c "import random,re;s=open('src/engine/corpus/sentences.generated.ts',encoding='utf8').read();l=re.findall(r'^  \"(.*)\",$',s,re.M);random.seed(1);print('\n'.join(random.sample(l,40)))"`
 Expected: 40 frases legibles, sin nombres, sin "vosotros". Si aparece basura sistemática (un patrón que se repite), agregar el filtro a `ok()` y regenerar; anotar en el PR qué se filtró.
 
-- [ ] **Step 5: Frases de la casa**
+- [x] **Step 5: Frases de la casa**
 
 Agregar al final del array `SENTENCES` en `sentences.ts` (antes del `]`) estas 100 frases:
 
@@ -1492,7 +1494,7 @@ Agregar al final del array `SENTENCES` en `sentences.ts` (antes del `]`) estas 1
   'Cada tecla dominada es una pequeña victoria que nadie te puede sacar.',
 ```
 
-- [ ] **Step 6: Tests del generador**
+- [x] **Step 6: Tests del generador**
 
 En `generator.test.ts`, agregar (importar `buildCurriculum` de `../curriculum` y `LATAM` de `../layouts`, y `fitSentence`, `GENERATED_SENTENCES`):
 
@@ -1526,12 +1528,12 @@ En `generator.test.ts`, agregar (importar `buildCurriculum` de `../curriculum` y
   })
 ```
 
-- [ ] **Step 7: Correr y ver fallar**
+- [x] **Step 7: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/generator/generator.test.ts`
 Expected: FAIL (`fitSentence` no existe).
 
-- [ ] **Step 8: Implementar `fitSentence` y el `pickSentences` ponderado**
+- [x] **Step 8: Implementar `fitSentence` y el `pickSentences` ponderado**
 
 En `generator/index.ts`:
 
@@ -1588,12 +1590,12 @@ export function pickSentences(
 
 `CORPORA` queda para `numbers` y `symbols`. `sentencesText` y `challengeText` no cambian.
 
-- [ ] **Step 9: Verificar**
+- [x] **Step 9: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test`
 Expected: verde. Si el test de cobertura falla en alguna etapa, mirar cuántas frases sin tildes salieron del script y subir `MIN_PLAIN`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add scripts/corpus_common.py scripts/build-corpus.py scripts/build-sentences.py .gitignore src/engine/corpus/sentences.ts src/engine/corpus/sentences.generated.ts src/engine/generator
@@ -1618,7 +1620,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `BIGRAMS`, `TRIGRAMS: [string, number][]`; `ngramText(pool, n, opts?)`; `ExerciseSpec { kind: 'ngram'; pool; n: 2 | 3; combination?; repetition?; tokens? }`; lecciones `velocidad-bigramas`, `velocidad-trigramas`; `dayOfYear(d: Date): number`.
 
-- [ ] **Step 1: Script y tabla**
+- [x] **Step 1: Script y tabla**
 
 `scripts/build-ngrams.py` (desvío del spec §8.1, anotado: pesa por **rango** en `words.ts` — el mismo peso `1/√(i+20)` que usa `wordsText` — en vez de por la frecuencia cruda de `es_50k.txt`, para no depender de una descarga ni tocar `words.ts`):
 
@@ -1662,7 +1664,7 @@ print(len(bi), 'bigrams,', len(tri), 'trigrams counted ->', os.path.normpath(out
 Run: `python scripts/build-ngrams.py`
 Expected: el archivo existe; `head -5 src/engine/corpus/ngrams.ts` muestra `['es', 1000]` o similar primero.
 
-- [ ] **Step 2: Tests de `ngramText`**
+- [x] **Step 2: Tests de `ngramText`**
 
 En `generator.test.ts`:
 
@@ -1702,12 +1704,12 @@ En `generator.test.ts`:
   })
 ```
 
-- [ ] **Step 3: Correr y ver fallar**
+- [x] **Step 3: Correr y ver fallar**
 
 Run: `npx vitest run src/engine/generator/generator.test.ts`
 Expected: FAIL.
 
-- [ ] **Step 4: Implementar `ngramText`**
+- [x] **Step 4: Implementar `ngramText`**
 
 ```ts
 import { BIGRAMS, TRIGRAMS } from '../corpus/ngrams'
@@ -1743,7 +1745,7 @@ export function ngramText(
 }
 ```
 
-- [ ] **Step 5: `ExerciseSpec`, `generateExercise`, lecciones**
+- [x] **Step 5: `ExerciseSpec`, `generateExercise`, lecciones**
 
 `curriculum/types.ts`, en la unión `ExerciseSpec`:
 
@@ -1789,7 +1791,7 @@ Test en `curriculum.test.ts`:
   })
 ```
 
-- [ ] **Step 6: Ruta y Calentamiento**
+- [x] **Step 6: Ruta y Calentamiento**
 
 `Path.tsx`, en `legend`, caso `'practice'`:
 
@@ -1821,7 +1823,7 @@ export function dayOfYear(d: Date = new Date()): number {
 
 (agregar `bigramDay` a las dependencias). En el header, título `{kind === 'calentamiento' && bigramDay ? 'Calentamiento · bigramas' : meta.title}`.
 
-- [ ] **Step 7: e2e**
+- [x] **Step 7: e2e**
 
 `e2e/ngram.spec.ts` (usa el helper `remaining`/`typeRemaining` copiado de `flow.spec.ts`):
 
@@ -1865,12 +1867,12 @@ test('the bigram drill in Velocidad is playable end to end', async ({ page }) =>
 })
 ```
 
-- [ ] **Step 8: Verificar**
+- [x] **Step 8: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/ngram.spec.ts`
 Expected: verde.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add scripts/build-ngrams.py src/engine/corpus/ngrams.ts src/engine/generator src/engine/curriculum src/engine/stats/index.ts src/app/routes/Practice.tsx src/app/routes/Path.tsx e2e/ngram.spec.ts
@@ -1886,7 +1888,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `src/app/routes/Stats.tsx`
 
-- [ ] **Step 1: Agregar el plegable bajo la tarjeta del chart**
+- [x] **Step 1: Agregar el plegable bajo la tarjeta del chart**
 
 Dentro de la `Card` "Velocidad de referencia", después del `<div>` de los `Swatch`:
 
@@ -1901,7 +1903,7 @@ Dentro de la `Card` "Velocidad de referencia", después del `<div>` de los `Swat
         </details>
 ```
 
-- [ ] **Step 2: Verificar y commit**
+- [x] **Step 2: Verificar y commit**
 
 Run: `npx tsc -b && npm run lint`
 Expected: verde.
@@ -1928,7 +1930,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `Legacy`, `setLegacy`, `legacyBeaten`, `challengeText`.
 - Produces: ruta `/practica/antes`; `ReferenceChart` prop `legacy?: number`.
 
-- [ ] **Step 1: `Practice.tsx` — el kind `antes`**
+- [x] **Step 1: `Practice.tsx` — el kind `antes`**
 
 `type Kind = 'calentamiento' | 'repaso' | 'reto' | 'antes'`. En `META`, `block` y `session` pasan a opcionales (`block?: RoutineBlock; session?: SessionKind`) y se agrega:
 
@@ -1964,7 +1966,7 @@ En el `useMemo` de `text`, antes del `if (kind === 'calentamiento')`: `if (kind 
 
 En el header, el eyebrow: `{kind === 'antes' ? 'Ajustes · tu velocidad de antes' : 'Rutina de hoy'}`. En la tarjeta de resultado, el eyebrow `{meta.title} · listo` y, para `antes`, un párrafo debajo de los `Stat`: `<p className="mt-4 text-sm text-ink-soft">Guardado como tu velocidad de antes. Cuando la mediana de tus Retos la supere, te aviso en Inicio.</p>`; el botón primario dice `Ver progreso →` con `to="/estadisticas"` en vez de "Volver a la rutina" (el Enter global sigue yendo a `/`; cambiar ese `navigate('/')` por `navigate(kind === 'antes' ? '/estadisticas' : '/')`).
 
-- [ ] **Step 2: Tarjeta en Ajustes**
+- [x] **Step 2: Tarjeta en Ajustes**
 
 En `Settings.tsx`, después de `<BackupCard />`:
 
@@ -1989,7 +1991,7 @@ function LegacyCard() {
 }
 ```
 
-- [ ] **Step 3: Línea en el chart**
+- [x] **Step 3: Línea en el chart**
 
 `ReferenceChart.tsx`: prop `legacy?: number`; en `top`: `Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => p.wpm)) * 1.15`; después de la línea de la meta:
 
@@ -2006,7 +2008,7 @@ function LegacyCard() {
 
 `Stats.tsx`: `const legacy = useStore((s) => s.legacy)` y `<ReferenceChart … legacy={legacy?.wpm} />`; en la leyenda de `Swatch`, si `legacy`, `<Swatch className="bg-ink-mute" label="tu velocidad de antes" />`.
 
-- [ ] **Step 4: Inicio — línea "antes" e hito**
+- [x] **Step 4: Inicio — línea "antes" e hito**
 
 `Home.tsx`: `const legacy = useStore((s) => s.legacy)`, `const setLegacy = useStore((s) => s.setLegacy)`, `const points = referenceByDay(days)` (ya usado para `reference`). Detectar el hito:
 
@@ -2037,7 +2039,7 @@ Tarjeta (debajo del header, antes de la rutina), solo cuando `legacy?.beatenAt &
 
 En "Últimos números", debajo del `<dl>`: `{!legacy && <Link to="/ajustes" className="mt-3 block text-sm font-bold text-ink-soft underline">Medí tu velocidad de antes →</Link>}` y, si `legacy`, `<p className="mt-3 text-sm text-ink-soft">Tu velocidad de antes: {legacy.wpm} PPM.</p>`.
 
-- [ ] **Step 5: e2e**
+- [x] **Step 5: e2e**
 
 `e2e/legacy.spec.ts`:
 
@@ -2075,12 +2077,12 @@ test('legacy speed: the route exists and the line shows on the chart', async ({ 
 })
 ```
 
-- [ ] **Step 6: Verificar**
+- [x] **Step 6: Verificar**
 
 Run: `npx tsc -b && npm run lint && npm test && npx playwright test e2e/legacy.spec.ts`
 Expected: verde.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/app/routes/Practice.tsx src/app/routes/Settings.tsx src/app/routes/Stats.tsx src/app/routes/Home.tsx src/app/components/stats/ReferenceChart.tsx e2e/legacy.spec.ts
@@ -2096,23 +2098,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `docs/backlog.md`, `.serena/memories/typelight-architecture.md`, `docs/superpowers/handoffs/HANDOFF.md`, `docs/superpowers/specs/2026-09-17-proteger-y-contenido-design.md` (marca "Implementado"), este plan (`> **Estado:**`).
 
-- [ ] **Step 1: Suite completa**
+- [x] **Step 1: Suite completa**
 
 Run: `npx tsc -b && npm run lint && npm test && npm run e2e && npm run build`
 Expected: todo verde; el lint con las 4 advertencias previas y ninguna más.
 
-- [ ] **Step 2: Capturas para Seba**
+- [x] **Step 2: Capturas para Seba**
 
 Run: `node scripts/shot.mjs http://localhost:5175/ajustes e2e/screens/ajustes-copia.png 1280 900` y lo mismo para `/estadisticas` (`stats-antes.png`) con el dev server de la rama en :5175. (El `shot.mjs` apunta a :5173; pasarle la URL completa con :5175 o cambiar temporalmente el `goto` inicial a la misma base.)
 
-- [ ] **Step 3: Docs**
+- [x] **Step 3: Docs**
 
 - `docs/backlog.md`: dejar en "Ideas sueltas" solo lo que sigue vigente (metrónomo en práctica; Backspace ya está decidido para la etapa siguiente: moverlo a "Pendientes" como "Ola 2 del reporte").
 - `.serena/memories/typelight-architecture.md`: viñetas nuevas en "Decisiones con su porqué": store v3 (`days.reference[]`/`sessions`, `legacy`), copia JSON, corpus por etapa (`fitSentence`, casa ×3, Tatoeba), n-gramas (`build-ngrams.py`, pesos por rango), `nextLesson` que no retrocede, pausa por pestaña oculta, `:5173` = `vite preview`, `:5175` = dev. En "Trampas": `window.confirm` no se usa (Playwright descarta diálogos); `document.hidden` se mockea con `defineProperty`.
 - `HANDOFF.md`: reescribir con el estado nuevo, **incluyendo el texto completo del `.bat`** y la instrucción para Seba: "reemplazá `C:\Users\seba_\Desktop\TypeLight.bat` por `scripts\TypeLight.bat`; desde ahora :5173 sirve el build de `master` y las ramas se prueban en :5175". Próximo paso: propuesta renderizada de la Ola 2.
 - Spec: agregar "Implementado completo el AAAA-MM-DD" en la línea de fecha. Plan: línea `> **Estado:**` con desvíos.
 
-- [ ] **Step 4: Commit y aviso**
+- [x] **Step 4: Commit y aviso**
 
 ```bash
 git add docs .serena/memories/typelight-architecture.md
