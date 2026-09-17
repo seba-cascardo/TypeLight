@@ -56,19 +56,24 @@ export function isFinished(s: TypingState): boolean {
   return s.finishedAt !== null
 }
 
-/** Feed one character (may be a multi-char string; processed sequentially). */
-export function typeText(s: TypingState, text: string, t: number): TypingState {
+/** Feed one character (may be a multi-char string; processed sequentially). `afterPause` caps the first latency. */
+export function typeText(s: TypingState, text: string, t: number, afterPause = false): TypingState {
   let next = s
-  for (const ch of text) next = typeChar(next, ch, t)
+  let first = true
+  for (const ch of text) {
+    next = typeChar(next, ch, t, afterPause && first)
+    first = false
+  }
   return next
 }
 
-export function typeChar(s: TypingState, ch: string, t: number): TypingState {
+export function typeChar(s: TypingState, ch: string, t: number, afterPause = false): TypingState {
   if (s.finishedAt !== null || s.pos >= s.target.length) return s
   const expected = s.target[s.pos]
   const correct = ch === expected
   const prev = s.keystrokes[s.keystrokes.length - 1]
-  const latency = prev ? Math.min(t - prev.t, MAX_LATENCY) : undefined
+  // A gap that spans a hidden tab is a pause, not typing.
+  const latency = prev ? (afterPause ? MAX_LATENCY : Math.min(t - prev.t, MAX_LATENCY)) : undefined
   const keystroke: Keystroke = { pos: s.pos, expected, actual: ch, correct, t, latency }
   const keystrokes = [...s.keystrokes, keystroke]
   const startedAt = s.startedAt ?? t

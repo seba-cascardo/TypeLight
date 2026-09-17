@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSession, isFinished, keySamples, metrics, rhythm, typeChar, typeText } from './index'
+import { MAX_LATENCY, createSession, isFinished, keySamples, metrics, rhythm, typeChar, typeText } from './index'
 
 describe('typing session', () => {
   it('advances on correct keys and finishes at the end', () => {
@@ -63,6 +63,14 @@ describe('typing session', () => {
     const samples = keySamples(s)
     expect(samples.get('a')).toMatchObject({ occurrences: 1, errors: 0, latencies: [] })
     expect(samples.get('b')).toMatchObject({ occurrences: 1, errors: 1, latencies: [2000] })
+  })
+
+  it('caps the latency of the first key after a pause', () => {
+    let s = createSession('ab')
+    s = typeChar(s, 'a', 1000)
+    s = typeText(s, 'b', 1300, true)
+    expect(s.keystrokes[1].latency).toBe(MAX_LATENCY)
+    expect(s.finishedAt).toBe(1300)
   })
 })
 

@@ -35,6 +35,25 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
   const sound = opts.sound ?? true
   const limit = opts.timeLimitMs
 
+  // Session clock = wall clock minus the time the tab spent hidden: the Reto's minute doesn't run while you're away.
+  const hiddenMs = useRef(0)
+  const hiddenFrom = useRef<number | null>(null)
+  const resumed = useRef(false)
+  const clock = useCallback(() => (hiddenFrom.current ?? performance.now()) - hiddenMs.current, [])
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (hiddenFrom.current === null) hiddenFrom.current = performance.now()
+      } else if (hiddenFrom.current !== null) {
+        hiddenMs.current += performance.now() - hiddenFrom.current
+        hiddenFrom.current = null
+        resumed.current = true
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
+
   useEffect(() => {
     setState(createSession(target))
   }, [target, setState])
@@ -53,34 +72,37 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
   useEffect(() => {
     if (state.startedAt === null || isFinished(state)) return
     const id = window.setInterval(() => {
-      const t = performance.now()
+      const t = clock()
       setNow(t)
       if (limit !== undefined && state.startedAt !== null && t - state.startedAt >= limit) {
         setState((s) => endSession(s, t))
       }
     }, 200)
     return () => window.clearInterval(id)
-  }, [state, limit, setState])
+  }, [state, limit, setState, clock])
 
   const input = useCallback(
     (text: string) => {
       if (!text) return
-      const now = performance.now()
+      const now = clock()
       const s = stateRef.current
       if (isFinished(s)) return
-      const next = typeText(s, text, now)
+      const next = typeText(s, text, now, resumed.current)
+      resumed.current = false
       if (sound) {
         if (next.lastWrong) thud()
         else click()
       }
       setState(next)
     },
-    [sound, setState],
+    [sound, setState, clock],
   )
 
   const restart = useCallback(
     (t?: string) => {
       notified.current = null
+      hiddenMs.current = 0
+      resumed.current = false
       setState(createSession(t ?? target))
     },
     [target, setState],
