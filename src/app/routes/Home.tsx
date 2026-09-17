@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
-import { dayKey, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
+import { dayKey, examDue, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
@@ -14,8 +14,11 @@ const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string
   { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '~1 min', variant: 'sun', to: '/practica/calentamiento' },
   { id: 'lesson', title: 'Lección', detail: 'La siguiente de tu ruta.', minutes: '5 min', variant: 'primary', to: '' },
   { id: 'review', title: 'Repaso', detail: 'Tus tres teclas más flojas, adrede.', minutes: '2 min', variant: 'secondary', to: '/practica/repaso' },
-  { id: 'challenge', title: 'Reto', detail: 'Un minuto de texto real. Mide tu PPM.', minutes: '1 min', variant: 'coral', to: '/practica/reto' },
+  { id: 'challenge', title: 'Reto', detail: 'Un minuto de texto real, sin ayuda. Mide tu PPM.', minutes: '1 min', variant: 'coral', to: '/practica/reto' },
 ]
+
+/** Once a week the coral card is the exam: three minutes, no help, no Backspace. */
+const EXAM_BLOCK: (typeof BLOCKS)[number] = { id: 'challenge', title: 'Examen semanal', detail: 'Sin ayuda ni Backspace. Tu velocidad limpia.', minutes: '3 min', variant: 'coral', to: '/practica/examen' }
 
 function greeting(name: string): string {
   const h = new Date().getHours()
@@ -32,7 +35,10 @@ export function Home() {
   const lastBackupAt = useStore((s) => s.settings.lastBackupAt)
   const legacy = useStore((s) => s.legacy)
   const setLegacy = useStore((s) => s.setLegacy)
+  const lastExamDay = useStore((s) => s.lastExamDay)
   const routine = useRoutine()
+  const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
+  const blocks = examToday ? BLOCKS.map((b) => (b.id === 'challenge' ? EXAM_BLOCK : b)) : BLOCKS
   const { curriculum, next, completed, learned } = useProgress()
 
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
@@ -93,7 +99,7 @@ export function Home() {
       {/* La rutina de hoy: una fila de cuatro teclas */}
       <section className="mb-10">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {BLOCKS.map((b) => {
+          {blocks.map((b) => {
             const done = routine[b.id]
             const to = b.id === 'lesson' ? (next ? `/leccion/${next.id}` : '/ruta') : b.to
             return (

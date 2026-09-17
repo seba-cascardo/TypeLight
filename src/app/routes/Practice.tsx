@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
-import { adaptiveText, challengeText, drillText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
-import { dayOfYear, weakestKeys } from '@/engine/stats'
-import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
+import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
+import { dayKey, dayOfYear, monthKey, newRollover, rolloverRatio, weakestKeys } from '@/engine/stats'
+import { keySamples, metrics, repairMetrics, rhythm, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
+import { FormCheck } from '../components/FormCheck'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
 import { TypingArea } from '../components/TypingArea'
@@ -11,15 +12,29 @@ import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
-type Kind = 'calentamiento' | 'repaso' | 'reto' | 'antes'
+type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes'
 
-const META: Record<Kind, { title: string; blurb: string; block?: RoutineBlock; session?: SessionKind; variant: 'sun' | 'secondary' | 'coral'; timed?: number }> = {
+interface Meta {
+  title: string
+  blurb: string
+  block?: RoutineBlock
+  session?: SessionKind
+  variant: 'sun' | 'secondary' | 'coral'
+  timed?: number
+  mode: TypingMode
+  /** No keyboard, hands or next-key hint: it measures transfer without help. */
+  blind?: true
+  reference?: true
+}
+
+const META: Record<Kind, Meta> = {
   calentamiento: {
     title: 'Calentamiento',
     blurb: 'Las teclas que ya conocés, sin apuro. Buscá el ritmo, no la velocidad.',
     block: 'warmup',
     session: 'warmup',
     variant: 'sun',
+    mode: 'stop',
   },
   repaso: {
     title: 'Repaso adaptativo',
@@ -27,20 +42,36 @@ const META: Record<Kind, { title: string; blurb: string; block?: RoutineBlock; s
     block: 'review',
     session: 'review',
     variant: 'secondary',
+    mode: 'stop',
   },
   reto: {
     title: 'Reto de un minuto',
-    blurb: 'Texto real durante sesenta segundos. Al final, tu velocidad de hoy.',
+    blurb: 'Texto real durante sesenta segundos, sin teclado ni manos. El error pasa: lo reparás con Backspace.',
     block: 'challenge',
     session: 'challenge',
     variant: 'coral',
     timed: 60_000,
+    mode: 'free',
+    blind: true,
+    reference: true,
+  },
+  examen: {
+    title: 'Examen semanal',
+    blurb: 'Tres minutos sin ayuda ni Backspace: tu velocidad limpia. El mismo texto todo el mes.',
+    block: 'challenge',
+    session: 'exam',
+    variant: 'coral',
+    timed: 180_000,
+    mode: 'stop',
+    blind: true,
+    reference: true,
   },
   antes: {
     title: 'Como antes',
     blurb: 'Un minuto tipeando como tipeabas antes de TypeLight, sin pensar en los dedos. Es la vara que vas a superar.',
     variant: 'sun',
     timed: 60_000,
+    mode: 'stop',
   },
 }
 
@@ -50,6 +81,13 @@ export function Practice() {
   return <PracticeRun key={kind} kind={kind as Kind} />
 }
 
+interface Result {
+  m: ReturnType<typeof metrics>
+  repair: RepairMetrics | null
+  /** Timestamp of the recorded session, for the form self-check. */
+  at: string | null
+}
+
 function PracticeRun({ kind }: { kind: Kind }) {
   const meta = META[kind]
   const { layout, learned, goalWpm, curriculum } = useProgress()
@@ -57,17 +95,23 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const sound = useStore((s) => s.settings.sound)
   const showHands = useStore((s) => s.settings.showHands)
   const recordSession = useStore((s) => s.recordSession)
+  const setSessionForm = useStore((s) => s.setSessionForm)
   const markRoutine = useStore((s) => s.markRoutine)
   const setLegacy = useStore((s) => s.setLegacy)
+  const setLastExamDay = useStore((s) => s.setLastExamDay)
   const [round, setRound] = useState(0)
-  const [result, setResult] = useState<ReturnType<typeof metrics> | null>(null)
+  const [result, setResult] = useState<Result | null>(null)
+  const [formDone, setFormDone] = useState(false)
+  const rollover = useRef(newRollover())
   const navigate = useNavigate()
   // A stable per-mount coin flip: a day change mid-exercise must not regenerate the text underneath the typist.
   const [bigramDay] = useState(() => dayOfYear() % 2 === 1)
+  const [month] = useState(() => monthKey(dayKey()))
+  const asksForm = kind === 'reto' || kind === 'examen'
 
-  // Enter on the result card goes back to the routine (or, after "antes", to Progreso).
+  // Enter on the result card goes back to the routine (or, after "antes", to Progreso) — once the form check is answered or skipped.
   useEffect(() => {
-    if (!result) return
+    if (!result || (asksForm && !formDone)) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault()
@@ -76,7 +120,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [result, navigate, kind])
+  }, [result, formDone, asksForm, navigate, kind])
 
   const pool = useMemo(
     () => (kind === 'antes' ? poolOf(curriculum.lessons[curriculum.lessons.length - 1].pool) : poolOf(learned.length >= 2 ? learned : ['f', 'j'])),
@@ -92,6 +136,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     // Until the space bar has been taught, drills are continuous runs.
     const joined = !learned.includes(' ')
     if (kind === 'antes') return challengeText(pool, { rng })
+    if (kind === 'examen') return joined ? drillText(learned, 40, { rng, joined }) : examText(pool, month)
     if (kind === 'calentamiento') {
       if (learned.length < 6) return drillText(learned, joined ? 8 : 16, { rng, joined })
       return bigramWarmup ? ngramText(pool, 2, { weak, tokens: 16, rng }) : wordsText(pool, 16, { rng })
@@ -102,18 +147,19 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     if (joined) return drillText(learned, 12, { rng, joined })
     return challengeText(pool, { rng })
-  }, [kind, pool, weak, learned, round, bigramWarmup])
+  }, [kind, pool, weak, learned, round, bigramWarmup, month])
 
   const onFinish = useCallback(
     (state: TypingState) => {
       const m = metrics(state)
       if (m.chars === 0) return
+      const repair = repairMetrics(state)
       if (kind === 'antes') {
         setLegacy({ wpm: m.wpm, acc: m.accuracy, at: new Date().toISOString() })
-        setResult(m)
+        setResult({ m, repair, at: null })
         return
       }
-      recordSession(
+      const at = recordSession(
         {
           kind: meta.session!,
           wpm: m.wpm,
@@ -122,26 +168,32 @@ function PracticeRun({ kind }: { kind: Kind }) {
           errors: m.errors,
           seconds: m.seconds,
           rhythm: rhythm(state),
-          ...(kind === 'reto' && { reference: true as const }),
+          rollover: rolloverRatio(rollover.current),
+          ...(meta.reference && { reference: true as const }),
+          ...(meta.blind && { blind: true as const }),
+          ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
         },
         keySamples(state).values(),
       )
       markRoutine(meta.block!)
-      setResult(m)
+      if (kind === 'examen') setLastExamDay(dayKey())
+      setResult({ m, repair, at })
     },
-    [kind, meta.session, meta.block, recordSession, markRoutine, setLegacy],
+    [kind, meta, recordSession, markRoutine, setLegacy, setLastExamDay],
   )
 
-  const session = useTypingSession(text, { sound, onFinish, timeLimitMs: meta.timed })
+  const session = useTypingSession(text, { sound, onFinish, timeLimitMs: meta.timed, mode: meta.mode })
   const nextChar = session.finished ? null : session.state.target[session.state.pos]
-  const m = session.live
   const remaining = meta.timed ? Math.max(0, Math.ceil((meta.timed - session.elapsedMs) / 1000)) : null
 
   const again = () => {
     setResult(null)
+    setFormDone(false)
+    rollover.current = newRollover()
     setRound((r) => r + 1)
   }
 
+  const r = result?.m
   return (
     <div className="animate-rise">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -167,16 +219,55 @@ function PracticeRun({ kind }: { kind: Kind }) {
         )}
       </header>
 
-      {result ? (
+      {result && r ? (
         <div className="card animate-rise p-8 text-center">
           <div className="eyebrow mb-3">{meta.title} · listo</div>
-          <div className="mx-auto flex max-w-md justify-around">
-            <Stat label="Velocidad" value={result.wpm} unit="PPM" tone={result.wpm >= goalWpm ? 'enter' : 'ink'} />
-            <Stat label="Precisión" value={`${Math.round(result.accuracy * 100)} %`} tone={result.accuracy >= 0.97 ? 'enter' : result.accuracy >= 0.95 ? 'ink' : 'esc'} />
-            <Stat label="Errores" value={result.errors} tone={result.errors === 0 ? 'enter' : 'ink'} />
+          <div className="mx-auto flex max-w-2xl flex-wrap justify-around gap-x-6 gap-y-4">
+            <Stat label="Velocidad" value={r.wpm} unit="PPM" tone={r.wpm >= goalWpm ? 'enter' : 'ink'} />
+            <Stat
+              label={result.repair ? 'Al primer intento' : 'Precisión'}
+              value={`${Math.round(r.accuracy * 100)} %`}
+              tone={r.accuracy >= 0.97 ? 'enter' : r.accuracy >= 0.95 ? 'ink' : 'esc'}
+            />
+            {result.repair ? (
+              <>
+                <Stat
+                  label="Reparados"
+                  value={
+                    <>
+                      {result.repair.repaired}
+                      <span className="ml-1 text-base font-bold text-ink-mute">de {result.repair.firstTryErrors}</span>
+                    </>
+                  }
+                  tone={result.repair.firstTryErrors === 0 ? 'enter' : 'ink'}
+                />
+                <Stat label="Teclas por letra" value={result.repair.kspc.toFixed(2).replace('.', ',')} tone={result.repair.kspc <= 1.02 ? 'enter' : 'ink'} />
+              </>
+            ) : (
+              <Stat label="Errores" value={r.errors} tone={r.errors === 0 ? 'enter' : 'ink'} />
+            )}
           </div>
+          {result.repair && (
+            <p className="mt-3 text-sm text-ink-mute">
+              {result.repair.repairMs !== null
+                ? `Reaccionaste al error en ${(result.repair.repairMs / 1000).toFixed(1).replace('.', ',')} s. `
+                : result.repair.firstTryErrors > 0
+                  ? 'Ningún error reparado. '
+                  : ''}
+              La velocidad es el texto correcto al final: lo reparado cuenta, lo que quedó mal no.
+            </p>
+          )}
           {kind === 'antes' && (
             <p className="mt-4 text-sm text-ink-soft">Guardado como tu velocidad de antes. Cuando la mediana de tus Retos la supere, te aviso en Inicio.</p>
+          )}
+          {asksForm && (
+            <FormCheck
+              key={result.at ?? 'x'}
+              onAnswer={(form) => {
+                if (result.at) setSessionForm(result.at, form)
+                setFormDone(true)
+              }}
+            />
           )}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Keycap variant="ghost" onClick={again}>
@@ -190,15 +281,13 @@ function PracticeRun({ kind }: { kind: Kind }) {
       ) : (
         <div className="grid gap-4">
           <div className="card p-6 md:p-8">
-            <TypingArea state={session.state} onInput={session.input} onRestart={() => session.restart()} />
+            <TypingArea state={session.state} onInput={session.input} onBackspace={session.backspace} onRestart={() => session.restart()} rollover={rollover} />
           </div>
           <div className="flex items-center justify-between px-1 text-sm font-bold text-ink-mute">
-            <span>
-              <span className="text-ink">{m.wpm}</span> PPM · <span className={m.accuracy < 0.95 ? 'text-esc-edge' : 'text-ink'}>{Math.round(m.accuracy * 100)} %</span> precisión · <span className="text-ink">{m.errors}</span> {m.errors === 1 ? 'error' : 'errores'}
-            </span>
+            <span>{meta.blind ? 'Sin teclado ni manos' : ''}</span>
             <span>Esc reinicia</span>
           </div>
-          {kind !== 'antes' && (
+          {kind !== 'antes' && !meta.blind && (
             <div className="card p-4 md:p-5">
               <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} />
             </div>
