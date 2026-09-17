@@ -174,7 +174,7 @@ export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 
 /** The data half of the store, exactly what persist writes. */
 export function persistedState(s: State): PersistedState {
-  return { settings: s.settings, lessons: s.lessons, keys: s.keys, sessions: s.sessions, streak: s.streak, routine: s.routine, days: s.days, legacy: s.legacy }
+  return Object.fromEntries(PERSISTED_KEYS.map((k) => [k, s[k]])) as PersistedState
 }
 
 /** Replace the data half wholesale (backup import); persist saves it on the next tick. */
