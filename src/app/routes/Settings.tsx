@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
+import { dayKey } from '@/engine/stats'
 import { LAYOUT_LIST, LAYOUTS } from '@/engine/layouts'
+import { backupFilename, downloadText, parseBackup, serializeBackup } from '../lib/backup'
 import { FingerLegend, Keyboard } from '../components/Keyboard'
 import { Keycap } from '../components/Keycap'
 import { PageTitle } from '../components/ui'
-import { useStore } from '../store'
+import { importState, persistedState, useStore, type PersistedState } from '../store'
 
 function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint: string }) {
   return (
@@ -18,6 +20,79 @@ function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange
         <span className="absolute left-1 h-4 w-4 rounded-full bg-ink-mute transition peer-checked:translate-x-5 peer-checked:bg-white" />
       </span>
     </label>
+  )
+}
+
+/** Download a backup and stamp `lastBackupAt`; shared by the backup card and the pre-reset nudge. */
+function downloadBackup(setSettings: (patch: { lastBackupAt: string }) => void) {
+  const now = new Date()
+  downloadText(backupFilename(now), serializeBackup(persistedState(useStore.getState()), now))
+  setSettings({ lastBackupAt: now.toISOString() })
+}
+
+function BackupCard() {
+  const lastBackupAt = useStore((s) => s.settings.lastBackupAt)
+  const setSettings = useStore((s) => s.setSettings)
+  const [message, setMessage] = useState<string | null>(null)
+  const [pending, setPending] = useState<{ state: PersistedState; when: string } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const download = () => {
+    downloadBackup(setSettings)
+    setMessage('Copia descargada.')
+  }
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const parsed = parseBackup(await file.text())
+    if (!parsed.ok) {
+      setMessage(parsed.error)
+      return
+    }
+    const when = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleDateString('es-AR') : 'sin fecha'
+    setPending({ state: parsed.state, when })
+    setMessage(null)
+  }
+
+  const confirmImport = () => {
+    if (!pending) return
+    importState(pending.state)
+    setMessage(`Progreso restaurado desde la copia del ${pending.when}.`)
+    setPending(null)
+  }
+
+  const last = lastBackupAt ? `Última copia: ${new Date(lastBackupAt).toLocaleDateString('es-AR')}.` : 'Todavía no guardaste ninguna copia.'
+
+  return (
+    <div className="rounded-xl bg-paper px-4 py-3" data-testid="backup-card">
+      <span className="block font-bold">Tu progreso</span>
+      <span className="block text-sm text-ink-soft">Vive solo en este navegador. Una copia en un archivo lo protege de cualquier limpieza. {last}</span>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Keycap variant="secondary" size="sm" onClick={download}>
+          Descargar copia
+        </Keycap>
+        <Keycap variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+          Importar copia…
+        </Keycap>
+        <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={onFile} data-testid="backup-file" />
+      </div>
+      {pending && (
+        <div className="mt-3 rounded-lg border-2 border-sun bg-sun-soft/60 px-3 py-2 text-sm">
+          Reemplaza el progreso actual por el de la copia del {pending.when}. ¿Seguir?
+          <div className="mt-2 flex gap-2">
+            <Keycap variant="primary" size="sm" onClick={confirmImport}>
+              Sí, reemplazar
+            </Keycap>
+            <Keycap variant="ghost" size="sm" onClick={() => setPending(null)}>
+              Cancelar
+            </Keycap>
+          </div>
+        </div>
+      )}
+      {message && <p className="mt-2 text-sm font-bold text-ink-soft">{message}</p>}
+    </div>
   )
 }
 
@@ -60,6 +135,7 @@ export function Settings() {
               ))}
             </div>
           </div>
+          <BackupCard />
           <div className="rounded-xl border-2 border-esc-soft bg-esc-soft/40 px-4 py-3">
             <span className="block font-bold">Reiniciar progreso</span>
             <span className="block text-sm text-ink-soft">Borra lecciones, estadísticas y racha. No se puede deshacer.</span>
@@ -70,6 +146,11 @@ export function Settings() {
                 </Keycap>
               ) : (
                 <>
+                  {(!settings.lastBackupAt || dayKey(new Date(settings.lastBackupAt)) !== dayKey()) && (
+                    <Keycap variant="secondary" size="sm" onClick={() => downloadBackup(setSettings)}>
+                      Antes, descargar copia
+                    </Keycap>
+                  )}
                   <Keycap
                     variant="coral"
                     size="sm"

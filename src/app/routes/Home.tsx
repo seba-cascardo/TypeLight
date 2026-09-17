@@ -7,6 +7,7 @@ import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useRoutine, useStore, type RoutineBlock } from '../store'
 import { unitAccentClass } from '../lib/accents'
+import { backupDue } from '../lib/backup'
 
 const BLOCKS: { id: RoutineBlock; title: string; detail: string; minutes: string; variant: 'sun' | 'primary' | 'secondary' | 'coral'; to: string }[] = [
   { id: 'warmup', title: 'Calentamiento', detail: 'Las teclas que ya sabés, a ritmo suave.', minutes: '1 min', variant: 'sun', to: '/practica/calentamiento' },
@@ -27,10 +28,12 @@ export function Home() {
   const sessions = useStore((s) => s.sessions)
   const days = useStore((s) => s.days)
   const results = useStore((s) => s.lessons)
+  const lastBackupAt = useStore((s) => s.settings.lastBackupAt)
   const routine = useRoutine()
   const { curriculum, next, completed, learned } = useProgress()
 
   const doneCount = BLOCKS.filter((b) => routine[b.id]).length
+  const activeDays = Object.values(days).filter((d) => d.seconds > 0).length
   const alive = streakAlive(streak, dayKey())
   const recent = sessions.slice(-10)
   const reference = referenceHeadline(referenceByDay(days))
@@ -54,6 +57,15 @@ export function Home() {
               : `${doneCount} de 4. Seguimos.`}
         </p>
       </header>
+
+      {backupDue(lastBackupAt, dayKey(), activeDays) && (
+        <p className="mb-6 rounded-xl bg-sun-soft/60 px-4 py-2 text-sm font-semibold text-ink-soft" data-testid="backup-reminder">
+          {lastBackupAt ? 'Hace más de un mes que no guardás una copia de tu progreso.' : 'Tu progreso vive solo en este navegador.'}{' '}
+          <Link to="/ajustes" className="font-bold text-mod-edge underline">
+            Ajustes → Descargar copia
+          </Link>
+        </p>
+      )}
 
       {/* La rutina de hoy: una fila de cuatro teclas */}
       <section className="mb-10">
