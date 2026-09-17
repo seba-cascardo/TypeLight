@@ -14,8 +14,16 @@ function dayLabel(day: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
 }
 
+interface Props {
+  summary: WeekSummary
+  goal: number
+  /** The weekly process commitment, when set: the card asks whether it was kept. */
+  commitment?: string
+  onClose: (kept?: 'si' | 'no') => void
+}
+
 /** The week that just ended, once, with one concrete win up front. */
-export function WeeklySummaryCard({ summary, goal, onClose }: { summary: WeekSummary; goal: number; onClose: () => void }) {
+export function WeeklySummaryCard({ summary, goal, commitment, onClose }: Props) {
   const parts = [
     `${summary.minutes} min`,
     `${summary.activeDays} de ${goal} días`,
@@ -31,8 +39,19 @@ export function WeeklySummaryCard({ summary, goal, onClose }: { summary: WeekSum
         </div>
         <p className="font-display text-2xl font-extrabold">{summary.win}.</p>
         <p className="mt-1 text-ink-soft">{parts.join(' · ')}.</p>
+        {commitment && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-bold" data-testid="commitment-ask">
+            <span>¿Cumpliste «{commitment}»?</span>
+            <Keycap variant="primary" size="sm" onClick={() => onClose('si')}>
+              Sí
+            </Keycap>
+            <Keycap variant="coral" size="sm" onClick={() => onClose('no')}>
+              No
+            </Keycap>
+          </div>
+        )}
       </div>
-      <Keycap variant="ghost" size="sm" onClick={onClose}>
+      <Keycap variant="ghost" size="sm" onClick={() => onClose()}>
         Cerrar
       </Keycap>
     </section>

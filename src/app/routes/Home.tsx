@@ -121,6 +121,8 @@ export function Home() {
   const markMilestoneSeen = useStore((s) => s.markMilestoneSeen)
   const lastWeeklySummaryWeek = useStore((s) => s.lastWeeklySummaryWeek)
   const setLastWeeklySummaryWeek = useStore((s) => s.setLastWeeklySummaryWeek)
+  const commitment = useStore((s) => s.settings.commitment)
+  const answerCommitment = useStore((s) => s.answerCommitment)
   const routine = useRoutine()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const { curriculum, next, completed, learned } = useProgress()
@@ -201,7 +203,17 @@ export function Home() {
 
       {milestone !== null && <MilestoneCard milestone={milestone} month={milestone === 30 ? monthSummary(days, today) : null} onClose={() => markMilestoneSeen(milestone)} />}
 
-      {showSummary && summary && <WeeklySummaryCard summary={summary} goal={weeklyGoal} onClose={() => setLastWeeklySummaryWeek(summary.week)} />}
+      {showSummary && summary && (
+        <WeeklySummaryCard
+          summary={summary}
+          goal={weeklyGoal}
+          commitment={commitment || undefined}
+          onClose={(kept) => {
+            if (kept) answerCommitment(summary.week, kept)
+            setLastWeeklySummaryWeek(summary.week)
+          }}
+        />
+      )}
 
       {!conversoSeen && <ConversoCard />}
 

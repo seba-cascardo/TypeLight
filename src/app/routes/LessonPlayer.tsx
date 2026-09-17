@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
 import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
-import { dayKey, newRollover, rolloverRatio, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
+import { dayKey, ghostWpm30, newRollover, rolloverRatio, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
 import { bigramSamples, deadKeyStats, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
 import { Keycap } from '../components/Keycap'
@@ -14,6 +14,7 @@ import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { gameSession } from '../lib/gameSession'
+import { metronome as metronomeTick } from '../lib/sound'
 import { handsOpacityFor } from '../lib/fingers'
 import { useStore } from '../store'
 import { unitAccentClass } from '../lib/accents'
@@ -54,6 +55,8 @@ function Player({ lesson }: { lesson: Lesson }) {
   const markRoutine = useStore((s) => s.markRoutine)
   const keyStats = useStore((s) => s.keys)
   const sessions = useStore((s) => s.sessions)
+  const days = useStore((s) => s.days)
+  const metronomeOn = useStore((s) => s.settings.metronome)
   const unit = curriculum.units.find((u) => u.id === lesson.unitId)!
   const nextLesson = curriculum.lessons[lesson.index + 1]
 
@@ -277,6 +280,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       goalWpm: lesson.goalWpm,
       weak: weakestKeys(keyStats, lesson.pool, 3, dayKey()),
       ghostWpm: ghostWpm(sessions, dayKey(), lesson.goalWpm),
+      ghostWpm30: ghostWpm30(days, dayKey()),
       patterns: lesson.patterns,
       sound,
       onFinish: onGameFinish,
@@ -365,6 +369,7 @@ function Player({ lesson }: { lesson: Lesson }) {
         onNext={step + 1 < texts.length ? nextStep : undefined}
         showHands={showHands}
         goalWpm={lesson.goalWpm}
+        metronome={metronomeOn && lesson.kind === 'practice'}
       />
     </div>
   )
@@ -379,16 +384,30 @@ interface ExerciseProps {
   onNext?: () => void
   showHands: boolean
   goalWpm: number
+  /** A beat at 90 % of the goal while typing (practice lessons, when enabled in Ajustes). */
+  metronome?: boolean
 }
 
-export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm }: ExerciseProps) {
+export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm, metronome = false }: ExerciseProps) {
   const { layout } = useProgress()
   const keyStats = useStore((s) => s.keys)
   const rollover = useRef(newRollover())
+  const [beat, setBeat] = useState(0)
   const finish = useCallback((state: TypingState) => onFinish(state, rolloverRatio(rollover.current)), [onFinish])
   const session = useTypingSession(text, { sound, onFinish: finish })
   const nextChar = session.finished ? null : session.state.target[session.state.pos]
   const m = session.live
+  const running = metronome && session.state.startedAt !== null && !session.finished
+  // Folklore, but useful: a beat under the goal keeps the new fingering in charge (research §10).
+  useEffect(() => {
+    if (!running) return
+    const ms = 60000 / (goalWpm * 0.9 * 5)
+    const id = window.setInterval(() => {
+      setBeat((b) => b + 1)
+      if (sound) metronomeTick()
+    }, ms)
+    return () => window.clearInterval(id)
+  }, [running, goalWpm, sound])
   return (
     <div className="grid gap-4">
       <div className="card relative p-6 md:p-8">
@@ -406,7 +425,15 @@ export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalW
           </div>
         )}
       </div>
-      <div className="flex items-center justify-end px-1 text-sm font-bold text-ink-mute">
+      <div className="flex items-center justify-between px-1 text-sm font-bold text-ink-mute">
+        <span>
+          {metronome && (
+            <span className="inline-flex items-center gap-2" data-testid="metronome">
+              <span key={beat} className={`inline-block h-3 w-3 rounded-full bg-lav ${running ? 'animate-pop' : 'opacity-40'}`} aria-hidden="true" />
+              metrónomo a {Math.round(goalWpm * 0.9)} PPM
+            </span>
+          )}
+        </span>
         <span>meta {goalWpm} PPM · Esc reinicia</span>
       </div>
       <div className="card p-4 md:p-5">

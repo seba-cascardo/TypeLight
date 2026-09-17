@@ -345,6 +345,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
     setCopied(null)
     rollover.current = newRollover()
     setRound((r) => r + 1)
+    // The Reto's text is the same all day: a new round needs an explicit restart, not just a new text.
+    session.restart()
   }
 
   const r = result?.m

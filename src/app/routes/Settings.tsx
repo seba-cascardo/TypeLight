@@ -167,6 +167,26 @@ export function Settings() {
           <Toggle checked={settings.sound} onChange={(v) => setSettings({ sound: v })} label="Sonido" hint="Un clic suave por tecla y un golpe seco por error." />
           <Toggle checked={settings.showHands} onChange={(v) => setSettings({ showHands: v })} label="Manos guía" hint="Las manos debajo del teclado, con el dedo que toca." />
           <Toggle checked={settings.mascot} onChange={(v) => setSettings({ mascot: v })} label="Mascota en Inicio" hint="Una línea al lado del saludo: qué toca hoy, nunca un reproche." />
+          <Toggle
+            checked={settings.metronome}
+            onChange={(v) => setSettings({ metronome: v })}
+            label="Metrónomo en las prácticas"
+            hint="Un pulso al 90 % de la meta de la unidad en las lecciones de práctica. Es folklore, pero frena al que atropella."
+          />
+          <label className="block rounded-xl bg-paper px-4 py-3">
+            <span className="block font-bold">Compromiso semanal</span>
+            <span className="mt-1 flex flex-wrap items-center gap-2 font-bold">
+              Esta semana, fuera de la app:
+              <input
+                value={settings.commitment}
+                onChange={(e) => setSettings({ commitment: e.target.value })}
+                placeholder="escribo los mails sin mirar el teclado"
+                aria-label="Compromiso semanal"
+                className="card w-72 px-3 py-2 font-semibold outline-none focus:border-mod"
+              />
+            </span>
+            <span className="mt-1 block text-sm text-ink-soft">Cada lunes, en el resumen de la semana, te pregunto si lo cumpliste. Sí o no, nada más: lo que predice el nivel es la meta explícita en el uso diario.</span>
+          </label>
           <div className="rounded-xl bg-paper px-4 py-3" data-testid="weekly-goal">
             <span className="block font-bold">Meta semanal</span>
             <span className="block text-sm text-ink-soft">Días con práctica por semana. Va aparte de la racha: la racha perdona un día, la meta es tu número.</span>

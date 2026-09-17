@@ -83,6 +83,9 @@ export function Stats() {
   const bigrams = useStore((s) => s.bigrams)
   const words = useStore((s) => s.words)
   const weeklyGoal = useStore((s) => s.settings.weeklyGoal)
+  const commitments = useStore((s) => s.commitments)
+  const commitmentKept = Object.values(commitments).filter((v) => v === 'si').length
+  const commitmentAsked = Object.keys(commitments).length
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
 
@@ -287,6 +290,12 @@ export function Stats() {
             </div>
             <p className="mt-1.5 text-xs text-ink-mute">
               {weeksMet} {weeksMet === 1 ? 'semana' : 'semanas'} con la meta cumplida · {streak.freezes} {streak.freezes === 1 ? 'comodín' : 'comodines'} de racha (uno cada 5 días activos, máximo 2; un día perdido siempre se perdona).
+              {commitmentAsked > 0 && (
+                <span data-testid="commitment-count">
+                  {' '}
+                  Compromiso fuera de la app: {commitmentKept} de {commitmentAsked} {commitmentAsked === 1 ? 'semana' : 'semanas'}.
+                </span>
+              )}
             </p>
           </div>
           <div className="mt-5" data-testid="fluidity">

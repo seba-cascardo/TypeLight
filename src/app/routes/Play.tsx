@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
 import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
-import { dayKey, weakestKeys } from '@/engine/stats'
+import { dayKey, ghostWpm30, weakestKeys } from '@/engine/stats'
 import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
 import { GAME_META } from '../components/games/meta'
@@ -21,6 +21,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
   const { layout, learned, goalWpm } = useProgress()
   const keyStats = useStore((s) => s.keys)
   const sessions = useStore((s) => s.sessions)
+  const days = useStore((s) => s.days)
   const sound = useStore((s) => s.settings.sound)
   const recordSession = useStore((s) => s.recordSession)
   const setSessionForm = useStore((s) => s.setSessionForm)
@@ -77,6 +78,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
           goalWpm={goalWpm}
           weak={weakestKeys(keyStats, learned, 3, dayKey())}
           ghostWpm={ghostWpm(sessions, dayKey(), goalWpm)}
+          ghostWpm30={ghostWpm30(days, dayKey())}
           best={sessions.filter((s) => s.gameId === 'sudden').reduce((a, s) => Math.max(a, s.chars), 0)}
           sound={sound}
           onFinish={onFinish}

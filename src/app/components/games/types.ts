@@ -13,6 +13,8 @@ export interface GameProps {
   durationMs?: number
   /** Carrera: what the ghost runs at (best recent Reto, or the goal). */
   ghostWpm?: number
+  /** Carrera: the ghost "you, 30 days ago" (median reference of 30–36 days back), when there is one. */
+  ghostWpm30?: number | null
   /** Globos: only words containing one of these (Patrones). */
   patterns?: string[]
   /** Muerte súbita: best score so far, shown beside the live count. */

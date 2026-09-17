@@ -13,7 +13,9 @@ import type { GameProps } from './types'
  * Carrera contra tu fantasma: three real sentences; your car moves with every correct character, the ghost
  * at a steady speed (your best Reto of the week, or the unit goal). Errors stop you, not the ghost.
  */
-export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFinish }: GameProps) {
+export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWpm30 = null, sound = true, onFinish }: GameProps) {
+  const [ghostPick, setGhostPick] = useState<'week' | 'month'>('week')
+  const ghostWpm = ghostPick === 'month' && ghostWpm30 ? ghostWpm30 : ghostWeek
   const text = useMemo(() => raceText(poolOf(pool), makeRng()), [pool])
   const length = text.length
   const [now, setNow] = useState(0)
@@ -97,8 +99,21 @@ export function RaceGame({ pool, goalWpm, ghostWpm = goalWpm, sound = true, onFi
           <span className="font-display text-2xl text-ink tabular-nums">{live.wpm}</span> PPM ·{' '}
           <span className={live.accuracy < 0.95 ? 'text-esc-edge' : 'text-ink'}>{Math.round(live.accuracy * 100)} %</span> precisión
         </span>
-        <span>
-          Fantasma a <span className="font-display text-xl text-ink tabular-nums">{ghostWpm}</span> PPM · {ghostWpm === goalWpm ? 'la meta de la unidad' : 'tu mejor Reto de la semana'}
+        <span className="flex flex-wrap items-center gap-2">
+          <span>
+            Fantasma a <span className="font-display text-xl text-ink tabular-nums">{ghostWpm}</span> PPM ·{' '}
+            {ghostPick === 'month' && ghostWpm30 ? 'vos hace 30 días' : ghostWeek === goalWpm ? 'la meta de la unidad' : 'tu mejor Reto de la semana'}
+          </span>
+          {ghostWpm30 !== null && state.startedAt === null && (
+            <span className="flex gap-1" data-testid="ghost-pick">
+              <button type="button" className={`keycap keycap-sm ${ghostPick === 'week' ? 'keycap-secondary' : 'keycap-ghost'}`} onMouseDown={(e) => e.preventDefault()} onClick={() => setGhostPick('week')}>
+                Esta semana · {ghostWeek}
+              </button>
+              <button type="button" className={`keycap keycap-sm ${ghostPick === 'month' ? 'keycap-secondary' : 'keycap-ghost'}`} onMouseDown={(e) => e.preventDefault()} onClick={() => setGhostPick('month')}>
+                Hace 30 días · {ghostWpm30}
+              </button>
+            </span>
+          )}
         </span>
         <span className="keycap keycap-sm font-display text-xl tabular-nums">
           {Math.floor(elapsed / 60000)}:{String(Math.floor((elapsed / 1000) % 60)).padStart(2, '0')}
