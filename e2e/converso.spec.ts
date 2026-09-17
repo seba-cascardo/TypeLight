@@ -43,7 +43,7 @@ async function remaining(page: Page): Promise<string> {
   return page.evaluate(() =>
     [...document.querySelectorAll('.type-char')]
       .filter((s) => !s.classList.contains('is-done') && !s.classList.contains('type-extra'))
-      .map((s) => (s.classList.contains('is-space') || s.textContent === ' ' || s.textContent === '' ? ' ' : s.textContent))
+      .map((s) => (s.classList.contains('is-space') || s.textContent === '\u00a0' || s.textContent === '' ? ' ' : s.textContent))
       .join(''),
   )
 }
