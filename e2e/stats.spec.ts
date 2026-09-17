@@ -98,3 +98,43 @@ test('progreso: the chart marks the day the Reto went blind and draws the weekly
   await expect(page.getByTestId('exam-point')).toHaveCount(1)
   await expect(page.getByText('desde acá, sin ayuda')).toBeVisible()
 })
+
+test('progreso: finger dominance map and fluidity', async ({ page }) => {
+  const today = at(0)
+  await page.goto('/')
+  await page.evaluate(
+    ([today, tDay]) => {
+      const done = { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-09-15T00:00:00Z' }
+      const stat = (latencyEma: number, errorEma: number, samples: number) => ({ latencyEma, errorEma, samples })
+      localStorage.setItem(
+        'typelight.v1',
+        JSON.stringify({
+          state: {
+            settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: true },
+            lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-space': done, 'guia-64-6b-keys': done },
+            keys: { f: stat(300, 0, 20), j: stat(300, 0, 20), d: stat(900, 0.1, 6), k: stat(2000, 0.3, 3), ' ': stat(300, 0, 20) },
+            sessions: [{ at: today, kind: 'lesson', wpm: 30, acc: 0.98, chars: 200, errors: 4, seconds: 60, rollover: 0.25 }],
+            streak: { count: 1, lastDay: tDay },
+            routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false },
+            days: { [tDay]: { seconds: 60, blocks: 1, learned: 5, mastered: 2, reference: [], sessions: 1 } },
+            legacy: null,
+            lastExamDay: null,
+            blindSince: null,
+          },
+          version: 4,
+        }),
+      )
+    },
+    [today, localDay(today)],
+  )
+  await page.goto('/estadisticas')
+  await expect(page.getByRole('heading', { name: 'Dominio por dedo' })).toBeVisible()
+  const map = page.getByTestId('finger-map')
+  await expect(map).toBeVisible()
+  await expect(map.getByTestId('finger-LI')).toContainText('%')
+  await expect(map.getByTestId('finger-LM')).toContainText('%')
+  await expect(map.getByTestId('finger-LP')).toHaveCount(0)
+  await expect(page.getByTestId('fluidity')).toContainText('25 %')
+  await expect(page.getByText('Ritmo parejo')).toHaveCount(0)
+  await page.screenshot({ path: 'e2e/screens/stats-fingers.png', fullPage: true })
+})

@@ -6,6 +6,7 @@ import {
   legacyBeaten,
   mastery,
   dominance,
+  fingerDominance,
   masteryCounts,
   masteryMap,
   median,
@@ -146,6 +147,22 @@ describe('mastery', () => {
     expect(dominance({ latencyEma: 1200, errorEma: 0, samples: 10 }, 15)).toBeCloseTo(0.5)
     expect(dominance({ latencyEma: 800, errorEma: 0, samples: 5 }, 15)).toBeCloseTo(0.5)
     expect(dominance({ latencyEma: 3000, errorEma: 0.5, samples: 50 }, 15)).toBe(0)
+  })
+
+  it('fingerDominance averages the learned keys of each finger; fingers without keys are absent', () => {
+    // goal 15 PPM → target gap 800 ms
+    const keys = {
+      a: { latencyEma: 800, errorEma: 0, samples: 10 }, // LP: 1
+      q: { latencyEma: 800, errorEma: 0, samples: 5 }, // LP: 0.5
+      f: { latencyEma: 800, errorEma: 0, samples: 10 }, // LI: 1
+      x: { latencyEma: 200, errorEma: 0, samples: 50 }, // not learned
+    }
+    const fingerOf = (ch: string) => ({ a: 'LP', q: 'LP', f: 'LI', j: 'RI', x: 'LR' })[ch] as 'LP' | 'LI' | 'RI' | 'LR' | undefined
+    const r = fingerDominance(keys, ['a', 'q', 'f', 'j'], 15, fingerOf)
+    expect(r.LP).toEqual({ value: 0.75, keys: 2 })
+    expect(r.LI).toEqual({ value: 1, keys: 1 })
+    expect(r.RI).toEqual({ value: 0, keys: 1 })
+    expect(r.LR).toBeUndefined()
   })
 
   it('maps and counts only learned keys', () => {

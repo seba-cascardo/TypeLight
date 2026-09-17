@@ -3,6 +3,7 @@ import {
   calendar,
   constancy,
   dayKey,
+  fingerDominance,
   keySpeed,
   masteryCounts,
   masteryMap,
@@ -15,11 +16,13 @@ import {
   weaknessScore,
   weeklyAccuracy,
 } from '@/engine/stats'
+import { Hands } from '../components/Hands'
 import { Keyboard } from '../components/Keyboard'
 import { Calendar } from '../components/stats/Calendar'
 import { ReferenceChart } from '../components/stats/ReferenceChart'
 import { PageTitle, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
+import { FINGER_NAME, typingFinger } from '../lib/fingers'
 import { useStore } from '../store'
 
 function Tile({ id, label, value, unit, note, up }: { id: string; label: string; value: string | number; unit?: string; note?: string; up?: boolean }) {
@@ -72,6 +75,12 @@ export function Stats() {
   const marks = useMemo(() => unitMarks(days), [days])
   const weekly = weeklyAccuracy(sessions, today)
   const levels = useMemo(() => masteryMap(keys, learned, goalWpm), [keys, learned, goalWpm])
+  const fingers = useMemo(() => fingerDominance(keys, learned, goalWpm, (ch) => typingFinger(layout, ch)), [keys, learned, goalWpm, layout])
+  const fingerTints = Object.fromEntries(Object.entries(fingers).map(([f, d]) => [f, 0.12 + 0.78 * d!.value]))
+  const fingerLabels = Object.fromEntries(Object.entries(fingers).map(([f, d]) => [f, `${Math.round(d!.value * 100)} %`]))
+  const weakestFingers = Object.entries(fingers)
+    .sort((a, b) => a[1]!.value - b[1]!.value)
+    .slice(0, 2)
   const counts = masteryCounts(levels)
   const weekAgo = snapshotBefore(days, today)
   const cells = calendar(days, today)
@@ -189,6 +198,19 @@ export function Stats() {
             </span>
             <span>{weekAgo ? `hace 7 días: ${weekAgo.mastered}` : 'todavía sin historia'}</span>
           </div>
+        </Card>
+
+        <Card title="Dominio por dedo" sub="Cada dedo, según sus teclas aprendidas: el promedio de qué tan tuyas son. Los pálidos son los que faltan; la app no ve qué dedo usás, así que esto vale lo que valga tu forma.">
+          {Object.keys(fingers).length === 0 ? (
+            <p className="text-ink-soft">Con unos ejercicios más aparecen acá.</p>
+          ) : (
+            <div data-testid="finger-map">
+              <Hands tints={fingerTints} labels={fingerLabels} className="mx-auto block w-full max-w-md" />
+              <p className="mt-3 text-xs font-bold text-ink-mute">
+                {weakestFingers.length > 0 && `Piden más: ${weakestFingers.map(([f]) => FINGER_NAME[f as keyof typeof FINGER_NAME]).join(' y ')}.`}
+              </p>
+            </div>
+          )}
         </Card>
 
         <Card title="Constancia" sub="La rutina de cuatro tarjetas, día por día. Verde = completa, amarillo = alguna, gris = nada. El tiempo no se infla con un ejercicio fácil.">

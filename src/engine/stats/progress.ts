@@ -142,6 +142,35 @@ export function dominance(stat: KeyStat | undefined, goalWpm: number): number {
   return Math.min(samples, error, latency)
 }
 
+export interface FingerDominance {
+  /** Mean dominance of the finger's learned keys, 0..1. */
+  value: number
+  keys: number
+}
+
+/** Dominance folded by finger over the learned keys; a finger with no learned key is absent. `fingerOf` maps a character to its typing finger. */
+export function fingerDominance<F extends string>(
+  keys: KeyStats,
+  learned: Iterable<string>,
+  goalWpm: number,
+  fingerOf: (ch: string) => F | undefined,
+): Partial<Record<F, FingerDominance>> {
+  const sums: Partial<Record<F, { sum: number; n: number }>> = {}
+  for (const ch of learned) {
+    const f = fingerOf(ch)
+    if (!f) continue
+    const acc = (sums[f] ??= { sum: 0, n: 0 })
+    acc.sum += dominance(keys[ch], goalWpm)
+    acc.n++
+  }
+  const out: Partial<Record<F, FingerDominance>> = {}
+  for (const f of Object.keys(sums) as F[]) {
+    const { sum, n } = sums[f]!
+    out[f] = { value: sum / n, keys: n }
+  }
+  return out
+}
+
 /** Mastery of every learned character (space included); unlearned keys are simply absent. */
 export function masteryMap(keys: KeyStats, learned: Iterable<string>, goalWpm: number): Record<string, Mastery> {
   const out: Record<string, Mastery> = {}

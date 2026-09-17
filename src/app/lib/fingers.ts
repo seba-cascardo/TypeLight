@@ -36,6 +36,25 @@ export function handsOpacityFor(keys: KeyStats, ch: string | null | undefined, g
   return Math.max(0.3, 1 - dominance(keys[ch], goalWpm))
 }
 
+/** The finger that presses the key for `ch` (Shift and AltGr helpers left out). */
+export function typingFinger(layout: Layout, ch: string): Finger | undefined {
+  const seq = resolveChar(layout, ch)
+  return seq?.[seq.length - 1]?.finger
+}
+
+export const FINGER_NAME: Record<Finger, string> = {
+  LP: 'meñique izquierdo',
+  LR: 'anular izquierdo',
+  LM: 'medio izquierdo',
+  LI: 'índice izquierdo',
+  LT: 'pulgar izquierdo',
+  RT: 'pulgar derecho',
+  RI: 'índice derecho',
+  RM: 'medio derecho',
+  RR: 'anular derecho',
+  RP: 'meñique derecho',
+}
+
 /** Fingers involved in typing `ch`: the typing finger, plus shift pinky / AltGr thumb. */
 export function fingersFor(layout: Layout, ch: string | null | undefined): Finger[] {
   if (!ch) return []
