@@ -9,6 +9,7 @@ import { Path } from './app/routes/Path'
 import { Play } from './app/routes/Play'
 import { Practice } from './app/routes/Practice'
 import { Settings } from './app/routes/Settings'
+import { OwnText } from './app/routes/OwnText'
 import { Stats } from './app/routes/Stats'
 import { Welcome } from './app/routes/Welcome'
 import { useStore } from './app/store'
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
           { path: '/leccion/:id', element: <LessonPlayer /> },
           { path: '/practica/:kind', element: <Practice /> },
           { path: '/jugar/:gameId', element: <Play /> },
+          { path: '/texto', element: <OwnText /> },
           { path: '/estadisticas', element: <Stats /> },
           { path: '/ajustes', element: <Settings /> },
           { path: '*', element: <Navigate to="/" replace /> },

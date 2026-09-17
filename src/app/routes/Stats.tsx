@@ -109,6 +109,8 @@ export function Stats() {
   const slowBigrams = useMemo(() => weakestBigrams(bigrams, poolOf(learned), 3), [bigrams, learned])
   const qualities = useMemo(() => weaknessQualities(keys, bigrams, layout, learned), [keys, bigrams, layout, learned])
   const weakWords = useMemo(() => weakestWords(words, 6), [words])
+  const cleanBest = sessions.reduce((a, s) => Math.max(a, s.cleanRun ?? 0), 0)
+  const cleanToday = sessions.filter((s) => dayKey(new Date(s.at)) === today).reduce((a, s) => Math.max(a, s.cleanRun ?? 0), 0)
   const dead = useMemo(() => {
     const recent = sessions.filter((s) => s.dead).slice(-30)
     if (recent.length === 0) return null
@@ -402,6 +404,14 @@ export function Stats() {
                   <span className="font-bold">Rutina completa seguida</span>
                   <span className="text-sm text-ink-soft">
                     <span className="font-display text-lg font-extrabold text-ink">{best.bestRoutineRun.days}</span> {best.bestRoutineRun.days === 1 ? 'día' : 'días'}
+                  </span>
+                </li>
+              )}
+              {cleanBest > 0 && (
+                <li className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5" data-testid="clean-run">
+                  <span className="font-bold">Racha de precisión</span>
+                  <span className="text-sm text-ink-soft">
+                    hoy <span className="font-display text-lg font-extrabold text-ink">{cleanToday}</span> · histórica <span className="font-display text-lg font-extrabold text-ink">{cleanBest}</span> caracteres seguidos
                   </span>
                 </li>
               )}

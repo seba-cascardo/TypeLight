@@ -14,11 +14,13 @@ import {
   referenceByDay,
   resistedWords,
   rolloverRatio,
+  seedOf,
   weakestBigrams,
   weakestKeys,
   weaknessQualities,
 } from '@/engine/stats'
-import { bigramSamples, deadKeyStats, keySamples, metrics, repairMetrics, rhythm, wordSamples, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
+import { bigramSamples, cleanRun, deadKeyStats, keySamples, metrics, repairMetrics, rhythm, wordSamples, type RepairMetrics, type TypingMode, type TypingState } from '@/engine/typing'
+import { shareText } from '../lib/share'
 import { FormCheck } from '../components/FormCheck'
 import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
@@ -232,6 +234,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
   // A stable per-mount coin flip: a day change mid-exercise must not regenerate the text underneath the typist.
   const [bigramDay] = useState(() => dayOfYear() % 2 === 1)
   const [month] = useState(() => monthKey(dayKey()))
+  const [day] = useState(() => dayKey())
+  const [copied, setCopied] = useState<string | null>(null)
   const asksForm = kind === 'reto' || kind === 'examen'
 
   // Enter on the result card goes back to the routine (or, after "antes", to Progreso) — once the form check is answered or skipped.
@@ -259,7 +263,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const bigramWarmup = kind === 'calentamiento' && bigramDay && learned.length >= 6
 
   const text = useMemo(() => {
-    const rng = makeRng()
+    // The Reto of the day is the same text all day (seeded by the date): everyone with the app types the same thing.
+    const rng = kind === 'reto' ? makeRng(seedOf(day)) : makeRng()
     void round
     // Until the space bar has been taught, drills are continuous runs.
     const joined = !learned.includes(' ')
@@ -276,7 +281,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
     }
     if (joined) return drillText(learned, 12, { rng, joined })
     return challengeText(pool, { rng })
-  }, [kind, pool, weak, weakBigrams, learned, round, bigramWarmup, month, practiceWords])
+  }, [kind, pool, weak, weakBigrams, learned, round, bigramWarmup, month, day, practiceWords])
 
   const onFinish = useCallback(
     (state: TypingState) => {
@@ -303,6 +308,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
           seconds: m.seconds,
           rhythm: rhythm(state),
           rollover: rolloverRatio(rollover.current),
+          cleanRun: cleanRun(state),
           ...(meta.reference && { reference: true as const }),
           ...(meta.blind && { blind: true as const }),
           ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
@@ -322,9 +328,21 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const nextChar = session.finished ? null : session.state.target[session.state.pos]
   const remaining = meta.timed ? Math.max(0, Math.ceil((meta.timed - session.elapsedMs) / 1000)) : null
 
+  const copy = async () => {
+    if (!r) return
+    const line = shareText({ day, wpm: r.wpm, accuracy: r.accuracy, goalWpm })
+    try {
+      await navigator.clipboard.writeText(line)
+      setCopied('Copiado. Pegalo donde quieras.')
+    } catch {
+      setCopied('No se pudo copiar: ' + line)
+    }
+  }
+
   const again = () => {
     setResult(null)
     setFormDone(false)
+    setCopied(null)
     rollover.current = newRollover()
     setRound((r) => r + 1)
   }
@@ -436,6 +454,15 @@ function PracticeRun({ kind }: { kind: Kind }) {
                 setFormDone(true)
               }}
             />
+          )}
+          {kind === 'reto' && (
+            <div className="mt-5 text-sm text-ink-soft" data-testid="share">
+              <Keycap variant="ghost" size="sm" onClick={copy}>
+                Copiar resultado
+              </Keycap>
+              {copied && <span className="ml-3 font-bold">{copied}</span>}
+              <p className="mt-1.5 text-xs text-ink-mute">El Reto de hoy es el mismo texto para cualquiera que tenga la app: se puede comparar.</p>
+            </div>
           )}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Keycap variant="ghost" onClick={again}>

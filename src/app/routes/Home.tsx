@@ -158,7 +158,7 @@ export function Home() {
   const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
-  const playable: GameId[] = wordsReady(learned) ? ['rain', 'rhythm', 'balloons', 'race'] : ['rain', 'rhythm']
+  const playable: GameId[] = wordsReady(learned) ? ['rain', 'rhythm', 'balloons', 'race', 'sudden'] : ['rain', 'rhythm']
 
   useEffect(() => {
     if (legacy && !legacy.beatenAt && legacyBeaten(points, legacy.wpm)) setLegacy({ ...legacy, beatenAt: dayKey() })
@@ -261,7 +261,7 @@ export function Home() {
       {doneCount === 4 && (
         <section className="mb-10" data-testid="play-row">
           <div className="eyebrow mb-3">Jugar · con todo lo que ya sabés</div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {playable.map((id) => (
               <Link key={id} to={`/jugar/${id}`} className={`keycap keycap-${GAME_META[id].variant} flex-col items-start gap-1 px-4 py-4 text-left`} style={{ borderRadius: 16 }}>
                 <span className="font-display text-2xl leading-none">{GAME_META[id].glyph}</span>
@@ -352,9 +352,14 @@ export function Home() {
             </Link>
           )}
           {legacy && <p className="mt-3 text-sm text-ink-soft">Tu velocidad de antes: {legacy.wpm} PPM.</p>}
-          <Link to="/estadisticas" className="mt-4 inline-block text-sm font-bold text-mod-edge underline">
-            Ver progreso completo
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
+            <Link to="/estadisticas" className="inline-block text-sm font-bold text-mod-edge underline">
+              Ver progreso completo
+            </Link>
+            <Link to="/texto" className="inline-block text-sm font-bold text-mod-edge underline" data-testid="own-text-link">
+              Tipear un texto propio →
+            </Link>
+          </div>
         </div>
       </section>
     </div>

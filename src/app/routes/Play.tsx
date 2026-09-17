@@ -77,6 +77,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
           goalWpm={goalWpm}
           weak={weakestKeys(keyStats, learned, 3, dayKey())}
           ghostWpm={ghostWpm(sessions, dayKey(), goalWpm)}
+          best={sessions.filter((s) => s.gameId === 'sudden').reduce((a, s) => Math.max(a, s.chars), 0)}
           sound={sound}
           onFinish={onFinish}
           durationMs={Number(new URLSearchParams(window.location.search).get('dur')) || undefined}

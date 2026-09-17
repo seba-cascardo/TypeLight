@@ -15,5 +15,7 @@ export interface GameProps {
   ghostWpm?: number
   /** Globos: only words containing one of these (Patrones). */
   patterns?: string[]
+  /** Muerte súbita: best score so far, shown beside the live count. */
+  best?: number
   onFinish: (r: GameResult) => void
 }
