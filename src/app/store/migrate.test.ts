@@ -17,7 +17,7 @@ describe('store migration v1 → v2', () => {
       days: Record<string, { seconds: number; blocks: number; learned: number; mastered: number; reference: number[]; sessions: number }>
       settings: { name: string; lastBackupAt: string | null }
     }
-    expect(v2.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true })
+    expect(v2.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false })
     expect(v2.days).toEqual({ '2026-09-10': { seconds: 0, blocks: 0, learned: 0, mastered: 0, reference: [22], sessions: 2 } })
     expect(v2.sessions[0].reference).toBeUndefined()
     expect(v2.sessions[1].reference).toBe(true)
@@ -36,7 +36,8 @@ describe('store migration v1 → v2', () => {
       keys: {},
       bigrams: {},
       words: {},
-      settings: { lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true },
+      commitments: {},
+      settings: { lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false },
     })
   })
 })
@@ -77,7 +78,7 @@ describe('store migration v2 → v3', () => {
     const v4 = migrateState(v3, 3) as { lastExamDay: unknown; blindSince: unknown; settings: Record<string, unknown> }
     expect(v4.lastExamDay).toBeNull()
     expect(v4.blindSince).toBeNull()
-    expect(v4.settings).toEqual({ lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true })
+    expect(v4.settings).toEqual({ lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false })
   })
 })
 
@@ -88,7 +89,7 @@ describe('store migration v3 → v4', () => {
     expect(v4.sessions).toBe(v3.sessions)
     expect(v4.days).toBe(v3.days)
     expect(v4.legacy).toBe(v3.legacy)
-    expect(v4.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true })
+    expect(v4.settings).toEqual({ name: 'Seba', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false })
     expect(v4.lastExamDay).toBeNull()
     expect(v4.blindSince).toBeNull()
   })
@@ -99,7 +100,7 @@ describe('store migration v3 → v4', () => {
     expect(v5.streak).toEqual({ count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 })
     expect(v5.milestonesSeen).toEqual([])
     expect(v5.lastWeeklySummaryWeek).toBeNull()
-    expect(v5.settings).toEqual({ lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true })
+    expect(v5.settings).toEqual({ lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false })
   })
 })
 
@@ -112,7 +113,7 @@ describe('store migration v4 → v5', () => {
     }
     const v5 = migrateState(v4, 4) as { streak: { count: number; lastDay: string; best: number; freezes: number; activeDays: number }; settings: Record<string, unknown> }
     expect(v5.streak).toEqual({ count: 3, lastDay: '2026-09-18', best: 3, freezes: 0, activeDays: 3 })
-    expect(v5.settings).toEqual({ name: 'Seba', weeklyGoal: 5, mascot: true })
+    expect(v5.settings).toEqual({ name: 'Seba', weeklyGoal: 5, mascot: true, commitment: '', metronome: false })
   })
 
   it('never counts fewer active days than the streak', () => {
@@ -139,8 +140,15 @@ describe('store migration v5 → v6', () => {
     expect(v6.words).toEqual({})
   })
 
-  it('leaves a v6 state untouched', () => {
-    const v6 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {} }
-    expect(migrateState(v6, 6)).toBe(v6)
+  it('chains into v7', () => {
+    const v6 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {}, settings: { name: 'S' } }
+    const v7 = migrateState(v6, 6) as { commitments: unknown; settings: Record<string, unknown> }
+    expect(v7.commitments).toEqual({})
+    expect(v7.settings).toEqual({ name: 'S', commitment: '', metronome: false })
+  })
+
+  it('leaves a v7 state untouched', () => {
+    const v7 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {}, commitments: {} }
+    expect(migrateState(v7, 7)).toBe(v7)
   })
 })

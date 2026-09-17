@@ -29,6 +29,7 @@ interface Persisted {
   keys?: Record<string, { lastSeen?: string; halfLife?: number; daysSeen?: number }>
   bigrams?: unknown
   words?: unknown
+  commitments?: unknown
 }
 
 /** v1 → v2: Retos count toward the reference speed (`reference: true`); the store gains `days`. */
@@ -72,6 +73,11 @@ function toV6(s: Persisted): Persisted {
   return { ...s, keys, bigrams: {}, words: {} }
 }
 
+/** v6 → v7: weekly commitment (text + answers) and the practice metronome. */
+function toV7(s: Persisted): Persisted {
+  return { ...s, commitments: {}, settings: { ...(s.settings ?? {}), commitment: '', metronome: false } }
+}
+
 export function migrateState(persisted: unknown, version: number): unknown {
   let s = (persisted ?? {}) as Persisted
   if (version < 2) s = toV2(s)
@@ -79,5 +85,6 @@ export function migrateState(persisted: unknown, version: number): unknown {
   if (version < 4) s = toV4(s)
   if (version < 5) s = toV5(s)
   if (version < 6) s = toV6(s)
-  return version >= 6 ? persisted : s
+  if (version < 7) s = toV7(s)
+  return version >= 7 ? persisted : s
 }

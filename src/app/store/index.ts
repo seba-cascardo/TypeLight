@@ -42,6 +42,10 @@ export interface Settings {
   weeklyGoal: number
   /** The mascot says one line in Inicio. */
   mascot: boolean
+  /** Weekly process commitment outside the app ("escribo los mails sin mirar"). Empty = none. */
+  commitment: string
+  /** A beat at 90 % of the unit goal during practice lessons. */
+  metronome: boolean
 }
 
 /** The one-minute test typed "the old way", before TypeLight: the bar the new fingering has to beat. */
@@ -96,6 +100,8 @@ export interface SessionRecord {
   form?: FormAnswer
   /** How the dead keys went, when an accented character was involved. */
   dead?: DeadKeyStats
+  /** Longest run of characters without an error. */
+  cleanRun?: number
 }
 
 /** Finer samples a session can hand to the store beside the per-key ones. */
@@ -134,7 +140,10 @@ interface State {
   /** Rolling stats per in-word bigram and per word (skill model v2). */
   bigrams: BigramStats
   words: WordStats
+  /** Weekly commitment answers by ISO week (its Monday). */
+  commitments: Record<string, 'si' | 'no'>
   setSettings: (patch: Partial<Settings>) => void
+  answerCommitment: (week: string, answer: 'si' | 'no') => void
   /** Records the session and returns its timestamp, so it can be annotated afterwards. */
   recordSession: (rec: Omit<SessionRecord, 'at'>, samples?: Iterable<KeySample>, extra?: ExtraSamples) => string
   setSessionForm: (at: string, form: FormAnswer | null) => void
@@ -163,16 +172,33 @@ const initialProgress = () => ({
   lastWeeklySummaryWeek: null as string | null,
   bigrams: {} as BigramStats,
   words: {} as WordStats,
+  commitments: {} as Record<string, 'si' | 'no'>,
 })
 
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      settings: { name: '', layoutId: 'latam', sound: true, showHands: true, onboarded: false, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true },
+      settings: {
+        name: '',
+        layoutId: 'latam',
+        sound: true,
+        showHands: true,
+        onboarded: false,
+        theme: 'auto',
+        lastBackupAt: null,
+        anchor: '',
+        conversoSeen: false,
+        weeklyGoal: 5,
+        mascot: true,
+        commitment: '',
+        metronome: false,
+      },
       legacy: null,
       ...initialProgress(),
 
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+
+      answerCommitment: (week, answer) => set((s) => ({ commitments: { ...s.commitments, [week]: answer } })),
 
       recordSession: (rec, samples, extra) => {
         const at = new Date().toISOString()
@@ -247,7 +273,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'typelight.v1',
-      version: 6,
+      version: 7,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -279,6 +305,7 @@ export const PERSISTED_KEYS = [
   'lastWeeklySummaryWeek',
   'bigrams',
   'words',
+  'commitments',
 ] as const
 export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 

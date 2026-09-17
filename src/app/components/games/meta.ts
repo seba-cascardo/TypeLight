@@ -13,4 +13,5 @@ export const GAME_META: Record<GameId, GameMeta> = {
   rhythm: { title: 'Al compás', blurb: 'Ritmo: tocá cada tecla justo cuando entra en la zona.', glyph: '♪', variant: 'lav' },
   balloons: { title: 'Globos de palabras', blurb: 'Palabras enteras, de corrido, antes de que se escapen.', glyph: '○', variant: 'secondary' },
   race: { title: 'Carrera contra tu fantasma', blurb: 'Frases reales contra tu mejor Reto.', glyph: '⚑', variant: 'primary' },
+  sudden: { title: 'Muerte súbita', blurb: 'Texto real: el primer error termina. Puntaje = caracteres.', glyph: '⚡', variant: 'sun' },
 }

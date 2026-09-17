@@ -104,6 +104,13 @@ describe('store', () => {
     expect(s.sessions[0].dead).toEqual({ n: 2, latency: 400, missed: 1, loose: 0 })
   })
 
+  it('answerCommitment stores the week and resetProgress clears it', () => {
+    useStore.getState().answerCommitment('2026-09-14', 'si')
+    expect(useStore.getState().commitments).toEqual({ '2026-09-14': 'si' })
+    useStore.getState().resetProgress()
+    expect(useStore.getState().commitments).toEqual({})
+  })
+
   it('resetProgress clears the bigram and word tables', () => {
     useStore.setState({ bigrams: { ca: { latencyEma: 300, errorEma: 0, samples: 5 } }, words: { casa: { latencyEma: 300, errorEma: 0, samples: 2, lastSeen: 'x' } } })
     useStore.getState().resetProgress()

@@ -33,5 +33,7 @@ export function starsForGame(r: GameResult): Stars {
       return r.accuracy >= 0.97 && (r.detail.escaped ?? 0) === 0 ? 3 : r.accuracy >= 0.95 ? 2 : 1
     case 'race':
       return r.detail.won === 1 && r.accuracy >= 0.97 ? 3 : r.accuracy >= 0.95 ? 2 : 1
+    case 'sudden':
+      return r.score >= 120 ? 3 : r.score >= 60 ? 2 : 1
   }
 }

@@ -75,6 +75,16 @@ function view(r: GameResult): View {
         footnote: won ? 'El fantasma corre a tu mejor Reto de la semana: la próxima va más rápido.' : 'El fantasma corre a tu mejor Reto de la semana (o a la meta de la unidad).',
       }
     }
+    case 'sudden':
+      return {
+        headline: ['Terminado. Cada carácter limpio cuenta: mañana llegás más lejos.', 'Buena racha. Sesenta y pico sin errores no es poco.', 'Ciento veinte o más sin un error. Eso es precisión.'],
+        stats: [
+          { label: 'Caracteres', value: r.score, tone: 'enter' },
+          { label: 'Tiempo', value: `${Math.round(r.seconds)} s` },
+          { label: 'Mejor', value: r.detail.best ?? r.score, tone: (r.detail.best ?? 0) <= r.score ? 'enter' : 'ink' },
+        ],
+        footnote: (r.detail.best ?? 0) <= r.score ? 'Tu mejor marca hasta hoy. Tres estrellas con 120 caracteres seguidos.' : `Tu mejor marca: ${r.detail.best} caracteres. Tres estrellas con 120.`,
+      }
   }
 }
 

@@ -14,6 +14,15 @@ const result = (partial: Partial<GameResult>): GameResult => ({
   ...partial,
 })
 
+describe('sudden death stars', () => {
+  it('rewards characters before the first error', () => {
+    const r = (score: number) => ({ gameId: 'sudden' as const, score, hits: score, misses: 0, wrong: 1, bestCombo: score, seconds: 30, accuracy: 1, detail: {} })
+    expect(starsForGame(r(130))).toBe(3)
+    expect(starsForGame(r(60))).toBe(2)
+    expect(starsForGame(r(10))).toBe(1)
+  })
+})
+
 describe('starsForGame', () => {
   it('rain: by accuracy, one star without any catch', () => {
     expect(starsForGame(result({ hits: 0, accuracy: 0 }))).toBe(1)

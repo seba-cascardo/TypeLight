@@ -390,3 +390,14 @@ export function deadKeyStats(s: TypingState): DeadKeyStats | null {
   if (n + missed + loose === 0) return null
   return { n, latency: lat.length ? Math.round(lat.reduce((a, b) => a + b, 0) / lat.length) : null, missed, loose }
 }
+
+/** Longest run of consecutive correct attempts (Backspace neither counts nor breaks it). */
+export function cleanRun(s: TypingState): number {
+  let best = 0
+  let run = 0
+  for (const k of attempts(s)) {
+    run = k.correct ? run + 1 : 0
+    if (run > best) best = run
+  }
+  return best
+}
