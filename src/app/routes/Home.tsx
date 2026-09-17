@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
-import { dayKey, legacyBeaten, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
+import { dayKey, legacyBeaten, median, referenceByDay, referenceHeadline, streakAlive, weeklyAccuracy } from '@/engine/stats'
 import { GAME_META } from '../components/games/meta'
 import { Keycap } from '../components/Keycap'
 import { Check, Stars } from '../components/ui'
@@ -40,6 +40,7 @@ export function Home() {
   const alive = streakAlive(streak, dayKey())
   const points = referenceByDay(days)
   const reference = referenceHeadline(points)
+  const recentMedian = points.length ? median(points.slice(-7).map((p) => p.wpm)) : null
   const exercises = Object.values(days).reduce((a, d) => a + d.sessions, 0)
   const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
@@ -71,7 +72,7 @@ export function Home() {
             <div className="eyebrow mb-1">Hito</div>
             <p className="font-display text-xl font-extrabold">Superaste tu forma vieja.</p>
             <p className="text-ink-soft">
-              La mediana de tus Retos ya está en {reference?.value ?? legacy.wpm} PPM con los dedos correctos, contra {legacy.wpm} de antes.
+              La mediana de tus Retos ya está en {recentMedian ?? legacy.wpm} PPM con los dedos correctos, contra {legacy.wpm} de antes.
             </p>
           </div>
           <Keycap variant="ghost" size="sm" onClick={() => setLegacy({ ...legacy, beatenSeen: true })}>

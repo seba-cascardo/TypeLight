@@ -196,9 +196,11 @@ function PracticeRun({ kind }: { kind: Kind }) {
             </span>
             <span>Esc reinicia</span>
           </div>
-          <div className="card p-4 md:p-5">
-            <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} />
-          </div>
+          {kind !== 'antes' && (
+            <div className="card p-4 md:p-5">
+              <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} />
+            </div>
+          )}
         </div>
       )}
     </div>

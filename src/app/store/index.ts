@@ -144,7 +144,11 @@ export const useStore = create<State>()(
 
       setLegacy: (legacy) => set({ legacy }),
 
-      resetProgress: () => set({ ...initialProgress() }),
+      resetProgress: () =>
+        set((s) => ({
+          ...initialProgress(),
+          legacy: s.legacy ? { wpm: s.legacy.wpm, acc: s.legacy.acc, at: s.legacy.at } : null,
+        })),
     }),
     {
       name: 'typelight.v1',
