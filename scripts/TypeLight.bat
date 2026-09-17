@@ -22,12 +22,18 @@ if not exist node_modules (
 rem Reconstruye dist/ si falta o si master tiene un commit mas nuevo que el build.
 rem (Sin bloques entre parentesis: las variables que se setean adentro no se leen en el mismo bloque.)
 set "NEEDS_BUILD=0"
+set "COMMIT_TS="
+set "BUILD_TS="
 if not exist dist\index.html set "NEEDS_BUILD=1"
 if "%NEEDS_BUILD%"=="1" goto build
 git log -1 --format=%%ct master > "%TEMP%\typelight-commit.txt"
 set /p COMMIT_TS=<"%TEMP%\typelight-commit.txt"
+if not defined COMMIT_TS set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto build
 powershell -NoProfile -Command "[int]((Get-Item 'dist\index.html').LastWriteTimeUtc - [datetime]'1970-01-01').TotalSeconds" > "%TEMP%\typelight-build.txt"
 set /p BUILD_TS=<"%TEMP%\typelight-build.txt"
+if not defined BUILD_TS set "NEEDS_BUILD=1"
+if "%NEEDS_BUILD%"=="1" goto build
 if %BUILD_TS% LSS %COMMIT_TS% set "NEEDS_BUILD=1"
 :build
 if "%NEEDS_BUILD%"=="1" (
