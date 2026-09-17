@@ -35,14 +35,16 @@ export interface DayPoint {
   day: string
   wpm: number
   n: number
+  /** The weekly exam's speed, on the day it was taken. */
+  exam?: number
 }
 
-/** Reference sessions (Reto, Velocidad texts, race) folded to one point per local day: the median. Oldest first. */
+/** Reference sessions (Reto, Velocidad texts, race, exam) folded to one point per local day: the median. Oldest first. */
 export function referenceByDay(days: Days): DayPoint[] {
   return Object.entries(days)
     .filter(([, d]) => d.reference.length > 0)
     .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([day, d]) => ({ day, wpm: median(d.reference), n: d.reference.length }))
+    .map(([day, d]) => ({ day, wpm: median(d.reference), n: d.reference.length, ...(d.exam !== undefined && { exam: d.exam }) }))
 }
 
 /** True once the median of the last seven days with data (at least three) reaches the speed typed "the old way". */

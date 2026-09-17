@@ -57,6 +57,13 @@ describe('referenceByDay from days', () => {
       { day: '2026-09-12', wpm: 26, n: 3 },
     ])
   })
+
+  it('carries the weekly exam speed of the day when there is one', () => {
+    const days: Days = {
+      '2026-09-14': { seconds: 180, blocks: 1, learned: 8, mastered: 2, reference: [28], sessions: 1, exam: 28 },
+    }
+    expect(referenceByDay(days)).toEqual([{ day: '2026-09-14', wpm: 28, n: 1, exam: 28 }])
+  })
 })
 
 describe('legacyBeaten', () => {

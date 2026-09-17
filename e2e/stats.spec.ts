@@ -52,11 +52,49 @@ test('progreso: reference speed comes from Retos only; v1 state migrates', async
   await expect(page.getByText('Velocidad de referencia')).toBeVisible()
   await expect(page.getByText('30', { exact: false }).first()).toBeVisible()
 
-  // v1 → v3: Retos became reference sessions and the store gained `days`, with per-day reference speeds backfilled
+  // v1 → v4: Retos became reference sessions and the store gained `days`, with per-day reference speeds backfilled
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
-  expect(stored.version).toBe(3)
+  expect(stored.version).toBe(4)
   expect(stored.state.sessions.filter((x: { reference?: true }) => x.reference).length).toBe(3)
   expect(stored.state.days).toBeDefined()
   expect(stored.state.days[localDay(today)].reference).toEqual([30])
   await page.screenshot({ path: 'e2e/screens/stats-reference.png', fullPage: true })
+})
+
+test('progreso: the chart marks the day the Reto went blind and draws the weekly exam as a diamond', async ({ page }) => {
+  const today = at(0)
+  const yesterday = at(-1)
+  await page.goto('/')
+  await page.evaluate(
+    ([yesterday, today, yDay, tDay]) => {
+      const s = (kind: string, wpm: number, at: string, extra: Record<string, unknown> = {}) => ({ at, kind, wpm, acc: 0.98, chars: 200, errors: 4, seconds: 60, reference: true, ...extra })
+      localStorage.setItem(
+        'typelight.v1',
+        JSON.stringify({
+          state: {
+            settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: true },
+            lessons: {},
+            keys: {},
+            sessions: [s('challenge', 30, yesterday), s('exam', 28, today, { blind: true })],
+            streak: { count: 1, lastDay: tDay },
+            routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false },
+            days: {
+              [yDay]: { seconds: 60, blocks: 1, learned: 8, mastered: 2, reference: [30], sessions: 1 },
+              [tDay]: { seconds: 180, blocks: 1, learned: 8, mastered: 2, reference: [28], sessions: 1, exam: 28 },
+            },
+            legacy: null,
+            lastExamDay: tDay,
+            blindSince: tDay,
+          },
+          version: 4,
+        }),
+      )
+    },
+    [yesterday, today, localDay(yesterday), localDay(today)],
+  )
+  await page.goto('/estadisticas')
+  await expect(page.getByTestId('blind-mark')).toBeVisible()
+  await expect(page.locator('svg text', { hasText: 'sin ayuda' })).toBeVisible()
+  await expect(page.getByTestId('exam-point')).toHaveCount(1)
+  await expect(page.getByText('desde acá, sin ayuda')).toBeVisible()
 })

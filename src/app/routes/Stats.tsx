@@ -63,6 +63,7 @@ export function Stats() {
   const days = useStore((s) => s.days)
   const streak = useStore((s) => s.streak)
   const legacy = useStore((s) => s.legacy)
+  const blindSince = useStore((s) => s.blindSince)
   const { layout, learned, curriculum, goalWpm } = useProgress()
   const today = dayKey()
 
@@ -142,27 +143,30 @@ export function Stats() {
 
       <Card
         title="Velocidad de referencia"
-        sub="Solo los Retos de un minuto, los textos de la unidad Velocidad y las Carreras. Las lecciones, los drills y los otros juegos no mueven esta línea. Un punto por día (la mediana si hubo varios); los días sin Reto quedan vacíos."
+        sub="Solo los Retos de un minuto, el examen semanal, los textos de la unidad Velocidad y las Carreras. Las lecciones, los drills y los otros juegos no mueven esta línea. Un punto por día (la mediana si hubo varios); los días sin Reto quedan vacíos."
         className="mt-4"
       >
         {points.length === 0 ? (
           <p className="text-ink-soft">Tu primer Reto pone el primer punto.</p>
         ) : (
-          <ReferenceChart points={points} goal={goalWpm} marks={marks} today={today} legacy={legacy?.wpm} />
+          <ReferenceChart points={points} goal={goalWpm} marks={marks} today={today} legacy={legacy?.wpm} blindSince={blindSince ?? undefined} />
         )}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-ink-soft">
           <Swatch className="rounded-full bg-mod" label="Reto del día (mediana)" />
           <Swatch className="bg-mod opacity-50" label="tendencia (3 retos)" />
           <Swatch className="bg-sun-edge" label="meta de la unidad" />
           <Swatch className="bg-ink-mute" label="llegaron teclas nuevas" />
+          <Swatch className="rotate-45 border-2 border-esc-edge bg-keycap" label="examen semanal" />
+          {blindSince && <Swatch className="bg-ink" label="desde acá, sin ayuda" />}
           {legacy && <Swatch className="bg-ink-mute" label="tu velocidad de antes" />}
         </div>
         <details className="mt-3 text-sm text-ink-soft">
           <summary className="cursor-pointer font-bold text-ink">¿Por qué este número y no otro?</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Solo cuentan el Reto de un minuto, los textos de la unidad Velocidad y las Carreras: texto real, de corrido, contra reloj.</li>
+            <li>Solo cuentan el Reto de un minuto, el examen semanal, los textos de la unidad Velocidad y las Carreras: texto real, de corrido, contra reloj.</li>
             <li>Si hubo varios en un día, vale la mediana: un intento suelto, bueno o malo, no mueve la línea.</li>
-            <li>La precisión es al primer intento: cada tecla equivocada cuenta, aunque el ejercicio termine perfecto.</li>
+            <li>La precisión es al primer intento: cada tecla equivocada cuenta, aunque el ejercicio termine perfecto o lo repares.</li>
+            <li>Desde la marca «sin ayuda», el Reto se tipea sin teclado ni manos y con Backspace: la velocidad es la del texto correcto al final. El examen semanal es la misma medida sin Backspace.</li>
           </ul>
         </details>
       </Card>

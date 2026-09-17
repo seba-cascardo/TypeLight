@@ -8,6 +8,8 @@ interface Props {
   today: string
   /** The one-minute speed typed "the old way", if measured. */
   legacy?: number
+  /** Day the Reto went blind (no keyboard, hands or hint): the line's one discontinuity. */
+  blindSince?: string
   /** Days shown, ending today. */
   span?: number
 }
@@ -22,11 +24,11 @@ function dayLabel(day: string): string {
 }
 
 /** One dot per day with reference sessions, a faint trend, the unit goal and the days new keys arrived. */
-export function ReferenceChart({ points, goal, marks, today, legacy, span = 14 }: Props) {
+export function ReferenceChart({ points, goal, marks, today, legacy, blindSince, span = 14 }: Props) {
   const [hover, setHover] = useState<number | null>(null)
   const days = Array.from({ length: span }, (_, i) => shiftDay(today, i - (span - 1)))
   const shown = points.filter((p) => days.includes(p.day))
-  const top = Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => p.wpm)) * 1.15
+  const top = Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => Math.max(p.wpm, p.exam ?? 0))) * 1.15
   const x = (day: string) => PAD.l + (days.indexOf(day) / (span - 1)) * (W - PAD.l - PAD.r)
   const y = (wpm: number) => PAD.t + (1 - wpm / top) * (H - PAD.t - PAD.b)
   const trend = movingAverage(shown.map((p) => p.wpm))
@@ -72,6 +74,14 @@ export function ReferenceChart({ points, goal, marks, today, legacy, span = 14 }
               </text>
             </g>
           ))}
+        {blindSince && days.includes(blindSince) && (
+          <g data-testid="blind-mark">
+            <line x1={x(blindSince)} x2={x(blindSince)} y1={PAD.t - 8} y2={H - PAD.b} stroke="var(--color-ink)" strokeWidth="1.5" strokeDasharray="4 4" />
+            <text x={x(blindSince) + 5} y={H - PAD.b - 6} fontSize="11" fontWeight="700" fill="var(--color-ink)">
+              sin ayuda
+            </text>
+          </g>
+        )}
         {shown.length > 1 && (
           <polyline
             points={shown.map((p, i) => `${x(p.day)},${y(trend[i])}`).join(' ')}
@@ -99,6 +109,24 @@ export function ReferenceChart({ points, goal, marks, today, legacy, span = 14 }
             onBlur={() => setHover(null)}
           />
         ))}
+        {shown
+          .filter((p) => p.exam !== undefined)
+          .map((p) => {
+            const cx = x(p.day)
+            const cy = y(p.exam!)
+            return (
+              <polygon
+                key={`exam-${p.day}`}
+                data-testid="exam-point"
+                points={`${cx},${cy - 9} ${cx + 9},${cy} ${cx},${cy + 9} ${cx - 9},${cy}`}
+                fill="var(--color-keycap)"
+                stroke="var(--color-esc-edge)"
+                strokeWidth="2.5"
+              >
+                <title>Examen semanal · {p.exam} PPM</title>
+              </polygon>
+            )
+          })}
         <text x={x(last.day)} y={y(last.wpm) - 12} textAnchor="middle" fontSize="14" fontWeight="800" fontFamily="var(--font-display)" fill="var(--color-ink)">
           {last.wpm}
         </text>
