@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
 import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
@@ -23,15 +23,17 @@ function PlayRun({ gameId }: { gameId: GameId }) {
   const sessions = useStore((s) => s.sessions)
   const sound = useStore((s) => s.settings.sound)
   const recordSession = useStore((s) => s.recordSession)
+  const setSessionForm = useStore((s) => s.setSessionForm)
   const navigate = useNavigate()
   const [result, setResult] = useState<GameResult | null>(null)
+  const at = useRef<string | null>(null)
   const [round, setRound] = useState(0)
   const meta = GAME_META[gameId]
 
   const onFinish = useCallback(
     (r: GameResult) => {
       setResult(r)
-      recordSession(gameSession(r), r.typing?.samples)
+      at.current = recordSession(gameSession(r), r.typing?.samples)
     },
     [recordSession],
   )
@@ -64,6 +66,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
             setRound((n) => n + 1)
           }}
           backTo={{ to: '/', label: 'Volver al inicio' }}
+          onForm={(form) => at.current && setSessionForm(at.current, form)}
         />
       ) : (
         <Game

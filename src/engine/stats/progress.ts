@@ -11,6 +11,7 @@ export interface SessionLike {
   reference?: true
   rhythm?: number
   rollover?: number
+  form?: 'si' | 'medio' | 'no'
 }
 
 /** `day` ± n calendar days, as yyyy-mm-dd. */
@@ -246,6 +247,13 @@ export function constancy(days: Days, today: string): Constancy {
     }
   }
   return { fullOfLast7: full, minutesPerDay: active ? Math.round(seconds7 / active / 60) : 0, totalMinutes: Math.round(total / 60) }
+}
+
+/** Good form ("sí") among the last 10 answered self-checks; null when nothing was answered yet. */
+export function formHeadline(sessions: SessionLike[]): { good: number; answered: number } | null {
+  const answered = sessions.filter((s) => s.form !== undefined).slice(-10)
+  if (answered.length === 0) return null
+  return { good: answered.filter((s) => s.form === 'si').length, answered: answered.length }
 }
 
 /** Rollover share over the last 7 days, weighted by chars; null without a session that measured it. */

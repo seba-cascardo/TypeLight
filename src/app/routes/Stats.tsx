@@ -10,6 +10,7 @@ import {
   referenceByDay,
   referenceHeadline,
   fluidity,
+  formHeadline,
   snapshotBefore,
   streakAlive,
   unitMarks,
@@ -86,6 +87,7 @@ export function Stats() {
   const cells = calendar(days, today)
   const cons = constancy(days, today)
   const fluid = fluidity(sessions, today)
+  const form = formHeadline(sessions)
   const alive = streakAlive(streak, today)
 
   const heat = useMemo(() => {
@@ -123,7 +125,7 @@ export function Stats() {
     <div className="animate-rise">
       <PageTitle eyebrow="Progreso" title="Cómo vas avanzando." />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Tile
           id="reference"
           label="Velocidad de referencia"
@@ -148,6 +150,14 @@ export function Stats() {
           up={weekAgo !== null && counts.mastered > weekAgo.mastered}
         />
         <Tile id="constancy" label="Constancia" value={cons.fullOfLast7} unit="de 7 días" note={`racha de ${alive ? streak.count : 0} · ${cons.minutesPerDay} min por día`} />
+        <Tile
+          id="form"
+          label="Forma"
+          value={form ? form.good : '—'}
+          unit={form ? `de ${form.answered}` : undefined}
+          note={form ? 'con fila guía y dedos correctos, según vos' : 'respondé el chequeo al cerrar un Reto'}
+          up={form !== null && form.good === form.answered}
+        />
       </div>
 
       <Card

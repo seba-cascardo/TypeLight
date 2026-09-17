@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import type { Lesson } from '@/engine/curriculum'
 import type { GameResult } from '@/engine/games'
 import type { Stars as StarCount } from '@/engine/stats'
+import type { FormAnswer } from '../../store'
+import { FormCheck } from '../FormCheck'
 import { Keycap } from '../Keycap'
 import { Stars, Stat } from '../ui'
 
@@ -83,9 +85,11 @@ interface Props {
   nextLesson?: Lesson
   /** Where "back" goes when there is no next lesson (free play uses the home). */
   backTo?: { to: string; label: string }
+  /** The race asks for the form self-check; the answer goes to the recorded session. */
+  onForm?: (form: FormAnswer | null) => void
 }
 
-export function GameResults({ result, stars, onRetry, nextLesson, backTo = { to: '/ruta', label: 'Volver a la ruta' } }: Props) {
+export function GameResults({ result, stars, onRetry, nextLesson, backTo = { to: '/ruta', label: 'Volver a la ruta' }, onForm }: Props) {
   const v = view(result)
   return (
     <div className="card p-8 text-center">
@@ -100,6 +104,7 @@ export function GameResults({ result, stars, onRetry, nextLesson, backTo = { to:
         ))}
       </div>
       <p className="mt-4 text-sm text-ink-mute">{v.footnote}</p>
+      {onForm && result.gameId === 'race' && <FormCheck onAnswer={onForm} />}
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Keycap variant="ghost" onClick={onRetry}>
           Jugar de nuevo

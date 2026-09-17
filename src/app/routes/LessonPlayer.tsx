@@ -49,6 +49,7 @@ function Player({ lesson }: { lesson: Lesson }) {
   const sound = useStore((s) => s.settings.sound)
   const showHands = useStore((s) => s.settings.showHands)
   const recordSession = useStore((s) => s.recordSession)
+  const setSessionForm = useStore((s) => s.setSessionForm)
   const completeLesson = useStore((s) => s.completeLesson)
   const markRoutine = useStore((s) => s.markRoutine)
   const keyStats = useStore((s) => s.keys)
@@ -58,6 +59,7 @@ function Player({ lesson }: { lesson: Lesson }) {
 
   const [phase, setPhase] = useState<Phase>(lesson.kind === 'game' ? 'game' : lesson.intro.length ? 'intro' : 'exercise')
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
+  const gameAt = useRef<string | null>(null)
   const [card, setCard] = useState(0)
   const [texts, setTexts] = useState(() => generateTexts(lesson))
   const [step, setStep] = useState(0)
@@ -160,7 +162,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       const s = starsForGame(r)
       setGameResult(r)
       setStars(s)
-      recordSession(gameSession(r), r.typing?.samples)
+      gameAt.current = recordSession(gameSession(r), r.typing?.samples)
       completeLesson(lesson.id, s, 0, r.accuracy)
       markRoutine('lesson')
       setPhase('results')
@@ -289,7 +291,7 @@ function Player({ lesson }: { lesson: Lesson }) {
     return (
       <div className="animate-rise">
         {header}
-        <GameResults result={gameResult} stars={stars} onRetry={retry} nextLesson={nextLesson} />
+        <GameResults result={gameResult} stars={stars} onRetry={retry} nextLesson={nextLesson} onForm={(form) => gameAt.current && setSessionForm(gameAt.current, form)} />
       </div>
     )
   }

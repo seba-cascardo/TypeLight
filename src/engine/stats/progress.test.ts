@@ -7,6 +7,7 @@ import {
   mastery,
   dominance,
   fingerDominance,
+  formHeadline,
   masteryCounts,
   masteryMap,
   median,
@@ -200,6 +201,20 @@ describe('snapshots, calendar, constancy', () => {
 
   it('counts full routines and minutes over the last 7 days, total minutes overall', () => {
     expect(constancy(days, '2026-09-16')).toEqual({ fullOfLast7: 2, minutesPerDay: 11, totalMinutes: 37 })
+  })
+})
+
+describe('form headline', () => {
+  it('counts good form among the last 10 answered sessions, ignoring unanswered ones', () => {
+    const answered = (day: string, form: 'si' | 'medio' | 'no') => session(day, 10, { form })
+    const list = [
+      ...Array.from({ length: 12 }, (_, i) => answered(`2026-09-${String(i + 1).padStart(2, '0')}`, i < 2 ? 'no' : i % 2 ? 'si' : 'medio')),
+      session('2026-09-14', 10), // no answer
+    ]
+    // the last 10 answered are i = 2..11: 'si' for odd i → 5
+    expect(formHeadline(list)).toEqual({ good: 5, answered: 10 })
+    expect(formHeadline([session('2026-09-14', 10)])).toBeNull()
+    expect(formHeadline([answered('2026-09-14', 'medio')])).toEqual({ good: 0, answered: 1 })
   })
 })
 
