@@ -298,7 +298,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
       const dead = deadKeyStats(state)
       // A personal best is judged against everything recorded before this session.
       const previousBest = meta.reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
-      const record = m.wpm > previousBest
+      // The very first Reto is not a "record": there is nothing to beat yet.
+      const record = previousBest > 0 && m.wpm > previousBest
       const at = recordSession(
         {
           kind: meta.session!,
@@ -330,8 +331,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
   const remaining = meta.timed ? Math.max(0, Math.ceil((meta.timed - session.elapsedMs) / 1000)) : null
 
   const copy = async () => {
-    if (!r) return
-    const line = shareText({ day, wpm: r.wpm, accuracy: r.accuracy, goalWpm })
+    if (!result) return
+    const line = shareText({ day, wpm: result.m.wpm, accuracy: result.m.accuracy, goalWpm })
     try {
       await navigator.clipboard.writeText(line)
       setCopied('Copiado. Pegalo donde quieras.')
