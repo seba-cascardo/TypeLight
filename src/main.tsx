@@ -1,18 +1,14 @@
-import { StrictMode, useEffect } from 'react'
+import { StrictMode, useEffect, type ComponentType } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import './index.css'
 import { AppShell } from './app/components/AppShell'
 import { Home } from './app/routes/Home'
-import { LessonPlayer } from './app/routes/LessonPlayer'
-import { Path } from './app/routes/Path'
-import { Play } from './app/routes/Play'
-import { Practice } from './app/routes/Practice'
-import { Settings } from './app/routes/Settings'
-import { OwnText } from './app/routes/OwnText'
-import { Stats } from './app/routes/Stats'
 import { Welcome } from './app/routes/Welcome'
 import { useStore } from './app/store'
+
+// Every screen past Inicio loads on demand: the daily routine paints from a small first chunk.
+const lazy = <T extends Record<string, unknown>>(load: () => Promise<T>, name: keyof T) => async () => ({ Component: (await load())[name] as ComponentType })
 
 /** Mirrors the theme setting onto <html data-theme>; 'auto' follows the system. */
 function ThemeSync() {
@@ -42,13 +38,13 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/', element: <Home /> },
-          { path: '/ruta', element: <Path /> },
-          { path: '/leccion/:id', element: <LessonPlayer /> },
-          { path: '/practica/:kind', element: <Practice /> },
-          { path: '/jugar/:gameId', element: <Play /> },
-          { path: '/texto', element: <OwnText /> },
-          { path: '/estadisticas', element: <Stats /> },
-          { path: '/ajustes', element: <Settings /> },
+          { path: '/ruta', lazy: lazy(() => import('./app/routes/Path'), 'Path') },
+          { path: '/leccion/:id', lazy: lazy(() => import('./app/routes/LessonPlayer'), 'LessonPlayer') },
+          { path: '/practica/:kind', lazy: lazy(() => import('./app/routes/Practice'), 'Practice') },
+          { path: '/jugar/:gameId', lazy: lazy(() => import('./app/routes/Play'), 'Play') },
+          { path: '/texto', lazy: lazy(() => import('./app/routes/OwnText'), 'OwnText') },
+          { path: '/estadisticas', lazy: lazy(() => import('./app/routes/Stats'), 'Stats') },
+          { path: '/ajustes', lazy: lazy(() => import('./app/routes/Settings'), 'Settings') },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },
