@@ -19,5 +19,7 @@ export interface GameProps {
   patterns?: string[]
   /** Muerte súbita: best score so far, shown beside the live count. */
   best?: number
+  /** Al compás: fastest tempo the ramp may reach (the warm-up stays under the comfortable speed). */
+  maxWpm?: number
   onFinish: (r: GameResult) => void
 }

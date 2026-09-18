@@ -42,7 +42,8 @@ const FEEDBACK_BAR: Record<Feedback, string> = {
  * Al compás: a metronome at the unit's goal speed; keys slide into the hit zone and each press is
  * judged justo / bien / fuera. The round state lives in the engine; this component only draws it.
  */
-export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, durationMs = 45_000, onFinish }: GameProps) {
+export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, durationMs = 45_000, maxWpm, onFinish }: GameProps) {
+  const floorMs = maxWpm ? beatMs(maxWpm) : undefined
   const letters = useMemo(() => pickLetters(layout, pool), [layout, pool])
   const colorOf = useMemo(() => {
     const map: Record<string, string> = {}
@@ -58,7 +59,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const [phase, setPhase] = useState<'ready' | 'playing' | 'done'>('ready')
   const [, setFrame] = useState(0)
 
-  const round = useRef<Round>(startRound(beatMs(goalWpm)))
+  const round = useRef<Round>(startRound(beatMs(goalWpm), floorMs))
   const rng = useRef(makeRng())
   const startedAt = useRef(0)
   const nextTickAt = useRef(0)
@@ -172,7 +173,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   }, [phase, sound])
 
   const start = () => {
-    round.current = startRound(beatMs(goalWpm))
+    round.current = startRound(beatMs(goalWpm), floorMs)
     rng.current = makeRng()
     floating.current = []
     recent.current = []

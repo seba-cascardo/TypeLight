@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { makeRng } from '../generator'
 import { advance, beatMs, currentNote, judge, nextBeat, pickNote, press, schedule, startRound, tally } from './rhythm'
 
+describe('beat floor', () => {
+  it('a round with a floor never tightens past it', () => {
+    expect(nextBeat(1000, 1, 950)).toBe(950)
+    expect(nextBeat(1000, 1)).toBe(900)
+    expect(startRound(1000, 950).floor).toBe(950)
+  })
+})
+
 describe('beat and judgement', () => {
   it('derives the beat from the goal speed', () => {
     expect(beatMs(12)).toBe(1000)

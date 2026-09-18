@@ -192,6 +192,7 @@ function WarmupGame({ game }: { game: 'rhythm' | 'balloons' }) {
           layout={layout}
           pool={learned}
           goalWpm={game === 'rhythm' ? beatWpm : goalWpm}
+          maxWpm={game === 'rhythm' ? Math.round(beatWpm / 0.9) : undefined}
           weak={weakestKeys(keyStats, learned, 3, dayKey())}
           sound={sound}
           onFinish={onFinish}

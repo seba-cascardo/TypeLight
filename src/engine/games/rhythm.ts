@@ -17,9 +17,9 @@ export function judge(offsetMs: number): Judgement {
   return d <= JUST_MS ? 'justo' : d <= GOOD_MS ? 'bien' : 'fuera'
 }
 
-/** The beat tightens by 10 % after a stretch with at least 80 % of its notes on time. */
-export function nextBeat(beat: number, onTime: number): number {
-  return onTime >= 0.8 ? Math.max(MIN_BEAT_MS, Math.round(beat * 0.9)) : beat
+/** The beat tightens by 10 % after a stretch with at least 80 % of its notes on time, never past `floorMs` (the fastest allowed beat). */
+export function nextBeat(beat: number, onTime: number, floorMs = MIN_BEAT_MS): number {
+  return onTime >= 0.8 ? Math.max(floorMs, Math.round(beat * 0.9)) : beat
 }
 
 /** Next note: never the previous one; half the time one of the weak keys when there are any. */
@@ -45,6 +45,8 @@ export interface Note {
 export interface Round {
   notes: Note[]
   beat: number
+  /** Fastest beat this round may reach (the warm-up stays under the comfortable speed). */
+  floor: number
   /** Fastest beat reached, ms. */
   minBeat: number
   wrong: number
@@ -60,8 +62,8 @@ export interface Round {
   stretchOnTime: number
 }
 
-export function startRound(beat: number): Round {
-  return { notes: [], beat, minBeat: beat, wrong: 0, combo: 0, bestCombo: 0, score: 0, nextId: 1, nextAt: beat * 2, stretchStart: 0, stretchJudged: 0, stretchOnTime: 0 }
+export function startRound(beat: number, floor = MIN_BEAT_MS): Round {
+  return { notes: [], beat, floor, minBeat: beat, wrong: 0, combo: 0, bestCombo: 0, score: 0, nextId: 1, nextAt: beat * 2, stretchStart: 0, stretchJudged: 0, stretchOnTime: 0 }
 }
 
 /** Schedule notes up to `now + lookaheadMs`, one per beat. Returns the same round when nothing is due. */
@@ -126,7 +128,7 @@ export function advance(r: Round, now: number): { round: Round; expired: Note[] 
   let next: Round = { ...r, notes, combo: expired.length ? 0 : r.combo, stretchJudged: r.stretchJudged + expired.length }
   if (now - r.stretchStart >= STRETCH_MS) {
     const ratio = next.stretchJudged ? next.stretchOnTime / next.stretchJudged : 0
-    const beat = nextBeat(r.beat, ratio)
+    const beat = nextBeat(r.beat, ratio, r.floor)
     next = { ...next, beat, minBeat: Math.min(next.minBeat, beat), stretchStart: now, stretchJudged: 0, stretchOnTime: 0 }
   }
   return { round: next, expired }
