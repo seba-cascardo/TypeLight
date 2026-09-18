@@ -2,7 +2,7 @@
 
 Fecha 2026-09-18 · sesión nocturna: decisiones del agente sobre el roadmap aprobado (`docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 5, puntos 29–34). Los puntos 35 (modo lectura, L) y 36 (numérico y símbolos de código, M) quedan en el backlog: piden corpus y unidades nuevas que no entran en una sesión nocturna y conviene que Seba decida si los quiere.
 
-**Estado:** en implementación (rama `ola-5`).
+**Estado:** implementado completo (rama `ola-5`, mergeada fast-forward a `master` el 2026-09-18) salvo los puntos 35 y 36, que quedan en el backlog. Desvíos: el texto propio exige ≥ 10 caracteres para arrancar; las casillas del resultado compartible se llenan por `floor` (las cinco solo al llegar a la meta); «Otra vez» en el Reto reinicia explícitamente la sesión (el texto del día no cambia).
 
 ## 1. Texto propio (punto 29)
 
