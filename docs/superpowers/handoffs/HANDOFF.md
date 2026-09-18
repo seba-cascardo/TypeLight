@@ -1,10 +1,12 @@
-# Handoff — TypeLight: Olas 2 a 5 cerradas; sesión nocturna en curso
+# Handoff — TypeLight: Olas 2 a 5 cerradas y pasada de calidad hecha; sesión nocturna
 
-Fecha 2026-09-18 · rama `master` · preparado sobre el merge ff de `ola-5`
+Fecha 2026-09-18 · rama `master` · preparado sobre el merge ff de `calidad`
 
 ## Alcance
 
-**Sí:** la **Ola 5 · Extras** (puntos 29–34), mergeada ff a `master` después de la 4: **texto propio** (`/texto`: pegá y tipeá en modo texto, sin referencia), **compromiso semanal** (Ajustes → la tarjeta «Tu semana» pregunta Sí/No → «N de M semanas» en Progreso), **muerte súbita** (juego en «Jugar»: el primer error termina, puntaje = caracteres) y **racha de precisión** (`cleanRun` por sesión → Récords), **fantasma «vos hace 30 días»** en la Carrera, **Reto del día con semilla** (el mismo texto todo el día) y **«Copiar resultado»** (línea con casillas), **metrónomo opcional** en las lecciones `practice` (90 % de la meta). Store **v7**. Los puntos 35 (modo lectura) y 36 (numérico/símbolos de código) quedan en el backlog para que Seba decida. Spec: `docs/superpowers/specs/2026-09-18-ola-5-extras-design.md`. Verificación antes del merge: `tsc` limpio · lint 4 advertencias previas · 210 unitarios en 30 archivos · 33 e2e · build OK.
+**Sí:** la **pasada de calidad** (rama `calidad`, mergeada ff): rutas con carga diferida (`lazy` de react-router en `src/main.tsx`; chunk principal 684 → 421 KB, sin advertencia de Vite), Al compás como Calentamiento con techo de tempo (`maxWpm`, no pasa la velocidad cómoda), sin chip de récord en el primer Reto, recorrido en el navegador de Bienvenida/Inicio/Ruta/Progreso/Ajustes/Lección sin errores de consola nuevos. Verificación: 211 unitarios · 33 e2e · build OK.
+
+También la **Ola 5 · Extras** (puntos 29–34), mergeada ff a `master` después de la 4: **texto propio** (`/texto`: pegá y tipeá en modo texto, sin referencia), **compromiso semanal** (Ajustes → la tarjeta «Tu semana» pregunta Sí/No → «N de M semanas» en Progreso), **muerte súbita** (juego en «Jugar»: el primer error termina, puntaje = caracteres) y **racha de precisión** (`cleanRun` por sesión → Récords), **fantasma «vos hace 30 días»** en la Carrera, **Reto del día con semilla** (el mismo texto todo el día) y **«Copiar resultado»** (línea con casillas), **metrónomo opcional** en las lecciones `practice` (90 % de la meta). Store **v7**. Los puntos 35 (modo lectura) y 36 (numérico/símbolos de código) quedan en el backlog para que Seba decida. Spec: `docs/superpowers/specs/2026-09-18-ola-5-extras-design.md`. Verificación antes del merge: `tsc` limpio · lint 4 advertencias previas · 210 unitarios en 30 archivos · 33 e2e · build OK.
 
 También la **Ola 4 · Modelo de habilidad v2 completa** (puntos 22–27), mergeada ff a `master` después de la 3: **EMA ponderada por muestras** (α = intentos/(muestras+intentos), piso 0.05, tope 0.5) con **vida media de olvido** por tecla (3..30 días) y **dominio sostenido** (nivel 3 exige dos días distintos; decae si no la ves en 2× la vida media); **bigramas** con las cuatro clases de Dhakal (alternancia / misma mano / mismo dedo / letra doble) en la tarjeta «Transiciones» de Progreso y en el Repaso (palabras con el bigrama débil); **palabras problemáticas** (tabla con tope 400; «Se te resistieron … Practicar estas» tras el Reto/examen → `/practica/palabras?w=…`; tarjeta en Progreso); **cualidades de la debilidad** («Hoy pesa: mano derecha y mismo dedo» en Repaso y Progreso); **predicción** hacia la meta de la unidad bajo el chart (regresión, R² ≥ 0.5); **tecla muerta** (`SessionRecord.dead`: latencia con tilde vs. sin, tildes olvidadas y sueltas). Store **v6**. Spec: `docs/superpowers/specs/2026-09-18-ola-4-habilidad-v2-design.md`; plan: `docs/superpowers/plans/2026-09-18-ola-4-habilidad-v2.md`. Verificación antes del merge: `tsc` limpio · lint 4 advertencias previas · 202 unitarios en 27 archivos · 28 e2e · build OK; mirado en el navegador (Progreso con Transiciones, Palabras, predicción).
 
@@ -20,7 +22,7 @@ Verificación corrida sobre la rama antes del merge: `npx tsc -b` limpio · `npm
 
 ## Arrancá acá
 
-**Primera acción:** si Seba está presente, preguntarle si probó las Olas 2 a 5 en `:5173` (el `.bat` reconstruye solo al abrirlo) y si algo no le cerró (Reto con Backspace y «Copiar resultado», examen, manos, racha/comodines, mascota, resumen semanal, Transiciones, palabras que se resistieron, predicción, texto propio, muerte súbita, metrónomo); si trae feedback, arreglarlo primero. Si no hay nadie (sesión nocturna), sigue la **pasada de calidad** (`docs/backlog.md` → Pendientes): copy y consistencia de las pantallas nuevas, accesibilidad, `React.lazy` por ruta para el bundle, y revisión de bugs con uso real. Los puntos 35 y 36 del reporte esperan la decisión de Seba. Las decisiones de diseño de las Olas 3, 4 y 5 (tabla de abajo) las tomó el agente: revisarlas con Seba cuando vuelva.
+**Primera acción:** si Seba está presente, preguntarle si probó las Olas 2 a 5 en `:5173` (el `.bat` reconstruye solo al abrirlo) y si algo no le cerró (Reto con Backspace y «Copiar resultado», examen, manos, racha/comodines, mascota, resumen semanal, Transiciones, palabras que se resistieron, predicción, texto propio, muerte súbita, metrónomo); si trae feedback, arreglarlo primero. Si no hay nadie (sesión nocturna), **no queda trabajo autónomo en el backlog**: lo que sigue (revisión con Seba de las Olas 2–5, modo lectura, numérico/símbolos de código) necesita a Seba. Con él delante: pedirle que pruebe la rutina completa en `:5173` y traiga feedback concreto. Las decisiones de diseño de las Olas 3, 4 y 5 (tabla de abajo) las tomó el agente: revisarlas con Seba cuando vuelva.
 
 Verificá con: `npm test` (210 unitarios) · `npm run e2e` (33 Playwright, arranca su propio dev server en :5174) · `npm run build`. Lint: `npm run lint` tiene 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`): no sumar ninguna.
 
@@ -40,7 +42,7 @@ Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho. Respond
 
 ## Estado
 
-`master` = `ola-5` mergeada ff (último commit: docs de cierre de la Ola 5). Sin commitear: nada. Fuera de git: `dist/` construido desde la punta de `ola-5` (= `master`), sin `dist\.commit` (el `.bat` reconstruye la próxima vez); capturas en `e2e/screens/` (gitignored).
+`master` = `calidad` mergeada ff (último commit: docs de cierre de la pasada de calidad). Sin commitear: nada. Fuera de git: `dist/` construido desde la punta de `calidad` (= `master`, con los chunks lazy), sin `dist\.commit` (el `.bat` reconstruye la próxima vez); capturas en `e2e/screens/` (gitignored).
 
 ## Descartado y confirmado
 
