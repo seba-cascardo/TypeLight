@@ -21,6 +21,7 @@ describe('mascot line', () => {
     expect(returnLine({ ...base, gap: null })).toBeNull()
     expect(returnLine({ ...base, gap: 2 })).toBe('Ayer no practicaste. No pasa nada: hoy cuenta igual.')
     expect(returnLine({ ...base, gap: 3, alive: true, freezes: 1 })).toBe('Volvés después de 3 días. Un comodín cubre el hueco: hoy cuenta igual.')
+    expect(returnLine({ ...base, gap: 4, alive: true, freezes: 2 })).toBe('Volvés después de 4 días. Dos comodines cubren el hueco: hoy cuenta igual.')
     expect(returnLine({ ...base, gap: 5, alive: false, activeDays: 12 })).toBe('Volvés después de 5 días. La racha vuelve a empezar hoy; tus 12 días activos no se borran.')
   })
 })

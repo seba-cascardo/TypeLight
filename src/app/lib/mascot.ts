@@ -23,7 +23,11 @@ export interface MascotContext {
 export function returnLine(ctx: MascotContext): string | null {
   if (ctx.gap === null || ctx.gap < 2) return null
   if (ctx.gap === 2) return 'Ayer no practicaste. No pasa nada: hoy cuenta igual.'
-  if (ctx.alive) return `Volvés después de ${ctx.gap} días. Un comodín cubre el hueco: hoy cuenta igual.`
+  if (ctx.alive) {
+    // A gap of N days needs N - 2 freezes (one missed day is always forgiven); at most two exist.
+    const cover = ctx.gap - 2 >= 2 ? 'Dos comodines cubren el hueco' : 'Un comodín cubre el hueco'
+    return `Volvés después de ${ctx.gap} días. ${cover}: hoy cuenta igual.`
+  }
   return `Volvés después de ${ctx.gap} días. La racha vuelve a empezar hoy; tus ${ctx.activeDays} días activos no se borran.`
 }
 

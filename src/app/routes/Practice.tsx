@@ -373,7 +373,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
             <ul className="mt-1.5 grid gap-0.5 text-xs font-semibold text-ink-mute">
               {weak.map((k) => (
                 <li key={k}>
-                  <span className="font-extrabold text-ink">{k}</span> · {keyReason(keyStats[k], dayKey())}
+                  <span className="font-extrabold text-ink">{k}</span> · {keyReason(keyStats[k], dayKey(), goalWpm)}
                 </li>
               ))}
             </ul>
