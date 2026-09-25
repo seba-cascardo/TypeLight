@@ -107,7 +107,7 @@ export function Stats() {
   const fluid = fluidity(sessions, today)
   const form = formHeadline(sessions)
   const best = useMemo(() => records(days, sessions), [days, sessions])
-  const trend = forecast(points, goalWpm, today)
+  const trend = forecast(points, goalWpm, today, blindSince ?? undefined)
   const classes = useMemo(() => bigramClasses(bigrams, layout), [bigrams, layout])
   const slowBigrams = useMemo(() => weakestBigrams(bigrams, poolOf(learned), 3), [bigrams, learned])
   const qualities = useMemo(() => weaknessQualities(keys, bigrams, layout, learned), [keys, bigrams, layout, learned])

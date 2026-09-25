@@ -97,6 +97,8 @@ test('progreso: the chart marks the day the Reto went blind and draws the weekly
   await expect(page.locator('svg text', { hasText: 'sin ayuda' })).toBeVisible()
   await expect(page.getByTestId('exam-point')).toHaveCount(1)
   await expect(page.getByText('desde acá, sin ayuda')).toBeVisible()
+  // one point on each side of the mark: the trend does not bridge assisted and blind days
+  await expect(page.getByTestId('trend')).toHaveCount(0)
 })
 
 test('progreso: finger dominance map and fluidity', async ({ page }) => {

@@ -13,7 +13,7 @@ import { TypingArea } from '../components/TypingArea'
 import { Stars, Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
-import { gameSession } from '../lib/gameSession'
+import { gameExtra, gameSession } from '../lib/gameSession'
 import { metronome as metronomeTick } from '../lib/sound'
 import { handsOpacityFor } from '../lib/fingers'
 import { useStore } from '../store'
@@ -62,6 +62,8 @@ function Player({ lesson }: { lesson: Lesson }) {
 
   const [phase, setPhase] = useState<Phase>(lesson.kind === 'game' ? 'game' : lesson.intro.length ? 'intro' : 'exercise')
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
+  // After a race, Enter waits for the form self-check (answered or skipped), as after the Reto and the exam.
+  const [formDone, setFormDone] = useState(false)
   const gameAt = useRef<string | null>(null)
   const [card, setCard] = useState(0)
   const [texts, setTexts] = useState(() => generateTexts(lesson))
@@ -144,7 +146,7 @@ function Player({ lesson }: { lesson: Lesson }) {
   // Enter advances: between exercises, and from the results to the next lesson.
   useEffect(() => {
     const advanceExercise = phase === 'exercise' && stepDone
-    const advanceLesson = phase === 'results'
+    const advanceLesson = phase === 'results' && (gameResult?.gameId !== 'race' || formDone)
     if (!advanceExercise && !advanceLesson) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return
@@ -154,7 +156,7 @@ function Player({ lesson }: { lesson: Lesson }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, stepDone, nextStep, navigate, nextLesson])
+  }, [phase, stepDone, nextStep, navigate, nextLesson, gameResult, formDone])
 
   // A tip is reading, not practice: it completes but does not fill the routine's Lección card.
   const completeTip = () => {
@@ -168,7 +170,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       const s = starsForGame(r)
       setGameResult(r)
       setStars(s)
-      gameAt.current = recordSession(gameSession(r), r.typing?.samples)
+      gameAt.current = recordSession(gameSession(r), r.typing?.samples, gameExtra(r))
       completeLesson(lesson.id, s, 0, r.accuracy)
       markRoutine('lesson')
       setPhase('results')
@@ -179,6 +181,7 @@ function Player({ lesson }: { lesson: Lesson }) {
   const retry = () => {
     if (lesson.kind === 'game') {
       setGameResult(null)
+      setFormDone(false)
       setPhase('game')
       return
     }
@@ -298,7 +301,11 @@ function Player({ lesson }: { lesson: Lesson }) {
     return (
       <div className="animate-rise">
         {header}
-        <GameResults result={gameResult} stars={stars} onRetry={retry} nextLesson={nextLesson} onForm={(form) => gameAt.current && setSessionForm(gameAt.current, form)} />
+        <GameResults result={gameResult} stars={stars} onRetry={retry} nextLesson={nextLesson} onForm={(form) => {
+            if (gameAt.current) setSessionForm(gameAt.current, form)
+            setFormDone(true)
+          }}
+        />
       </div>
     )
   }

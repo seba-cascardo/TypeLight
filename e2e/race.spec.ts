@@ -40,5 +40,16 @@ test('race game: beat the ghost, record a reference session', async ({ page }) =
   const last = state.sessions[state.sessions.length - 1]
   expect(last).toMatchObject({ kind: 'game', gameId: 'race', reference: true })
   expect(last.wpm).toBeGreaterThan(25)
+  // the race feeds the skill model like a Reto: bigrams and words
+  expect(Object.keys(state.bigrams ?? {}).length).toBeGreaterThan(0)
+  expect(Object.keys(state.words ?? {}).length).toBeGreaterThan(0)
   await page.screenshot({ path: 'e2e/screens/race-results.png' })
+  // Enter waits for the form self-check, as after the Reto and the exam
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('Juego terminado')).toBeVisible()
+  await expect(page.getByTestId('form-check')).toHaveAttribute('data-answer', 'pending')
+  await page.keyboard.press('1')
+  await expect(page.getByTestId('form-check')).toHaveAttribute('data-answer', 'si')
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('Juego terminado')).toHaveCount(0)
 })

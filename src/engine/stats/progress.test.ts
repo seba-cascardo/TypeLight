@@ -12,6 +12,7 @@ import {
   masteryMap,
   median,
   movingAverage,
+  trendSegments,
   referenceByDay,
   referenceHeadline,
   fluidity,
@@ -98,6 +99,22 @@ describe('referenceHeadline', () => {
 
   it('moving average uses partial windows at the start', () => {
     expect(movingAverage([10, 20, 30, 40])).toEqual([10, 15, 20, 30])
+  })
+
+  it('the trend restarts at the blind mark instead of averaging across it', () => {
+    const p = (day: string, wpm: number) => ({ day, wpm, n: 1 })
+    const pts = [p('2026-09-10', 30), p('2026-09-11', 40), p('2026-09-12', 20), p('2026-09-13', 30)]
+    expect(trendSegments(pts)).toEqual([[
+      { day: '2026-09-10', value: 30 }, { day: '2026-09-11', value: 35 }, { day: '2026-09-12', value: 30 }, { day: '2026-09-13', value: 30 },
+    ]])
+    expect(trendSegments(pts, '2026-09-12')).toEqual([
+      [{ day: '2026-09-10', value: 30 }, { day: '2026-09-11', value: 35 }],
+      [{ day: '2026-09-12', value: 20 }, { day: '2026-09-13', value: 25 }],
+    ])
+    // a mark before or after every point leaves one segment
+    expect(trendSegments(pts, '2026-09-01')).toHaveLength(1)
+    expect(trendSegments(pts, '2026-09-30')).toHaveLength(1)
+    expect(trendSegments([], '2026-09-12')).toEqual([])
   })
 })
 

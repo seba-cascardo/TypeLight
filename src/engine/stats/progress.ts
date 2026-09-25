@@ -82,6 +82,22 @@ export function movingAverage(values: number[], window = 3): number[] {
   })
 }
 
+/**
+ * The chart's trend line, restarted at `breakDay` (the day the Reto went blind): assisted and blind speeds
+ * are different scales, so one average across the mark would draw a slide that never happened.
+ */
+export function trendSegments(points: readonly DayPoint[], breakDay?: string): { day: string; value: number }[][] {
+  const groups: DayPoint[][] = breakDay
+    ? [points.filter((p) => p.day < breakDay), points.filter((p) => p.day >= breakDay)]
+    : [[...points]]
+  return groups
+    .filter((g) => g.length > 0)
+    .map((g) => {
+      const avg = movingAverage(g.map((p) => p.wpm))
+      return g.map((p, i) => ({ day: p.day, value: avg[i] }))
+    })
+}
+
 export interface UnitMark {
   day: string
   added: number

@@ -1,6 +1,6 @@
 import type { GameId } from '../curriculum/types'
 import type { Stars } from '../stats'
-import type { KeySample } from '../typing'
+import type { BigramSample, KeySample, WordSample } from '../typing'
 
 /** What every game reports when the round ends. `detail` carries the game's own numbers. */
 export interface GameResult {
@@ -18,7 +18,7 @@ export interface GameResult {
   accuracy: number
   detail: Record<string, number>
   /** Games played through the typing engine (Carrera) also report what a lesson would. */
-  typing?: { wpm: number; rhythm?: number; rollover?: number; samples: KeySample[] }
+  typing?: { wpm: number; rhythm?: number; rollover?: number; samples: KeySample[]; bigrams?: BigramSample[]; words?: WordSample[] }
 }
 
 export function starsForGame(r: GameResult): Stars {

@@ -126,7 +126,7 @@ export function Home() {
   const routine = useRoutine()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const { curriculum, next, completed, learned } = useProgress()
-  const game = warmupGame(dayOfYear(), learned)
+  const game = warmupGame(dayOfYear(), learned, next?.game)
   const blocks = BLOCKS.map((b) => (b.id === 'challenge' && examToday ? EXAM_BLOCK : b.id === 'warmup' && game ? GAME_BLOCK[game] : b))
 
   const today = dayKey()
@@ -135,8 +135,9 @@ export function Home() {
   const alive = streakAlive(streak, today)
   const weekDays = weekActiveDays(days, today)
   const summary = weeklySummary(days, sessions, today, weeklyGoal)
-  const showSummary = summary !== null && summary.week !== lastWeeklySummaryWeek
   const milestone = milestoneReached(streak.activeDays, milestonesSeen)
+  // One closable card at a time: a new milestone goes first, the weekly summary waits until it is closed.
+  const showSummary = summary !== null && summary.week !== lastWeeklySummaryWeek && milestone === null
   const best = records(days, sessions)
   const mascotCtx: MascotContext = {
     recordToday: best.bestReference?.day === today && (days[today]?.reference.length ?? 0) > 0,

@@ -7,7 +7,7 @@ import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
 import { GAME_META } from '../components/games/meta'
 import { useProgress } from '../hooks/useCurriculum'
-import { gameSession } from '../lib/gameSession'
+import { gameExtra, gameSession } from '../lib/gameSession'
 import { useStore } from '../store'
 
 export function Play() {
@@ -29,18 +29,20 @@ function PlayRun({ gameId }: { gameId: GameId }) {
   const [result, setResult] = useState<GameResult | null>(null)
   const at = useRef<string | null>(null)
   const [round, setRound] = useState(0)
+  // After a race, Enter waits for the form self-check (answered or skipped), as after the Reto and the exam.
+  const [formDone, setFormDone] = useState(false)
   const meta = GAME_META[gameId]
 
   const onFinish = useCallback(
     (r: GameResult) => {
       setResult(r)
-      at.current = recordSession(gameSession(r), r.typing?.samples)
+      at.current = recordSession(gameSession(r), r.typing?.samples, gameExtra(r))
     },
     [recordSession],
   )
 
   useEffect(() => {
-    if (!result) return
+    if (!result || (result.gameId === 'race' && !formDone)) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault()
@@ -49,7 +51,7 @@ function PlayRun({ gameId }: { gameId: GameId }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [result, navigate])
+  }, [result, formDone, navigate])
 
   return (
     <div className="animate-rise">
@@ -64,10 +66,14 @@ function PlayRun({ gameId }: { gameId: GameId }) {
           stars={starsForGame(result)}
           onRetry={() => {
             setResult(null)
+            setFormDone(false)
             setRound((n) => n + 1)
           }}
           backTo={{ to: '/', label: 'Volver al inicio' }}
-          onForm={(form) => at.current && setSessionForm(at.current, form)}
+          onForm={(form) => {
+            if (at.current) setSessionForm(at.current, form)
+            setFormDone(true)
+          }}
         />
       ) : (
         <Game

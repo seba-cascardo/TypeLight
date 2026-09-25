@@ -180,7 +180,8 @@ test('one day in three the warm-up card is a game and playing it fills the warm-
   await page.clock.setFixedTime(new Date(2026, 0, 9, 12, 0, 0))
   await page.goto('/')
   await seed(page, {
-    lessons: Object.fromEntries(['guia-tip-intro', 'guia-66-6a-keys', 'guia-space', 'guia-64-6b-keys', 'guia-unit-review'].map((id) => [id, { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }])),
+    // The row's Al compás lesson is done too: the warm-up never repeats the game the next lesson is.
+    lessons: Object.fromEntries(['guia-tip-intro', 'guia-66-6a-keys', 'guia-space', 'guia-64-6b-keys', 'guia-unit-review', 'guia-juego-fila-guia'].map((id) => [id, { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }])),
   })
   await page.goto('/')
   const card = page.getByTestId('routine-warmup')

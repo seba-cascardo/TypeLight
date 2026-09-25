@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRng, poolOf } from '@/engine/generator'
 import { ghostPos, raceOutcome, raceText } from '@/engine/games'
 import { newRollover, rolloverRatio } from '@/engine/stats'
-import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
+import { bigramSamples, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { TypingArea } from '../TypingArea'
 import { useTypingSession } from '../../hooks/useTypingSession'
 import { Mascot } from './Mascot'
@@ -42,7 +42,7 @@ export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWp
         seconds: m.seconds,
         accuracy: m.accuracy,
         detail: { won: outcome.won ? 1 : 0, marginSeconds: outcome.marginSeconds, wpm: m.wpm, ghostWpm },
-        typing: { wpm: m.wpm, rhythm: rhythm(state), rollover: rolloverRatio(rollover.current), samples: [...keySamples(state).values()] },
+        typing: { wpm: m.wpm, rhythm: rhythm(state), rollover: rolloverRatio(rollover.current), samples: [...keySamples(state).values()], bigrams: [...bigramSamples(state).values()], words: [...wordSamples(state).values()] },
       })
     },
     [ghostWpm, length, onFinish],

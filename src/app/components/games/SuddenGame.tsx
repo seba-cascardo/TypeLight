@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { challengeText, makeRng, poolOf } from '@/engine/generator'
-import { keySamples, metrics, rhythm, type TypingState } from '@/engine/typing'
+import { bigramSamples, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { TypingArea } from '../TypingArea'
 import { useTypingSession } from '../../hooks/useTypingSession'
 import type { GameProps } from './types'
@@ -29,7 +29,7 @@ export function SuddenGame({ pool, sound = true, best = 0, onFinish }: GameProps
         seconds: m.seconds,
         accuracy: score + (byError ? 1 : 0) > 0 ? score / (score + (byError ? 1 : 0)) : 1,
         detail: { best: Math.max(best, score), byError: byError ? 1 : 0 },
-        typing: { wpm: m.wpm, rhythm: rhythm(state), samples: [...keySamples(state).values()] },
+        typing: { wpm: m.wpm, rhythm: rhythm(state), samples: [...keySamples(state).values()], bigrams: [...bigramSamples(state).values()], words: [...wordSamples(state).values()] },
       })
     },
     [best, onFinish],

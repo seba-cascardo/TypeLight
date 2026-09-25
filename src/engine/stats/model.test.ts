@@ -98,4 +98,12 @@ describe('forecast', () => {
     expect(forecast(points([20, 21, 22]), 40, '2026-09-03')).toBeNull()
     expect(forecast(points([30, 29, 28, 27, 26, 25, 24, 23]), 40, '2026-09-08')).toBeNull()
   })
+  it('only reads the points since the blind mark: the assisted days before it are another scale', () => {
+    // assisted 40s, then blind from day 5 climbing from 20: across the mark the slope is flat or negative
+    const pts = points([40, 41, 42, 43, 20, 21, 22, 23, 24, 25, 26, 27])
+    expect(forecast(pts, 40, '2026-09-12')).toBeNull()
+    const f = forecast(pts, 40, '2026-09-12', '2026-09-05')
+    expect(f).toMatchObject({ reached: false, r2: 1 })
+    expect(f && 'daysToGoal' in f ? f.daysToGoal : null).toBe(13)
+  })
 })

@@ -9,10 +9,11 @@ export const FORECAST_MAX_DAYS = 365
 
 /**
  * Linear fit of the last 30 reference points (calendar day → PPM), like keybr's estimate: only spoken
- * when the trend is clear (R² ≥ 0.5) and upward. Days are counted from `today`.
+ * when the trend is clear (R² ≥ 0.5) and upward. Days are counted from `today`. With `since` (the day the
+ * Reto went blind), only the points from that day on: the assisted ones before it are another scale.
  */
-export function forecast(points: DayPoint[], goal: number, today: string): Forecast | null {
-  const recent = points.slice(-30)
+export function forecast(points: DayPoint[], goal: number, today: string, since?: string): Forecast | null {
+  const recent = (since ? points.filter((p) => p.day >= since) : points).slice(-30)
   if (recent.length === 0) return null
   if (recent[recent.length - 1].wpm >= goal) return { reached: true }
   if (recent.length < FORECAST_MIN_POINTS) return null

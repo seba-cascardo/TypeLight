@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { movingAverage, shiftDay, type DayPoint, type UnitMark } from '@/engine/stats'
+import { shiftDay, trendSegments, type DayPoint, type UnitMark } from '@/engine/stats'
 
 interface Props {
   points: DayPoint[]
@@ -31,7 +31,7 @@ export function ReferenceChart({ points, goal, marks, today, legacy, blindSince,
   const top = Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => Math.max(p.wpm, p.exam ?? 0))) * 1.15
   const x = (day: string) => PAD.l + (days.indexOf(day) / (span - 1)) * (W - PAD.l - PAD.r)
   const y = (wpm: number) => PAD.t + (1 - wpm / top) * (H - PAD.t - PAD.b)
-  const trend = movingAverage(shown.map((p) => p.wpm))
+  const trend = trendSegments(shown, blindSince)
   const step = top > 60 ? 20 : 10
   const grid: number[] = []
   for (let v = 0; v <= top; v += step) grid.push(v)
@@ -82,17 +82,21 @@ export function ReferenceChart({ points, goal, marks, today, legacy, blindSince,
             </text>
           </g>
         )}
-        {shown.length > 1 && (
-          <polyline
-            points={shown.map((p, i) => `${x(p.day)},${y(trend[i])}`).join(' ')}
-            fill="none"
-            stroke="var(--color-mod)"
-            strokeWidth="2"
-            strokeOpacity="0.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
+        {trend
+          .filter((seg) => seg.length > 1)
+          .map((seg) => (
+            <polyline
+              key={seg[0].day}
+              data-testid="trend"
+              points={seg.map((t) => `${x(t.day)},${y(t.value)}`).join(' ')}
+              fill="none"
+              stroke="var(--color-mod)"
+              strokeWidth="2"
+              strokeOpacity="0.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
         {shown.map((p, i) => (
           <circle
             key={p.day}

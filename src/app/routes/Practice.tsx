@@ -33,7 +33,7 @@ import { Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { handsOpacityFor } from '../lib/fingers'
-import { gameSession } from '../lib/gameSession'
+import { gameExtra, gameSession } from '../lib/gameSession'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
 type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes' | 'palabras'
@@ -123,8 +123,8 @@ export function Practice() {
 
 /** One day in three the warm-up is a game (decided once per mount, like the bigram day). */
 function WarmupOrGame() {
-  const { learned } = useProgress()
-  const [game] = useState(() => warmupGame(dayOfYear(), learned))
+  const { learned, next } = useProgress()
+  const [game] = useState(() => warmupGame(dayOfYear(), learned, next?.game))
   if (game === 'rhythm' || game === 'balloons') return <WarmupGame key={game} game={game} />
   return <PracticeRun key="calentamiento" kind="calentamiento" />
 }
@@ -148,7 +148,7 @@ function WarmupGame({ game }: { game: 'rhythm' | 'balloons' }) {
   const onFinish = useCallback(
     (r: GameResult) => {
       setResult(r)
-      recordSession(gameSession(r), r.typing?.samples)
+      recordSession(gameSession(r), r.typing?.samples, gameExtra(r))
       markRoutine('warmup')
     },
     [recordSession, markRoutine],

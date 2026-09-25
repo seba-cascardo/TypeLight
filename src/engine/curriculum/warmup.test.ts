@@ -23,4 +23,13 @@ describe('warmupGame', () => {
     expect(warmupGame(6, six)).toBe('rhythm')
     expect(warmupGame(6, ['f', 'j', 'd', 'k', 's', 'l', 'a', 'ñ'])).toBe('rhythm')
   })
+
+  it('never repeats the game the next lesson already is: no two Al compás in one routine', () => {
+    expect(warmupGame(3, many, 'rhythm')).toBe('balloons')
+    expect(warmupGame(6, many, 'balloons')).toBe('rhythm')
+    // without words for Globos, the warm-up is the plain one
+    expect(warmupGame(3, six, 'rhythm')).toBeNull()
+    expect(warmupGame(3, many, 'race')).toBe('rhythm')
+    expect(warmupGame(4, many, 'rhythm')).toBeNull()
+  })
 })
