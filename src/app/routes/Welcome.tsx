@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router'
 import { LAYOUT_LIST, LAYOUTS, type LayoutId } from '@/engine/layouts'
 import { Keyboard } from '../components/Keyboard'
 import { Keycap } from '../components/Keycap'
+import { ImportFileButton, RestorePrompt, useRestore } from '../components/BackupRestore'
 import { useStore } from '../store'
+import { isWriteBlocked, subscribeWriteBlocked, unblockWrites } from '../store/storage'
 
 type Step = 'name' | 'detect-l' | 'detect-enie' | 'confirm'
 
@@ -46,6 +48,10 @@ export function Welcome() {
   const [step, setStep] = useState<Step>('name')
   const [layoutId, setLayoutId] = useState<LayoutId | null>(null)
   const [pressed, setPressed] = useState<Pressed | null>(null)
+  const blocked = useSyncExternalStore(subscribeWriteBlocked, isWriteBlocked)
+  const restore = useRestore((state) => {
+    if (state.settings.onboarded) navigate('/')
+  })
 
   const detecting = step === 'detect-l' || step === 'detect-enie'
 
@@ -100,6 +106,20 @@ export function Welcome() {
           <span className="font-display text-xl font-extrabold tracking-tight">TypeLight</span>
         </div>
 
+        {blocked && (
+          <section className="card mb-8 p-4" data-testid="load-failed">
+            <p className="font-bold">No pudimos leer tu progreso guardado. No lo borramos.</p>
+            <p className="text-sm text-ink-soft">Restaurá una copia, o empezá de cero: lo que no se pudo leer queda aparte en este navegador.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <ImportFileButton restore={restore} label="Restaurar desde una copia…" testId="rescue-file" />
+              <Keycap variant="ghost" size="sm" onClick={unblockWrites}>
+                Empezar de cero
+              </Keycap>
+            </div>
+            <RestorePrompt restore={restore} />
+          </section>
+        )}
+
         {step === 'name' && (
           <section className="animate-rise">
             <h1 className="mb-3 text-5xl md:text-6xl">
@@ -131,6 +151,13 @@ export function Welcome() {
                 Seguir →
               </Keycap>
             </form>
+            {!blocked && (
+              <div className="mt-8 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+                ¿Ya tenías progreso?
+                <ImportFileButton restore={restore} label="Restaurar desde una copia…" testId="welcome-backup-file" />
+              </div>
+            )}
+            {!blocked && <RestorePrompt restore={restore} />}
           </section>
         )}
 

@@ -28,6 +28,7 @@ import { Check, Stars } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useRoutine, useStore, type RoutineBlock } from '../store'
 import { unitAccentClass } from '../lib/accents'
+import { autoBackup, useAutoBackup } from '../lib/autoBackup'
 import { backupDue } from '../lib/backup'
 import { mascotLine, returnLine, type MascotContext } from '../lib/mascot'
 
@@ -125,6 +126,7 @@ export function Home() {
   const commitment = useStore((s) => s.settings.commitment)
   const answerCommitment = useStore((s) => s.answerCommitment)
   const routine = useRoutine()
+  const auto = useAutoBackup()
   const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const { curriculum, next, completed, learned } = useProgress()
   const game = warmupGame(dayOfYear(), learned, next?.game)
@@ -238,12 +240,28 @@ export function Home() {
         </section>
       )}
 
-      {backupDue(lastBackupAt, dayKey(), activeDays) && (
+      {auto.state === 'paused' && (
+        <p className="mb-6 rounded-xl bg-sun-soft/60 px-4 py-2 text-sm font-semibold text-ink-soft" data-testid="backup-paused">
+          Tu copia automática está en pausa.{' '}
+          {auto.why === 'permission' ? (
+            <button type="button" className="font-bold text-mod-edge underline" onClick={() => void autoBackup.reconnect()}>
+              Reconectar
+            </button>
+          ) : (
+            <Link to="/ajustes" className="font-bold text-mod-edge underline">
+              Ajustes → Elegir otra carpeta
+            </Link>
+          )}
+        </p>
+      )}
+
+      {(auto.state === 'off' || auto.state === 'unsupported') && backupDue(lastBackupAt, dayKey(), activeDays) && (
         <p className="mb-6 rounded-xl bg-sun-soft/60 px-4 py-2 text-sm font-semibold text-ink-soft" data-testid="backup-reminder">
           {lastBackupAt ? 'Hace más de un mes que no guardás una copia de tu progreso.' : 'Tu progreso vive solo en este navegador.'}{' '}
           <Link to="/ajustes" className="font-bold text-mod-edge underline">
             Ajustes → Descargar copia
           </Link>
+          {auto.state === 'off' && ', o elegí una carpeta para que se guarde sola.'}
         </p>
       )}
 
