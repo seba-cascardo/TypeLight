@@ -2,7 +2,7 @@
 
 Fecha 2026-09-25 · pedido de Seba al cerrar la review de la sesión nocturna 2: «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». De tres opciones (A: red dentro del navegador; B: copia sola en una carpeta; C: el servidor local guarda) eligió **B**, con una condición: «se la voy a pasar a unos amigos a la app así que la elección de la carpeta debe ser personalizable».
 
-**Estado:** aprobado por Seba el 2026-09-25; plan en `docs/superpowers/plans/2026-09-25-guardado.md`, rama `guardado`.
+**Estado:** implementado en la rama `guardado` (plan `docs/superpowers/plans/2026-09-25-guardado.md`); falta la prueba de Seba en Chrome con una carpeta real. Desvíos: (1) la pausa tiene un tercer motivo, `denied` (el navegador no tiene permiso para esa carpeta), que ofrece solo «Elegir otra carpeta»; (2) un error de escritura que no es de permiso ni de carpeta perdida (disco lleno, un archivo bloqueado por OneDrive o el antivirus) no pausa: la copia sigue activa y reintenta con el próximo cambio, y «última: hace …» deja ver el atraso; un borrado fallido de la rotación tampoco pausa; (3) las escrituras van en una cola, una por vez; (4) con la carga bloqueada, Bienvenida oculta los pasos hasta que se elige restaurar o empezar de cero (si no, lo practicado después se perdía sin aviso); (5) el e2e usa una carpeta falsa en memoria: el OPFS del Chromium de Playwright se cae al releer un handle guardado en IndexedDB después de recargar, así que «la carpeta se recuerda» queda para la prueba manual; (6) con la copia activa o en pausa, la tarjeta no muestra la línea de la descarga manual, y «Descargar copia» es botón secundario salvo en navegadores sin soporte.
 
 ## 0. Qué es
 
