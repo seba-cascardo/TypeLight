@@ -1,4 +1,14 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+/**
+ * Press a note's key so the game's keydown listener sees it. Playwright only knows the US layout:
+ * `press('ñ')` throws "Unknown key" and `type('ñ')` inserts the text without a keydown.
+ */
+async function pressNote(page: Page, ch: string) {
+  if (ch === ' ') await page.keyboard.press('Space')
+  else if (/^[a-z]$/.test(ch)) await page.keyboard.press(ch)
+  else await page.evaluate((key) => window.dispatchEvent(new KeyboardEvent('keydown', { key })), ch)
+}
 
 test('rhythm game: hit the notes on the beat, finish, get stars and a game session', async ({ page }) => {
   await page.goto('/')
@@ -34,7 +44,7 @@ test('rhythm game: hit the notes on the beat, finish, get stars and a game sessi
       return el ? { ch: el.dataset.ch!, offset: Number(el.dataset.offset) } : null
     })
     if (cur && cur.offset <= 60) {
-      await page.keyboard.type(cur.ch)
+      await pressNote(page, cur.ch)
       if (!shot) {
         shot = true
         await page.screenshot({ path: 'e2e/screens/rhythm-play.png' })
@@ -80,12 +90,18 @@ test('Al compás with words in Velocidad: the notes spell real words with a spac
   const played: string[] = []
   const deadline = Date.now() + 5000
   while (played.length < 16 && Date.now() < deadline) {
-    const ch = await page.evaluate(() => document.querySelector<HTMLElement>('[data-current="1"]')?.dataset.ch ?? null)
-    if (ch !== null) {
-      played.push(ch)
-      await page.keyboard.press(ch === ' ' ? 'Space' : ch)
+    const note = await page.evaluate(() => {
+      const el = document.querySelector<HTMLElement>('[data-current="1"]')
+      return el ? { id: el.dataset.id!, ch: el.dataset.ch! } : null
+    })
+    if (note === null) {
+      await page.waitForTimeout(20)
+      continue
     }
-    await page.waitForTimeout(20)
+    played.push(note.ch)
+    await pressNote(page, note.ch)
+    // The field redraws on the next frame: until then the pressed note still reads as current.
+    await page.waitForFunction((id) => document.querySelector<HTMLElement>('[data-current="1"]')?.dataset.id !== id, note.id, { timeout: 2000 })
   }
   const text = played.join('')
   expect(text).toContain(' ')

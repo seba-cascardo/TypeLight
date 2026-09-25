@@ -261,6 +261,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
               className={`kb-key absolute items-center justify-center font-extrabold text-ink ${isCurrent ? 'ring-4 ring-mod/40' : ''}`}
               style={{ left: x, top: TRACK_TOP + 12, width: KEY, height: KEY, fontSize: KEY * 0.45, background: colorOf[n.ch], padding: 0, opacity: x > width - KEY ? 0.4 : 1 }}
               data-current={isCurrent ? '1' : undefined}
+              data-id={isCurrent ? n.id : undefined}
               data-ch={isCurrent ? n.ch : undefined}
               data-offset={isCurrent ? Math.round(n.at - now) : undefined}
             >
