@@ -33,6 +33,8 @@ const router = createBrowserRouter([
   { path: '/bienvenida', element: <Welcome /> },
   {
     element: <RequireOnboarding />,
+    // While a lazy screen loads on a direct visit, paint nothing (the page background shows) instead of warning.
+    hydrateFallbackElement: <></>,
     children: [
       {
         element: <AppShell />,
