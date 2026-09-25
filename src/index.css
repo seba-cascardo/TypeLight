@@ -335,6 +335,8 @@
 }
 
 /* Área de tipeo */
+/* A word never breaks across lines: each character is an inline-block, so the word holds them together. */
+.type-word { white-space: nowrap; }
 .type-char {
   display: inline-block;
   min-width: 0.55em;
