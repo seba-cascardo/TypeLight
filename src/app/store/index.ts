@@ -21,6 +21,7 @@ import {
   type WordStats,
 } from '@/engine/stats'
 import type { BigramSample, DeadKeyStats, KeySample, WordSample } from '@/engine/typing'
+import { blockWrites, guardedStorage, keepPreMigrationCopy } from './storage'
 import { migrateState } from './migrate'
 
 export type Theme = 'auto' | 'light' | 'dark'
@@ -296,7 +297,15 @@ export const useStore = create<State>()(
     {
       name: 'typelight.v1',
       version: 8,
-      migrate: (persisted, version) => migrateState(persisted, version) as State,
+      storage: guardedStorage<State>(),
+      migrate: (persisted, version) => {
+        keepPreMigrationCopy()
+        return migrateState(persisted, version) as State
+      },
+      // A failed load must not be overwritten by the empty state the app falls back to.
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) blockWrites()
+      },
     },
   ),
 )

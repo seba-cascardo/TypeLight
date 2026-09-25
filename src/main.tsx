@@ -5,6 +5,7 @@ import './index.css'
 import { AppShell } from './app/components/AppShell'
 import { Home } from './app/routes/Home'
 import { Welcome } from './app/routes/Welcome'
+import { requestPersistence } from './app/store/storage'
 import { useStore } from './app/store'
 
 // Every screen past Inicio loads on demand: the daily routine paints from a small first chunk.
@@ -55,6 +56,8 @@ const router = createBrowserRouter([
     ],
   },
 ])
+
+if (useStore.getState().settings.onboarded) requestPersistence()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
