@@ -4,7 +4,7 @@ Pendientes acordados con Seba, en orden de llegada. Los "hechos" se borran de ac
 
 ## Pendientes
 
-Ninguno. La sesión nocturna 2 la revisó Seba el 2026-09-25 y aprobó los cinco ítems sin cambios.
+- **Guardado menos frágil** (pedido 2026-09-25, al cerrar la review de la sesión nocturna 2): «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». Hoy el progreso vive solo en el `localStorage` del navegador y la copia es un JSON que se baja a mano desde Ajustes. Primero, propuesta con 2-3 opciones.
 
 ## Ideas sueltas (sin compromiso)
 

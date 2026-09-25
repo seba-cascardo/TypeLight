@@ -1,42 +1,40 @@
-# Handoff — TypeLight: sesión nocturna 2 cerrada (lectura, código/numérico, ideas sueltas, revisión integral); próxima sesión = review con Seba
+# Handoff — TypeLight: sesión nocturna 2 aprobada entera; próxima = contarle a Seba qué quedó abierto y proponer un guardado menos frágil
 
-Fecha 2026-09-25 · rama `master` · preparado sobre `e93dab8`
+Fecha 2026-09-25 · rama `master` · preparado sobre `b4ca674`
 
 ## Alcance
 
-**Sí (todo en `master`, pusheado):**
+**Sí (en `master`, pusheado hasta `b4ca674`):**
 
-- **Review de la sesión nocturna 1 con Seba** (a la tarde): aprobó las Olas 2–5 y la pasada de calidad ítem por ítem. Cambios pedidos, hechos con test: mascota **Toon Head** (eligió A en el artifact `https://claude.ai/artifact/496obf7STT8qwPhfT5Vumm`), «lenta» relativa a la meta, «dos comodines» en el aviso de vuelta, **solo el primer Reto del día cuenta como referencia**, advertencia `HydrateFallback` fuera.
-- **Sesión nocturna 2** (Seba: «de lo que queda avanzá e implementá lo que te parezca correcto… cuando termines hacé una review integral»):
-  - **Ideas sueltas del backlog**: tendencia y predicción cortadas en «sin ayuda»; Enter de la Carrera espera el auto-chequeo; una tarjeta cerrable por vez en Inicio; Carrera y Muerte súbita alimentan bigramas y palabras; el Calentamiento no repite el juego de la lección siguiente; **Al compás con palabras** (primer juego de Velocidad).
-  - **Punto 36 · unidades opcionales** (`docs/superpowers/specs/2026-09-25-opcionales-codigo-numpad-design.md`): «Símbolos de código» y «Teclado numérico», al final de la ruta, fuera del camino principal.
-  - **Punto 35 · modo lectura** (`docs/superpowers/specs/2026-09-25-lectura-design.md`): `/lectura`, Quiroga y Arlt, modo `word` («stop on word»). Store **v8**.
-  - **Revisión integral**: code review de `src` (9 hallazgos, todos arreglados con test) + recorrido de todas las pantallas con un estado realista de tres semanas, en los dos temas, a 2048 px. Arreglos: posición de lectura robusta, modo `word` al final del texto, `repairMs` y «reparados», racha con reloj que retrocede, resumen semanal antes que el hito, «6 de 5 días», etiqueta del chart cortada, campo del compromiso angosto, pseudopalabras de 1 letra, palabras que se cortaban entre renglones (bug previo de `TypingArea`, también en el Reto), corpus sin formas sin tilde ni inglés.
+- **Review de la sesión nocturna 2 con Seba** (2026-09-25), ítem por ítem: ideas sueltas → Al compás con palabras → unidades opcionales (código y numérico) → modo lectura → revisión integral. **Aprobó los cinco sin cambios**; de las unidades de código dijo «me encanta que añadas unidades avanzadas para scripts». `4f2e1d0` cierra la review (backlog, trampa «Heredocs y escapes»). `b4ca674` suma a `.serena/memories/typelight-architecture.md` la trampa de no editar el repo mientras corren los e2e: 9 fallos con «navigated to …» mientras el agente editaba este handoff; la misma corrida sin tocar nada, 42/42.
+- Lo que hizo la sesión nocturna 2 está en `git log e4481eb..e93dab8`, en los specs `docs/superpowers/specs/2026-09-25-*.md` (con su `**Estado:**`) y en `## Decisiones`.
+- **Pedido de Seba al cerrar, para esta sesión:** (1) que le digas si quedó algo abierto; (2) «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». Quedó como pendiente en `docs/backlog.md`.
 
-Verificación final sobre `e93dab8`: `npx tsc -b` limpio · `npm run lint` con las 4 advertencias previas · `npm test` 270 unitarios · `npm run e2e` 42 Playwright · `npm run build` OK (principal 451 KB; la biblioteca, 262 KB, va en el chunk lazy de `Reading`). `dist/` construido desde `e93dab8` con `dist/.commit` escrito.
+**No:** esta ventana no tocó código. Deploy, backend y PWA siguen fuera; el pedido del guardado puede reabrir alguno solo si Seba elige esa opción.
 
-**No:** deploy, backend, PWA. Sílabas como notas en Al compás; los textos de Quiroga y Arlt con tuteo; la tecla decimal del numérico; «consistencia por bigrama»; Muerte súbita en la ruta (ver `docs/backlog.md`).
+Verificación sobre `4f2e1d0` (el código es el de `e93dab8`): `npx tsc -b` limpio · `npm run lint` con las 4 advertencias previas · `npm test` 270 · `npm run e2e` 42 (corrida limpia) · `npm run build` OK sobre `b4ca674`; `dist/.commit` = `b4ca674`.
 
 ## Arrancá acá
 
-**Primera acción:** explicarle a Seba lo hecho en la sesión nocturna 2, **ítem por ítem y esperando su review de cada uno** antes de tocar código, en este orden: ideas sueltas → Al compás con palabras → unidades opcionales (código y numérico) → modo lectura → revisión integral (hallazgos y arreglos). Para cada ítem: qué hace, dónde se ve en `:5173` y qué decidió el agente y por qué (tabla `## Decisiones`, filas «llamada del agente»). Lo que objete se arregla en el momento (con test) o queda en `docs/backlog.md`.
+**Primera acción, en un mensaje a Seba:**
 
-Avisos para esa conversación:
-- La primera vez que abra `:5173` su progreso migra a v8 solo (el `.bat` no reconstruye: `dist/.commit` = `e93dab8`).
-- Probablemente vea el resumen semanal en Inicio: ahora va antes que un hito pendiente.
-- El numérico: si su teclado no tiene, la unidad es opcional; si tiene, Bloq Num encendido.
-- La biblioteca tiene 5 cuentos de Quiroga y 41 aguafuertes de Arlt; los 6 textos con tuteo quedaron afuera (se pueden sumar relajando el filtro).
-- Durante la noche la máquina estuvo al 100 % de CPU (renders de Blender): dos e2e de tipeo largo quedaron en `test.slow()` y Vitest tiene `testTimeout: 20_000`.
+1. **Qué quedó abierto:** ningún trabajo comprometido salvo el guardado. Sin commitear, del agente en el cierre y para el commit siguiente: `HANDOFF.md` y `docs/backlog.md` (ver `## Estado`). `test-results/` (ignorada) tiene los restos del e2e roto y del experimento del cierre: descartable. El resto del backlog son ideas sueltas.
+2. **Guardado menos frágil:** `superpowers:brainstorming` y una propuesta con 2-3 opciones renderizadas (el flujo que funciona con él: propuesta → elige → spec → plan → rama → merge ff). Interpretación del agente, a confirmar en una línea dentro de esa propuesta: «el guardado» es el progreso de la app, no el handoff que se vació unos segundos en el cierre.
 
-Verificá con: `npm test` (270) · `npm run e2e` (42, arranca su propio dev server en :5174) · `npm run build`. Lint: 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`); no sumar ninguna.
+Lo que hay hoy (dicho en la conversación, sin re-verificar en el código):
+- zustand `persist` en `localStorage`, clave `typelight.v1`, store v8 con migraciones y backup v8: `src/app/store/index.ts`.
+- Copia = JSON que se baja a mano desde Ajustes; importar reemplaza todo. Es la fila «Copia de progreso» de `## Decisiones`: cuenta/backend y merge fueron rechazados, y la fila caduca «hasta que Seba pida sync o merge» — si elige una de esas, se elimina.
+- «Reiniciar progreso» borra todo salvo `legacy`. Tope de 1000 sesiones; la referencia se lee de `days`.
+- `:5173` y `:5175` son orígenes distintos, cada uno con su propio `localStorage` (inferencia del agente por la regla de origen del navegador; los scripts de capturas siembran `:5175` aparte).
+
+Verificá con: `npm test` (270) · `npm run e2e` (42; no edites archivos del repo mientras corre, y leé el resumen, no el exit code de un pipe) · `npm run build`. Lint: 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`); no sumar ninguna.
 
 **Puertos:** `:5173` = build estable (`npm run serve` desde el `.bat`; ahí practica Seba); `:5175` = dev de rama (`.claude/launch.json` → `typelight-branch`); `:5174` = e2e. Buildear en rama pisa `dist/`: solo en `master`, justo antes de cerrar.
 
-Leé, en este orden:
-- `docs/backlog.md` — pendientes e ideas sueltas.
-- Los dos specs de arriba, con su `**Estado:**` (desvíos).
-- `.serena/memories/typelight-architecture.md` — decisiones con porqué (entradas de esta noche: mascota, primer Reto, opcionales, modo `word`, lectura, `.type-word`, corpus, Al compás con palabras) y trampas nuevas (CRLF de Python, heredocs con `\n`, numérico en Playwright, máquina cargada, `git add docs/superpowers`).
-- Código: `src/engine/reading/`, `src/app/routes/Reading.tsx`, `scripts/build-books.py`; `src/engine/curriculum/build.ts` (`optionalUnits`), `src/engine/corpus/code.ts`, `src/app/lib/numpad.ts`, `src/app/components/Numpad.tsx`; `src/engine/typing/index.ts` (modo `word`, `blocked`, `erred`); `src/engine/games/rhythm.ts` (`wordStream`), `src/engine/games/pool.ts` (`rhythmWords`).
+Leé:
+- `docs/backlog.md` — el pendiente del guardado y las ideas sueltas.
+- `src/app/store/index.ts` — dónde y cómo se persiste, las migraciones y el backup: es el punto de partida de cualquier opción.
+- `.serena/memories/typelight-architecture.md` — decisiones con porqué y trampas (CRLF de Python, heredocs y escapes, numérico en Playwright, máquina cargada, no editar el repo durante los e2e, `git add docs/superpowers`).
 
 **Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque un plan lo liste como pendiente: este handoff es más reciente que los planes. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
@@ -44,7 +42,7 @@ Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho (viewpor
 
 ## Estado
 
-Sobre `e93dab8` quedaron dos archivos sin commitear, los dos del agente en el cierre y los dos para el commit siguiente de Seba: este `HANDOFF.md`, y `.serena/memories/typelight-architecture.md`, donde en `## Trampas` las dos líneas sobre heredocs pasaron a ser una sola, «Heredocs y escapes» (Seba lo aprobó en el cierre). Fuera de git: `dist/` construido desde `e93dab8` con `dist/.commit`; `scripts/.books-cache/` (páginas de Wikisource, ignorada); capturas y scripts de la noche en el scratchpad de la sesión (descartables).
+Sobre `b4ca674` quedaron dos archivos sin commitear, los dos del agente en este cierre y los dos para el commit siguiente: `docs/superpowers/handoffs/HANDOFF.md` (este) y `docs/backlog.md` (el pendiente «Guardado menos frágil» reemplaza al «Ninguno»). Fuera de git: `dist/` construido desde `b4ca674` con `dist/.commit`; `test-results/` con los `error-context.md` del e2e roto y del experimento (ignorada, descartable); copias del handoff y scripts del cierre en el scratchpad de la sesión (descartables).
 
 ## Descartado y confirmado
 
@@ -100,7 +98,7 @@ Sobre `e93dab8` quedaron dos archivos sin commitear, los dos del agente en el ci
 | Examen semanal = la tarjeta Reto transformada el primer día de la semana que se llega a ella; texto fijo por mes (semilla del `yyyy-mm`) | siguen siendo cuatro tarjetas; el texto fijo controla la dificultad dentro del mes | quinta tarjeta; texto aleatorio | usuario (2A) + llamada del agente (semilla) | decidida | hasta que Seba pida otro día o corpus |
 | Manos se desvanecen por dominio con piso del 30 %; nunca en Reto ni examen | la app no ve el dedo y el dedo es el problema de Seba: la pista se apaga, no se borra | desaparecer del todo (4A); chip con el nombre (4C) | usuario (4B) | decidida | hasta que Seba pida otro piso |
 | Fluidez (rollover) reemplaza a «Ritmo parejo» | el CV global mide lo que los expertos no hacen (research §2.6); el rollover es el mejor predictor conocido | sumarla sin quitar Ritmo parejo | llamada del agente (anunciada en la propuesta) | decidida | hasta que Seba pida ver Ritmo parejo de nuevo |
-| Auto-chequeo con teclas 1/2/3, Esc salta; Enter espera la respuesta en Reto, examen y Carrera | responder sin soltar el teclado; la Carrera dejaba saltearlo sin querer (idea suelta hecha el 2026-09-25) | mascota con globo (6B); Carrera sin esperar | usuario (6A) + llamada del agente (Carrera) | decidida | hasta que Seba pida que la Carrera no espere |
+| Auto-chequeo con teclas 1/2/3, Esc salta; Enter espera la respuesta en Reto, examen y Carrera | responder sin soltar el teclado; la Carrera dejaba saltearlo sin querer (idea suelta hecha el 2026-09-25) | mascota con globo (6B); Carrera sin esperar | usuario (6A) + llamada del agente (Carrera), aprobada el 2026-09-25 | decidida | hasta que Seba pida que la Carrera no espere |
 | Juego en la rutina un día de cada tres, Al compás al 90 % de la referencia de 7 días con techo en el 100 %, alternando con Globos | mantiene el mapeo nuevo al mando (§10) y rota la novedad; el ramp-up del juego no debe pasar la velocidad cómoda | solo Al compás (8B); dejar que el pulso acelere sin tope | usuario (8A) + llamada del agente (techo) | decidida | hasta que Seba pida otra cadencia |
 | Día activo = sesión grabada (un tip no cuenta); un día perdido siempre se perdona; comodines automáticos 1 cada 5 días activos, tope 2, para huecos de 2+ días | Lally 2010 y la experiencia de Duolingo (§6.7): la racha frágil castiga justo al que necesita 66 días | racha estricta; freeze manual | llamada del agente (Ola 3) | decidida | hasta que Seba pida otra regla |
 | Hitos por días activos totales (no por racha): 7/14/30/66/100 | es lo que Lally cuenta: repeticiones del hábito, no días seguidos | hitos por racha | llamada del agente | decidida | hasta que Seba pida hitos de racha |
@@ -115,16 +113,16 @@ Sobre `e93dab8` quedaron dos archivos sin commitear, los dos del agente en el ci
 | Muerte súbita solo en «Jugar», no en la ruta | es un extra; la ruta ya tiene 12 huecos de juego aprobados | meterla en la ruta | llamada del agente | decidida | hasta que Seba la quiera en la dieta |
 | Reto del día con semilla por fecha (mismo texto todo el día) | punto 33: comparable con quien tenga las mismas letras y teclado; commitment device | texto aleatorio por intento | llamada del agente | decidida | hasta que Seba prefiera variedad |
 | Rutas con carga diferida (todas salvo Inicio y Bienvenida) | chunk principal 684 → 421 KB sin tocar nada más | `React.lazy` + Suspense manual; dejar el bundle | llamada del agente (calidad) | decidida | hasta que se mida que la carga diferida molesta en `:5173` |
-| Modo lectura (35) y numérico/código (36): hechos en la sesión nocturna 2 | Seba: «de lo que queda avanzá e implementá lo que te parezca correcto» | dejarlos en el backlog | usuario (autonomía) + llamada del agente (diseño) | decidida | hasta que Seba los revise |
+| Modo lectura (35) y numérico/código (36): hechos en la sesión nocturna 2 | Seba: «de lo que queda avanzá e implementá lo que te parezca correcto» | dejarlos en el backlog | usuario (autonomía) + llamada del agente (diseño), aprobados por Seba el 2026-09-25 | decidida | hasta que Seba pida cambiarlos |
 | Mascota = Toon Head (Johan Melin, CC BY 4.0), personaje fijo, círculo con tintes claros en los dos temas, créditos en Ajustes | Seba: el keycap con cara era «cutre»; eligió A entre tres sets libres; de noche el pelo oscuro se perdía en el círculo oscuro | Open Peeps (tinta), Fluent Emoji 3D; dibujo por código | usuario (elección) + llamada del agente (tintes) | decidida | hasta que Seba pida otro personaje |
 | Solo el primer Reto del día cuenta como referencia (y récord y «Copiar resultado»); los siguientes son práctica | el texto sale de la fecha: repetirlo infla la mediana | «Otra vez» con texto nuevo | usuario | decidida | hasta que Seba pida otra regla |
 | «lenta» en el Repaso = más de 1,5 × el objetivo por tecla de la meta | 700 ms fijos (~17 PPM) nunca saltaba a su velocidad | umbral fijo | usuario (aprobó el arreglo) | decidida | hasta que se note distinto en uso real |
 | Migración v6 sin días vistos: las teclas dominadas vuelven al verde con dos días de práctica | dominio sostenido en 2 días distintos | contarlas como vistas en 2 días | usuario (aprobó así) | decidida | no caduca |
-| Unidades opcionales al final (Código, Numérico): fuera del contador, de `learned` y de `nextLesson` hasta completar el camino; primera lección siempre abierta | opcionales de verdad: no cambian el Reto ni el progreso, y se abren cuando él quiera | meterlas en el camino; bloquearlas hasta terminar | llamada del agente | decidida | hasta que Seba pida otro lugar |
-| Código: solo los símbolos que la unidad Signos de ese layout no enseñó + líneas de código escritas a mano por lenguaje | en ES/LATAM Signos no enseña llaves, corchetes, barras, virgulilla ni acento circunflejo; copiar código ajeno no hace falta | repetir todos los símbolos; código de proyectos reales | llamada del agente | decidida | hasta que Seba pida otros lenguajes |
-| Numérico: se exige el teclado numérico (la fila de números no entra), sin tecla decimal, sin alimentar el modelo de teclas | el 4 del numérico no es el 4 de la fila; la decimal da `.` o `,` según el sistema | aceptar cualquier dígito; enseñar la decimal | llamada del agente | decidida | hasta que Seba pida la decimal |
-| Modo lectura: Quiroga (*Cuentos de la selva*) y Arlt (*Aguafuertes porteñas*) de Wikisource, sin textos con tuteo, por páginas de 150–480 caracteres, en modo `word` | rioplatenses y de dominio público; el corpus de la app no usa tú; «stop on word» del roadmap | Lugones/Payró/Güiraldes; incluir los textos con tú | llamada del agente | decidida | hasta que Seba pida otros libros o aceptar tuteo |
-| Lectura: práctica, no medición (sin referencia, sin bloque de rutina; sí minutos, racha, teclas, bigramas y palabras) | texto largo y conocido no es comparable día a día | contar como referencia | llamada del agente | decidida | hasta que Seba pida que cuente |
-| Al compás con palabras: letras de palabras reales de una sola tecla, el espacio como nota; primer juego de Velocidad (13 huecos de juego) | ritmo parejo sobre palabras por debajo de la meta (research §10); el juego lee `e.key`, así que sin tildes ni Shift | sílabas como notas; reemplazar un juego existente | llamada del agente | decidida | hasta que Seba pida sílabas u otro lugar |
-| Ideas sueltas hechas: tendencia y predicción cortadas en «sin ayuda»; Enter de la Carrera espera el auto-chequeo; una tarjeta cerrable por vez en Inicio (primero el resumen semanal); Carrera y Muerte súbita alimentan bigramas/palabras; el Calentamiento no repite el juego de la lección siguiente | eran las del backlog con valor claro | dejarlas | llamada del agente | decidida | hasta que Seba pida volver atrás alguna |
-| Corpus de palabras sin formas sin tilde (dia, aqui) ni inglés (hall, flash) ni nombres (rusia, dallas), con homógrafos protegidos | los subtítulos pierden tildes y un drill no debe enseñar la falta | dejarlo | llamada del agente | decidida | hasta que se vea una palabra válida perdida |
+| Unidades opcionales al final (Código, Numérico): fuera del contador, de `learned` y de `nextLesson` hasta completar el camino; primera lección siempre abierta | opcionales de verdad: no cambian el Reto ni el progreso, y se abren cuando él quiera | meterlas en el camino; bloquearlas hasta terminar | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida otro lugar |
+| Código: solo los símbolos que la unidad Signos de ese layout no enseñó + líneas de código escritas a mano por lenguaje | en ES/LATAM Signos no enseña llaves, corchetes, barras, virgulilla ni acento circunflejo; copiar código ajeno no hace falta | repetir todos los símbolos; código de proyectos reales | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida otros lenguajes |
+| Numérico: se exige el teclado numérico (la fila de números no entra), sin tecla decimal, sin alimentar el modelo de teclas | el 4 del numérico no es el 4 de la fila; la decimal da `.` o `,` según el sistema | aceptar cualquier dígito; enseñar la decimal | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida la decimal |
+| Modo lectura: Quiroga (*Cuentos de la selva*) y Arlt (*Aguafuertes porteñas*) de Wikisource, sin textos con tuteo, por páginas de 150–480 caracteres, en modo `word` | rioplatenses y de dominio público; el corpus de la app no usa tú; «stop on word» del roadmap | Lugones/Payró/Güiraldes; incluir los textos con tú | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida otros libros o aceptar tuteo |
+| Lectura: práctica, no medición (sin referencia, sin bloque de rutina; sí minutos, racha, teclas, bigramas y palabras) | texto largo y conocido no es comparable día a día | contar como referencia | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida que cuente |
+| Al compás con palabras: letras de palabras reales de una sola tecla, el espacio como nota; primer juego de Velocidad (13 huecos de juego) | ritmo parejo sobre palabras por debajo de la meta (research §10); el juego lee `e.key`, así que sin tildes ni Shift | sílabas como notas; reemplazar un juego existente | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida sílabas u otro lugar |
+| Ideas sueltas hechas: tendencia y predicción cortadas en «sin ayuda»; Enter de la Carrera espera el auto-chequeo; una tarjeta cerrable por vez en Inicio (primero el resumen semanal); Carrera y Muerte súbita alimentan bigramas/palabras; el Calentamiento no repite el juego de la lección siguiente | eran las del backlog con valor claro | dejarlas | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que Seba pida volver atrás alguna |
+| Corpus de palabras sin formas sin tilde (dia, aqui) ni inglés (hall, flash) ni nombres (rusia, dallas), con homógrafos protegidos | los subtítulos pierden tildes y un drill no debe enseñar la falta | dejarlo | llamada del agente, aprobada por Seba el 2026-09-25 | decidida | hasta que se vea una palabra válida perdida |
