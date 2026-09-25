@@ -83,7 +83,7 @@ test('own text: paste, type in text mode, recorded without reference', async ({ 
   await expect(page.getByTestId('own-text-input')).toBeVisible()
 })
 
-test('the Reto of the day keeps its text on retry and offers a shareable result', async ({ page }) => {
+test('the Reto of the day keeps its text on retry; only the first round counts and is shareable', async ({ page }) => {
   await page.goto('/')
   await seed(page)
   await page.goto('/practica/reto')
@@ -101,6 +101,17 @@ test('the Reto of the day keeps its text on retry and offers a shareable result'
   await expect(page.locator('.type-char.is-current')).toBeVisible()
   const again = await remaining(page)
   expect(again).toBe(first)
+  // The second round types a text already seen today: practice, not reference, and nothing to share.
+  await page.keyboard.type(again)
+  await expect(page.getByText('Reto de un minuto · listo')).toBeVisible()
+  await expect(page.getByTestId('practice-note')).toBeVisible()
+  await expect(page.getByTestId('share')).toHaveCount(0)
+  const stored = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('typelight.v1')!).state
+    return { refs: s.sessions.filter((x: { kind: string }) => x.kind === 'challenge').map((x: { reference?: boolean }) => x.reference === true), days: Object.values(s.days).map((d) => (d as { reference: number[] }).reference.length) }
+  })
+  expect(stored.refs).toEqual([true, false])
+  expect(stored.days).toEqual([1])
 })
 
 test('sudden death ends on the first error and keeps the best score', async ({ page }) => {

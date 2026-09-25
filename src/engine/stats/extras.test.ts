@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LATAM, US } from '../layouts'
 import { backspace, cleanRun, createSession, typeChar, typeText } from '../typing'
-import { ghostWpm30, prepareOwnText, seedOf } from './extras'
+import { firstRetoOfDay, ghostWpm30, prepareOwnText, seedOf } from './extras'
 import type { Days } from './days'
 
 describe('own text', () => {
@@ -40,5 +40,15 @@ describe('ghost of 30 days ago', () => {
     const days: Days = { '2026-08-19': row([20, 24]), '2026-08-14': row([30]), '2026-08-12': row([40]), '2026-09-17': row([50]) }
     expect(ghostWpm30(days, '2026-09-18')).toBe(24) // 08-19 (gap 30) and 08-14 (gap 35): 20, 24, 30 → 24
     expect(ghostWpm30(days, '2026-11-01')).toBeNull()
+  })
+})
+
+describe('the Reto of the day', () => {
+  it('only the first Reto of the day counts: later rounds type a text already seen', () => {
+    const at = (day: string, h = 12) => new Date(`${day}T${String(h).padStart(2, '0')}:00:00`).toISOString()
+    expect(firstRetoOfDay([], '2026-09-25')).toBe(true)
+    expect(firstRetoOfDay([{ kind: 'challenge', at: at('2026-09-24', 23) }], '2026-09-25')).toBe(true)
+    expect(firstRetoOfDay([{ kind: 'exam', at: at('2026-09-25') }, { kind: 'game', at: at('2026-09-25') }], '2026-09-25')).toBe(true)
+    expect(firstRetoOfDay([{ kind: 'challenge', at: at('2026-09-25', 0) }], '2026-09-25')).toBe(false)
   })
 })

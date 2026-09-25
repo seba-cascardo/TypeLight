@@ -1,6 +1,6 @@
 import { canType, type Layout } from '../layouts'
 import type { Days } from './days'
-import { daysBetween } from './index'
+import { dayKey, daysBetween } from './index'
 import { median } from './progress'
 
 export const OWN_TEXT_MAX = 1500
@@ -30,6 +30,14 @@ export function seedOf(key: string): number {
     h = Math.imul(h, 0x01000193) >>> 0
   }
   return h
+}
+
+/**
+ * The Reto text is the same all day, so only the first round of the day is a reference (and can be a record
+ * or be shared): later rounds type a text already seen. `challenge` is the Reto's session kind.
+ */
+export function firstRetoOfDay(sessions: readonly { kind: string; at: string }[], today: string): boolean {
+  return !sessions.some((s) => s.kind === 'challenge' && dayKey(new Date(s.at)) === today)
 }
 
 /** The ghost "you, 30 days ago": median reference of the days 30 to 36 days back, or null. */

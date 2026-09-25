@@ -6,6 +6,7 @@ import { starsForGame, type GameResult } from '@/engine/games'
 import {
   dayKey,
   dayOfYear,
+  firstRetoOfDay,
   keyReason,
   median,
   monthKey,
@@ -212,6 +213,8 @@ interface Result {
   record: boolean
   /** Words that carried an error or came out slow, for "practicar estas". */
   resisted: string[]
+  /** False for a second Reto of the day: practice on a text already seen, not a reference. */
+  counted: boolean
 }
 
 function PracticeRun({ kind }: { kind: Kind }) {
@@ -291,13 +294,16 @@ function PracticeRun({ kind }: { kind: Kind }) {
       const repair = repairMetrics(state)
       if (kind === 'antes') {
         setLegacy({ wpm: m.wpm, acc: m.accuracy, at: new Date().toISOString() })
-        setResult({ m, repair, at: null, record: false, resisted: [] })
+        setResult({ m, repair, at: null, record: false, resisted: [], counted: false })
         return
       }
       const words = wordSamples(state)
       const dead = deadKeyStats(state)
+      // Only the first Reto of the day is a reference: later rounds type a text already seen today.
+      const counted = kind !== 'reto' || firstRetoOfDay(useStore.getState().sessions, dayKey())
+      const reference = meta.reference === true && counted
       // A personal best is judged against everything recorded before this session.
-      const previousBest = meta.reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
+      const previousBest = reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
       // The very first Reto is not a "record": there is nothing to beat yet.
       const record = previousBest > 0 && m.wpm > previousBest
       const at = recordSession(
@@ -311,7 +317,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
           rhythm: rhythm(state),
           rollover: rolloverRatio(rollover.current),
           cleanRun: cleanRun(state),
-          ...(meta.reference && { reference: true as const }),
+          ...(reference && { reference: true as const }),
           ...(meta.blind && { blind: true as const }),
           ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
           ...(dead && { dead }),
@@ -321,7 +327,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       )
       if (meta.block) markRoutine(meta.block)
       if (kind === 'examen') setLastExamDay(dayKey())
-      setResult({ m, repair, at, record, resisted: meta.reference ? resistedWords(words.values()) : [] })
+      setResult({ m, repair, at, record, resisted: meta.reference ? resistedWords(words.values()) : [], counted })
     },
     [kind, meta, recordSession, markRoutine, setLegacy, setLastExamDay],
   )
@@ -459,13 +465,18 @@ function PracticeRun({ kind }: { kind: Kind }) {
               }}
             />
           )}
-          {kind === 'reto' && (
+          {kind === 'reto' && !result.counted && (
+            <p className="mt-5 text-sm text-ink-soft" data-testid="practice-note">
+              Práctica: este texto ya lo tipeaste hoy, así que no mueve tu velocidad de referencia. Cuenta el primer Reto del día.
+            </p>
+          )}
+          {kind === 'reto' && result.counted && (
             <div className="mt-5 text-sm text-ink-soft" data-testid="share">
               <Keycap variant="ghost" size="sm" onClick={copy}>
                 Copiar resultado
               </Keycap>
               {copied && <span className="ml-3 font-bold">{copied}</span>}
-              <p className="mt-1.5 text-xs text-ink-mute">El Reto de hoy es el mismo texto para cualquiera que tenga la app: se puede comparar.</p>
+              <p className="mt-1.5 text-xs text-ink-mute">El texto del Reto es el mismo todo el día para cualquiera con tus mismas letras y teclado: se puede comparar.</p>
             </div>
           )}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
