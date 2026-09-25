@@ -41,7 +41,7 @@ function autoLine(auto: AutoBackupStatus, now: number): string {
     case 'loading':
       return 'Vive solo en este navegador. Una copia en un archivo lo protege de cualquier limpieza.'
     case 'off':
-      return 'Vive solo en este navegador. Guardá copias solas en una carpeta de tu compu: si elegís una de OneDrive, Google Drive o Dropbox, la copia también sale de tu compu.'
+      return 'Vive solo en este navegador. Elegí una carpeta y la copia se guarda sola; si es de OneDrive, Google Drive o Dropbox, también sale de tu compu.'
     case 'on':
       return `Se guarda sola en «${auto.folder}»${auto.lastAt ? ` · última: ${sinceLabel(auto.lastAt, now)}` : ''}.`
     case 'paused':
@@ -87,13 +87,14 @@ function BackupCard() {
   }
 
   const last = lastBackupAt ? `Última copia: ${fechaCopia(lastBackupAt)}.` : 'Todavía no guardaste ninguna copia.'
+  const showLast = auto.state === 'unsupported' || auto.state === 'loading' || auto.state === 'off'
 
   return (
     <div className="rounded-xl bg-paper px-4 py-3" data-testid="backup-card">
       <span className="block font-bold">Tu progreso</span>
       <span className="block text-sm text-ink-soft">
         {/* eslint-disable-next-line react/purity -- "since" label at the moment it renders, not a reactive clock */}
-        {autoLine(auto, Date.now())} {last}
+        {autoLine(auto, Date.now())} {showLast && last}
       </span>
       <div className="mt-3 flex flex-wrap gap-2">
         {auto.state === 'off' && (
@@ -124,7 +125,7 @@ function BackupCard() {
             </Keycap>
           </>
         )}
-        <Keycap variant="secondary" size="sm" onClick={download}>
+        <Keycap variant={auto.state === 'unsupported' ? 'secondary' : 'ghost'} size="sm" onClick={download}>
           Descargar copia
         </Keycap>
         <ImportFileButton restore={restore} />
