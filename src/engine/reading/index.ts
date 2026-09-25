@@ -38,7 +38,7 @@ export function bookProgress(book: Book, spot: Spot | null | undefined): { done:
 }
 
 /** The book read most recently, by the time its position was saved. */
-export function lastRead(reading: Record<string, { at: string }>): string | null {
+export function lastRead<T extends { at: string }>(reading: Record<string, T>): string | null {
   let best: string | null = null
   for (const [id, r] of Object.entries(reading)) if (best === null || r.at > reading[best].at) best = id
   return best
