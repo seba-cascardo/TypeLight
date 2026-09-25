@@ -129,6 +129,8 @@ test('the coral card is the weekly exam until it is taken this week', async ({ p
 })
 
 test('finishing the exam marks the week, the day and the routine', async ({ page }) => {
+  // Types the whole 1500+ character exam text: ~50 s on a loaded machine, too close to the 60 s default.
+  test.slow()
   await page.goto('/')
   await seed(page)
   await page.goto('/practica/examen')
