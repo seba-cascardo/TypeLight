@@ -16,6 +16,7 @@ james ben john jack sam tom harry mike michael frank charlie max nick george pet
 prostituta prostitutas prostitución golpear golpeó golpes espada espadas violencia violento gay puta
 sois vosotros vosotras vuestro vuestra vuestros vuestras os
 cagar cago cagó cagás cagada cagado cagan asesinaron asesinaste asesinamos asesinan guerra guerras
+sheriff green hall flash boom to in jo na id ji rusia dallas tí ví dí
 """.split())
 
 # First names that survive the dictionary check or start a sentence capitalised.
@@ -30,3 +31,25 @@ tomás tomas vicente víctor victor alejandro andrés andres antonio ángel ange
 
 def load_dictionary(path):
     return set(json.load(open(path, encoding='utf8')))
+
+
+# Words spelled both ways where the plain one is a real word too: never dropped by drop_unaccented.
+HOMOGRAPHS = set("""
+el tu mi te se si de que como cuando donde quien quienes cual cuales cuanto cuanta cuantos cuantas
+esta este ese esa estas estos esos esas aquel aquella aquellos aquellas solo aun o
+paso papa tomate saco costo termino periodo ira bebe dejo tomo llego compro compre logro gano entro toco quedo
+enseño continua ordenes perdida olvido saque trate busque pregunte intente
+""".split())
+ACCENTED = set('áéíóú')
+
+
+def drop_unaccented(words):
+    """Drop a plain spelling (dia, sera) when the corpus has an accented one (día, será) that is more frequent:
+    subtitles leave accents out, and a typing drill must not teach the misspelling. Real homographs stay."""
+    rank = {w: i for i, w in enumerate(words)}
+    accented_rank = {}
+    for w, i in rank.items():
+        if ACCENTED & set(w):
+            key = w.translate(STRIP)
+            accented_rank[key] = min(i, accented_rank.get(key, i))
+    return [w for w in words if ACCENTED & set(w) or w in HOMOGRAPHS or accented_rank.get(w, len(words)) > rank[w]]
