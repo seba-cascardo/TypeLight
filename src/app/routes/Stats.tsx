@@ -452,7 +452,10 @@ export function Stats() {
               const stars = u.lessons.reduce((a, l) => a + (results[l.id]?.stars ?? 0), 0)
               return (
                 <li key={u.id} className="flex items-center justify-between rounded-xl bg-paper px-4 py-2.5">
-                  <span className="font-bold">{u.title}</span>
+                  <span className="font-bold">
+                    {u.title}
+                    {u.optional && <span className="ml-2 text-xs font-black uppercase tracking-wider text-ink-mute">opcional</span>}
+                  </span>
                   <span className="flex items-center gap-3 text-sm text-ink-soft">
                     {done}/{u.lessons.length}
                     <span className="inline-flex items-center gap-1">

@@ -14,6 +14,8 @@ function legend(l: Lesson): { main: string; sub: string } {
       return { main: '↻', sub: 'repaso' }
     case 'practice':
       if (l.exercises[0]?.kind === 'ngram') return { main: 'ab', sub: 'n-gramas' }
+      if (l.numpad) return { main: '0-9', sub: 'numérico' }
+      if (l.exercises.some((e) => e.kind === 'code')) return { main: '</>', sub: 'código' }
       return l.id.includes('-patron-') ? { main: l.title.replace('Patrón: ', ''), sub: 'patrón' } : { main: '✎', sub: 'práctica' }
     case 'tip':
       return { main: 'tip', sub: 'consejo' }
@@ -39,12 +41,21 @@ export function Path() {
       </PageTitle>
 
       <div className="space-y-10">
-        {curriculum.units.map((u) => {
+        {curriculum.units.map((u, i) => {
           const done = u.lessons.filter((l) => completed.has(l.id)).length
           const vars = accentVars[u.accent]
           const isCurrent = next?.unitId === u.id
+          const firstOptional = u.optional && !curriculum.units[i - 1]?.optional
           return (
             <section key={u.id} id={u.id} className="scroll-mt-24">
+              {firstOptional && (
+                <div className="mb-8 border-t-2 border-dashed border-line pt-8" data-testid="optional-units">
+                  <div className="eyebrow mb-1">Opcionales · cuando quieras</div>
+                  <p className="max-w-2xl text-ink-soft">
+                    Fuera del camino principal: no cuentan en tu progreso ni cambian el Reto. Símbolos de código si programás; el teclado numérico si el tuyo lo tiene.
+                  </p>
+                </div>
+              )}
               <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">

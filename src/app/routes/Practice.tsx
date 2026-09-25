@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { warmupGame } from '@/engine/curriculum'
+import { mainLessons, warmupGame } from '@/engine/curriculum'
 import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
 import { starsForGame, type GameResult } from '@/engine/games'
 import {
@@ -256,7 +256,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
   }, [result, formDone, asksForm, navigate, kind])
 
   const pool = useMemo(
-    () => (kind === 'antes' ? poolOf(curriculum.lessons[curriculum.lessons.length - 1].pool) : poolOf(learned.length >= 2 ? learned : ['f', 'j'])),
+    () => (kind === 'antes' ? poolOf(mainLessons(curriculum).at(-1)!.pool) : poolOf(learned.length >= 2 ? learned : ['f', 'j'])),
     [kind, curriculum, learned],
   )
   const weak = useMemo(() => weakestKeys(keyStats, learned, 3, dayKey()), [keyStats, learned])

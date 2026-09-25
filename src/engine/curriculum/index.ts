@@ -66,13 +66,18 @@ export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): stri
   }
 }
 
+/** The main path: every lesson but the optional units'. */
+export function mainLessons(c: Curriculum): Lesson[] {
+  return c.lessons.filter((l) => !l.optional)
+}
+
 /**
  * The lesson to open next: the first pending one after the last completed lesson, so inserting a lesson
  * earlier in the path never sends the learner back; only when nothing is pending ahead, the first pending one.
  * The main path comes first: optional units are suggested only once it is complete.
  */
 export function nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | undefined {
-  const main = c.lessons.filter((l) => !l.optional)
+  const main = mainLessons(c)
   let lastIndex = -1
   for (const l of main) if (completedIds.has(l.id)) lastIndex = l.index
   return (

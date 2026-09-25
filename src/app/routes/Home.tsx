@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { warmupGame, wordsReady, type GameId } from '@/engine/curriculum'
+import { mainLessons, warmupGame, wordsReady, type GameId } from '@/engine/curriculum'
 import {
   dayKey,
   dayOfYear,
@@ -160,6 +160,9 @@ export function Home() {
   const exercises = Object.values(days).reduce((a, d) => a + d.sessions, 0)
   const weekly = weeklyAccuracy(sessions, dayKey())
   const unit = next ? curriculum.units.find((u) => u.id === next.unitId) : undefined
+  // Progress counts the main path; the optional units (código, numérico) do not move it.
+  const main = mainLessons(curriculum)
+  const mainDone = main.filter((l) => completed.has(l.id)).length
   const totalStars = Object.values(results).reduce((a, r) => a + r.stars, 0)
   const playable: GameId[] = wordsReady(learned) ? ['rain', 'rhythm', 'balloons', 'race', 'sudden'] : ['rain', 'rhythm']
 
@@ -320,12 +323,12 @@ export function Home() {
           <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-paper-deep">
             <div
               className="h-full rounded-full bg-enter transition-all"
-              style={{ width: `${(completed.size / curriculum.lessons.length) * 100}%` }}
+              style={{ width: `${(mainDone / main.length) * 100}%` }}
             />
           </div>
           <div className="mt-2 flex justify-between text-xs font-bold text-ink-mute">
             <span>
-              {completed.size} de {curriculum.lessons.length} lecciones
+              {mainDone} de {main.length} lecciones
             </span>
             <span className="inline-flex items-center gap-1">
               <Stars count={3} size="sm" /> {totalStars}
