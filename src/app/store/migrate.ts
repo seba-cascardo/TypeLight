@@ -30,6 +30,7 @@ interface Persisted {
   bigrams?: unknown
   words?: unknown
   commitments?: unknown
+  reading?: unknown
 }
 
 /** v1 → v2: Retos count toward the reference speed (`reference: true`); the store gains `days`. */
@@ -78,6 +79,11 @@ function toV7(s: Persisted): Persisted {
   return { ...s, commitments: {}, settings: { ...(s.settings ?? {}), commitment: '', metronome: false } }
 }
 
+/** v7 → v8: reading positions per book (the reading mode). */
+function toV8(s: Persisted): Persisted {
+  return { ...s, reading: {} }
+}
+
 export function migrateState(persisted: unknown, version: number): unknown {
   let s = (persisted ?? {}) as Persisted
   if (version < 2) s = toV2(s)
@@ -86,5 +92,6 @@ export function migrateState(persisted: unknown, version: number): unknown {
   if (version < 5) s = toV5(s)
   if (version < 6) s = toV6(s)
   if (version < 7) s = toV7(s)
-  return version >= 7 ? persisted : s
+  if (version < 8) s = toV8(s)
+  return version >= 8 ? persisted : s
 }

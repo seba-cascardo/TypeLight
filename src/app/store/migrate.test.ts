@@ -37,6 +37,7 @@ describe('store migration v1 → v2', () => {
       bigrams: {},
       words: {},
       commitments: {},
+      reading: {},
       settings: { lastBackupAt: null, anchor: '', conversoSeen: false, weeklyGoal: 5, mascot: true, commitment: '', metronome: false },
     })
   })
@@ -147,8 +148,14 @@ describe('store migration v5 → v6', () => {
     expect(v7.settings).toEqual({ name: 'S', commitment: '', metronome: false })
   })
 
-  it('leaves a v7 state untouched', () => {
-    const v7 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {}, commitments: {} }
-    expect(migrateState(v7, 7)).toBe(v7)
+  it('chains into v8: the reading positions start empty', () => {
+    const v7 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {}, commitments: {}, settings: { name: 'S' } }
+    const v8 = migrateState(v7, 7) as { reading: unknown }
+    expect(v8.reading).toEqual({})
+  })
+
+  it('leaves a v8 state untouched', () => {
+    const v8 = { sessions: [], days: {}, legacy: null, keys: {}, bigrams: {}, words: {}, commitments: {}, reading: {} }
+    expect(migrateState(v8, 8)).toBe(v8)
   })
 })

@@ -3,7 +3,7 @@ import { LAYOUTS } from '@/engine/layouts'
 import { migrateState } from '../store/migrate'
 import { PERSISTED_KEYS, type PersistedState } from '../store'
 
-export const BACKUP_VERSION = 7
+export const BACKUP_VERSION = 8
 
 export interface Backup {
   app: 'typelight'
@@ -71,6 +71,7 @@ export function isPersistedState(x: unknown): x is PersistedState {
   if (!Array.isArray(x.milestonesSeen)) return false
   if (!isPlainObject(x.bigrams) || !isPlainObject(x.words)) return false
   if (!isPlainObject(x.commitments)) return false
+  if (!isPlainObject(x.reading)) return false
   if (x.lastWeeklySummaryWeek !== null && typeof x.lastWeeklySummaryWeek !== 'string') return false
 
   return true

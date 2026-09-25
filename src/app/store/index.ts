@@ -67,7 +67,7 @@ export interface LessonResult {
   completedAt: string
 }
 
-export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge' | 'exam' | 'game'
+export type SessionKind = 'lesson' | 'warmup' | 'review' | 'challenge' | 'exam' | 'game' | 'reading'
 
 /** The form self-check after a Reto, exam or race: home row and correct fingers? */
 export type FormAnswer = 'si' | 'medio' | 'no'
@@ -87,7 +87,7 @@ export interface SessionRecord {
   rhythm?: number
   gameId?: GameId
   /** `free` = text mode with Backspace (the Reto). Absent = stop-on-error. */
-  mode?: 'free'
+  mode?: 'free' | 'word'
   /** Typed without keyboard, hands or next-key hint. */
   blind?: true
   /** Free mode: wrong keystrokes, keystrokes per final character, repaired errors and reaction time to the first Backspace. */
@@ -142,6 +142,9 @@ interface State {
   words: WordStats
   /** Weekly commitment answers by ISO week (its Monday). */
   commitments: Record<string, 'si' | 'no'>
+  /** Reading mode: the next page to type per book, and when it was saved; `done` once the book is finished. */
+  reading: Record<string, ReadingSpot>
+  setReadingSpot: (bookId: string, spot: { chapter: number; page: number } | null) => void
   setSettings: (patch: Partial<Settings>) => void
   answerCommitment: (week: string, answer: 'si' | 'no') => void
   /** Records the session and returns its timestamp, so it can be annotated afterwards. */
@@ -155,6 +158,13 @@ interface State {
   markMilestoneSeen: (milestone: number) => void
   setLastWeeklySummaryWeek: (week: string | null) => void
   resetProgress: () => void
+}
+
+export interface ReadingSpot {
+  chapter: number
+  page: number
+  at: string
+  done?: true
 }
 
 const emptyRoutine = (day: string): Routine => ({ day, warmup: false, lesson: false, review: false, challenge: false })
@@ -173,6 +183,7 @@ const initialProgress = () => ({
   bigrams: {} as BigramStats,
   words: {} as WordStats,
   commitments: {} as Record<string, 'si' | 'no'>,
+  reading: {} as Record<string, ReadingSpot>,
 })
 
 export const useStore = create<State>()(
@@ -199,6 +210,15 @@ export const useStore = create<State>()(
       setSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
 
       answerCommitment: (week, answer) => set((s) => ({ commitments: { ...s.commitments, [week]: answer } })),
+
+      setReadingSpot: (bookId, spot) =>
+        set((s) => {
+          const at = new Date().toISOString()
+          const prev = s.reading[bookId]
+          // null = the book is finished: keep where it ended, marked done.
+          const next: ReadingSpot = spot ? { ...spot, at } : { chapter: prev?.chapter ?? 0, page: prev?.page ?? 0, at, done: true }
+          return { reading: { ...s.reading, [bookId]: next } }
+        }),
 
       recordSession: (rec, samples, extra) => {
         const at = new Date().toISOString()
@@ -273,7 +293,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'typelight.v1',
-      version: 7,
+      version: 8,
       migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
@@ -306,6 +326,7 @@ export const PERSISTED_KEYS = [
   'bigrams',
   'words',
   'commitments',
+  'reading',
 ] as const
 export type PersistedState = Pick<State, (typeof PERSISTED_KEYS)[number]>
 

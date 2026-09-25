@@ -18,6 +18,7 @@ const state: PersistedState = {
   bigrams: {},
   words: {},
   commitments: {},
+  reading: { 'quiroga-selva': { chapter: 1, page: 3, at: '2026-09-25T10:00:00Z' } },
 }
 
 describe('backup', () => {
@@ -52,13 +53,14 @@ describe('backup', () => {
   })
 
   it('rejects a state with a malformed blind mark, streak or milestone list', () => {
-    const bad = (patch: Record<string, unknown>) => JSON.stringify({ app: 'typelight', version: 7, exportedAt: 'x', state: { ...state, ...patch } })
+    const bad = (patch: Record<string, unknown>) => JSON.stringify({ app: 'typelight', version: 8, exportedAt: 'x', state: { ...state, ...patch } })
     expect(parseBackup(bad({ blindSince: 3 })).ok).toBe(false)
     expect(parseBackup(bad({ streak: { count: 1, lastDay: null } })).ok).toBe(false)
     expect(parseBackup(bad({ milestonesSeen: 'x' })).ok).toBe(false)
     expect(parseBackup(bad({ bigrams: [] })).ok).toBe(false)
     expect(parseBackup(bad({ words: null })).ok).toBe(false)
     expect(parseBackup(bad({ commitments: 3 })).ok).toBe(false)
+    expect(parseBackup(bad({ reading: [] })).ok).toBe(false)
   })
 
   it('rejects things that are not a TypeLight backup', () => {

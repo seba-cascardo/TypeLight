@@ -14,5 +14,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // The generator tests sample thousands of texts: on a busy machine they pass the 5 s default.
+    testTimeout: 20_000,
   },
 })
