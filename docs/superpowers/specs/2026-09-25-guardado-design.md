@@ -2,7 +2,7 @@
 
 Fecha 2026-09-25 · pedido de Seba al cerrar la review de la sesión nocturna 2: «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». De tres opciones (A: red dentro del navegador; B: copia sola en una carpeta; C: el servidor local guarda) eligió **B**, con una condición: «se la voy a pasar a unos amigos a la app así que la elección de la carpeta debe ser personalizable».
 
-**Estado:** propuesto, falta la revisión de Seba.
+**Estado:** aprobado por Seba el 2026-09-25; plan en `docs/superpowers/plans/2026-09-25-guardado.md`, rama `guardado`.
 
 ## 0. Qué es
 
