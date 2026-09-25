@@ -165,6 +165,22 @@ describe('automatic backup', () => {
     expect(m.files.has(TODAY)).toBe(true)
   })
 
+  it('a rotation that fails to remove an old file does not pause the copy', async () => {
+    const m = memoryDir()
+    for (let i = 1; i <= 30; i++) m.files.set(autoBackupName(P, `2026-08-${String(i).padStart(2, '0')}`), { text: '{}', at: 0 })
+    m.dir.remove = async () => {
+      throw fail('NoModificationAllowedError')
+    }
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    change({ h: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(ab.getStatus()).toEqual({ state: 'on', folder: 'Copias', lastAt: NOW.getTime() })
+    expect(m.files.has(TODAY)).toBe(true)
+    expect(m.files.has(autoBackupName(P, '2026-08-01'))).toBe(true)
+    await expect(ab.snapshot('antes-de-reiniciar')).resolves.toBe(true)
+  })
+
   it('a folder that vanished pauses as missing', async () => {
     const m = memoryDir()
     const { ab, change } = setup({ saved: m.dir })

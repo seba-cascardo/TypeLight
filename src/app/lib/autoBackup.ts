@@ -83,10 +83,16 @@ export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
     const now = deps.now()
     try {
       await d.write(autoBackupName(deps.prefix, dayKey(now), reason), serializeBackup(deps.getState(), now))
-      for (const name of filesToDelete(deps.prefix, await d.list())) await d.remove(name)
     } catch (e) {
       pause(d, e)
       return false
+    }
+    // A rotation failure (a file locked by OneDrive/antivirus, one already gone) must not undo a copy that
+    // already landed on disk: swallow it, the old files just linger until the next write.
+    try {
+      for (const name of filesToDelete(deps.prefix, await d.list())) await d.remove(name)
+    } catch {
+      // ignore
     }
     if (dir === d && status.state === 'on') setStatus({ ...status, lastAt: now.getTime() })
     return true
