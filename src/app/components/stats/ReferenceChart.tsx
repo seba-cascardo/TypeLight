@@ -30,6 +30,8 @@ export function ReferenceChart({ points, goal, marks, today, legacy, blindSince,
   const shown = points.filter((p) => days.includes(p.day))
   const top = Math.max(goal, 10, legacy ?? 0, ...shown.map((p) => Math.max(p.wpm, p.exam ?? 0))) * 1.15
   const x = (day: string) => PAD.l + (days.indexOf(day) / (span - 1)) * (W - PAD.l - PAD.r)
+  // A vertical mark near the right edge labels to its left, so the text is not cut by the edge.
+  const label = (day: string) => (x(day) > W - PAD.r - 90 ? { x: x(day) - 5, textAnchor: 'end' as const } : { x: x(day) + 5, textAnchor: 'start' as const })
   const y = (wpm: number) => PAD.t + (1 - wpm / top) * (H - PAD.t - PAD.b)
   const trend = trendSegments(shown, blindSince)
   const step = top > 60 ? 20 : 10
@@ -69,7 +71,7 @@ export function ReferenceChart({ points, goal, marks, today, legacy, blindSince,
           .map((m) => (
             <g key={m.day}>
               <line x1={x(m.day)} x2={x(m.day)} y1={PAD.t - 8} y2={H - PAD.b} stroke="var(--color-ink-mute)" strokeWidth="1.5" strokeDasharray="3 4" />
-              <text x={x(m.day) + 5} y={PAD.t + 2} fontSize="11" fontWeight="600" fill="var(--color-ink-soft)">
+              <text {...label(m.day)} y={PAD.t + 2} fontSize="11" fontWeight="600" fill="var(--color-ink-soft)">
                 +{m.added} teclas
               </text>
             </g>
@@ -77,7 +79,7 @@ export function ReferenceChart({ points, goal, marks, today, legacy, blindSince,
         {blindSince && days.includes(blindSince) && (
           <g data-testid="blind-mark">
             <line x1={x(blindSince)} x2={x(blindSince)} y1={PAD.t - 8} y2={H - PAD.b} stroke="var(--color-ink)" strokeWidth="1.5" strokeDasharray="4 4" />
-            <text x={x(blindSince) + 5} y={H - PAD.b - 6} fontSize="11" fontWeight="700" fill="var(--color-ink)">
+            <text {...label(blindSince)} y={H - PAD.b - 6} fontSize="11" fontWeight="700" fill="var(--color-ink)">
               sin ayuda
             </text>
           </g>

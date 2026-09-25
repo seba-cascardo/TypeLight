@@ -30,11 +30,16 @@ interface Props {
  * without this a line could end in the middle of a word). Each word keeps its trailing space, so a line breaks
  * after a space and the next one never starts with one. Extra letters hang at a space index, before it.
  */
+/** Longer than any word the app shows (with its space): past this, a run is a drill, not a word. */
+const MAX_WORD = 16
+
 function wordsOf(chars: { space: boolean; nodes: ReactNode[] }[]): ReactNode[] {
   const out: ReactNode[] = []
   let word: ReactNode[] = []
   const flush = () => {
-    if (word.length) out.push(<span key={`w${out.length}`} className="type-word">{word}</span>)
+    // A run longer than a word (the first drills have no spaces) stays loose, so a narrow screen can wrap it.
+    if (word.length > MAX_WORD) out.push(...word)
+    else if (word.length) out.push(<span key={`w${out.length}`} className="type-word">{word}</span>)
     word = []
   }
   for (const c of chars) {

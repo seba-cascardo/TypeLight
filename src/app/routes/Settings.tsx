@@ -182,7 +182,7 @@ export function Settings() {
                 onChange={(e) => setSettings({ commitment: e.target.value })}
                 placeholder="escribo los mails sin mirar el teclado"
                 aria-label="Compromiso semanal"
-                className="card w-72 px-3 py-2 font-semibold outline-none focus:border-mod"
+                className="card w-full px-3 py-2 font-semibold outline-none focus:border-mod"
               />
             </span>
             <span className="mt-1 block text-sm text-ink-soft">Cada lunes, en el resumen de la semana, te pregunto si lo cumpliste. Sí o no, nada más: lo que predice el nivel es la meta explícita en el uso diario.</span>

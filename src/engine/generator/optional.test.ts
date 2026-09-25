@@ -73,3 +73,10 @@ describe('numpadText', () => {
     expect(t).toMatch(/^[789 ]+$/)
   })
 })
+
+describe('pseudoWord', () => {
+  it('never makes a word shorter than three letters (a lone "i" reads as a typo)', async () => {
+    const { pseudoWord } = await import('./index')
+    for (let seed = 1; seed < 300; seed++) expect(pseudoWord(['a', 'i', 'r', 'ñ', 'd'], new Set(['ñ']), makeRng(seed)).length).toBeGreaterThanOrEqual(3)
+  })
+})

@@ -15,6 +15,7 @@ import {
   streakAlive,
   streakGap,
   weekActiveDays,
+  weekGoalLabel,
   weeklyAccuracy,
   weeklySummary,
 } from '@/engine/stats'
@@ -201,7 +202,7 @@ export function Home() {
           )}
           <span className={`inline-flex items-center gap-2 ${weekDays >= weeklyGoal ? 'text-enter-edge' : ''}`} data-testid="week-goal">
             <span className={`inline-block h-2 w-2 rounded-full ${weekDays >= weeklyGoal ? 'bg-enter' : 'bg-line'}`} aria-hidden="true" />
-            Esta semana: {weekDays} de {weeklyGoal} días
+            Esta semana: {weekGoalLabel(weekDays, weeklyGoal)}
           </span>
         </div>
       </header>

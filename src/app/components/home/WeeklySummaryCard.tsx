@@ -1,5 +1,5 @@
 import type { WeekSummary } from '@/engine/stats'
-import { shiftDay } from '@/engine/stats'
+import { shiftDay, weekGoalLabel } from '@/engine/stats'
 import { Keycap } from '../Keycap'
 
 const signedPpm = (n: number | null) => (n === null ? '' : n > 0 ? ` (+${n})` : n < 0 ? ` (${n})` : ' (igual)')
@@ -26,7 +26,7 @@ interface Props {
 export function WeeklySummaryCard({ summary, goal, commitment, onClose }: Props) {
   const parts = [
     `${summary.minutes} min`,
-    `${summary.activeDays} de ${goal} días`,
+    weekGoalLabel(summary.activeDays, goal),
     summary.refMedian !== null ? `referencia ${summary.refMedian} PPM${signedPpm(summary.refDelta)}` : null,
     summary.acc !== null ? `precisión ${Math.round(summary.acc * 100)} %${signedPts(summary.accDelta)}` : null,
     summary.masteredNew > 0 ? `${summary.masteredNew} ${summary.masteredNew === 1 ? 'tecla dominada nueva' : 'teclas dominadas nuevas'}` : null,

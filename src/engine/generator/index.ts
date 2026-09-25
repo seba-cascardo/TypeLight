@@ -112,7 +112,8 @@ export function pseudoWord(letters: readonly string[], focus: ReadonlySet<string
   }
   const syllables = 1 + rng.int(3)
   let w = ''
-  for (let s = 0; s < syllables; s++) {
+  // At least three letters: a lone vowel or a two-letter scrap reads as a typo, not as a word.
+  for (let s = 0; s < syllables || w.length < 3; s++) {
     const shape = rng.pick(['CV', 'CV', 'CVC', 'VC', 'V'])
     for (const part of shape) {
       w += part === 'C' ? weightedPick(consonants, focus, rng) : weightedPick(vowels, focus, rng)

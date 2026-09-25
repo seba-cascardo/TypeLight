@@ -91,3 +91,10 @@ export function weeklySummary(days: Days, sessions: SessionLike[], today: string
   const numbers: WeekNumbers = { week, minutes, activeDays: active.length, refMedian, refDelta, acc, accDelta, masteredNew }
   return { ...numbers, win: weekWin(numbers, goal) }
 }
+
+/** Active days against the weekly goal: «3 de 5 días», and past it «6 días, meta de 5 cumplida» (never «6 de 5»). */
+export function weekGoalLabel(days: number, goal: number): string {
+  if (days < goal) return `${days} de ${goal} días`
+  if (days === goal) return `${days} de ${goal} días, meta cumplida`
+  return `${days} días, meta de ${goal} cumplida`
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Days } from './days'
-import { activeWeeks, weekActiveDays, weekWin, weeklySummary } from './week'
+import { activeWeeks, weekActiveDays, weekGoalLabel, weekWin, weeklySummary } from './week'
 
 const row = (seconds: number, extra: Partial<Days[string]> = {}): Days[string] => ({ seconds, blocks: 0, learned: 0, mastered: 0, reference: [], sessions: 1, ...extra })
 const at = (day: string) => `${day}T12:00:00.000Z`
@@ -57,5 +57,14 @@ describe('week', () => {
     expect(weekWin({ ...base, accDelta: 0.012 }, 5)).toBe('+1 punto de precisión')
     expect(weekWin({ ...base, activeDays: 5 }, 5)).toBe('meta semanal cumplida: 5 de 5 días')
     expect(weekWin(base, 5)).toBe('12 minutos: todos cuentan')
+  })
+})
+
+describe('weekly goal label', () => {
+  it('reads «N de M días» under the goal and says it was met past it, never «6 de 5»', () => {
+    expect(weekGoalLabel(3, 5)).toBe('3 de 5 días')
+    expect(weekGoalLabel(1, 5)).toBe('1 de 5 días')
+    expect(weekGoalLabel(5, 5)).toBe('5 de 5 días, meta cumplida')
+    expect(weekGoalLabel(6, 5)).toBe('6 días, meta de 5 cumplida')
   })
 })

@@ -19,4 +19,10 @@ describe('TypingArea', () => {
     expect(first.textContent).toBe('sols')
     expect(first.querySelector('.type-extra')?.textContent).toBe('s')
   })
+
+  it('a run with no spaces (the first f j drills) is not held together: it wraps on a narrow screen', () => {
+    const { container } = render(<TypingArea state={createSession('fjfjjffjfjjfjffjfjjf ok')} onInput={() => {}} autoFocus={false} />)
+    const words = [...container.querySelectorAll('.type-word')].map((w) => w.textContent)
+    expect(words).toEqual(['ok'])
+  })
 })
