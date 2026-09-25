@@ -2,7 +2,7 @@
 
 Fecha 2026-09-25 · sesión nocturna 2: Seba pidió «de lo que queda avanzá e implementá lo que te parezca correcto» (punto 35 del roadmap, `docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 5: «Modo lectura: libros rioplatenses de dominio público, tipear por párrafos, "stop on word" solo acá (L)»). Decisiones del agente con su porqué; Seba las revisa al volver.
 
-**Estado:** en implementación (rama `lectura`).
+**Estado:** implementado completo (rama `lectura`, mergeada fast-forward a `master` el 2026-09-25). Desvíos: al probarlo apareció un bug previo de `TypingArea` (cada letra es `inline-block`, así que un renglón podía cortar una palabra al medio: pasaba también en el Reto y el texto propio); se arregló agrupando cada palabra con su espacio en un `span` que no se corta. El timeout de Vitest subió a 20 s y dos e2e de tipeo largo se marcaron `test.slow()`: con la máquina al 100 % de CPU pasaban el límite.
 
 ## 0. Qué es
 
