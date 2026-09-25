@@ -30,6 +30,11 @@
   --color-mint-edge: #35a087;
   --color-mint-soft: #d9f4ec;
 
+  /* Mascot circle: the light soft tints in both themes (dark hair vanishes on the night ones). */
+  --color-mascot-calm: #ddf3e1;
+  --color-mascot-nervous: #fff1c7;
+  --color-mascot-panic: #ffe1da;
+
   --color-finger-pinky: #f6a5b0;
   --color-finger-ring: #f8d66b;
   --color-finger-middle: #9eddb1;

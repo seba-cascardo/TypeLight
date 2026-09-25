@@ -23,6 +23,8 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@dicebear/core": "^9.4.2",
+    "@dicebear/toon-head": "^9.4.2",
     "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

@@ -271,6 +271,18 @@ export function Settings() {
           </p>
         </section>
       </div>
+
+      <p className="mt-6 text-xs text-ink-mute" data-testid="credits">
+        Mascota: «Toon Head» de{' '}
+        <a className="underline" href="https://www.johanmelin.com" target="_blank" rel="noreferrer">
+          Johan Melin
+        </a>{' '}
+        (
+        <a className="underline" href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noreferrer">
+          CC BY 4.0
+        </a>
+        ), adaptada (un personaje fijo, recortado a la cabeza). Manos: «Hand external anatomy, dorsum», Wikimedia Commons, dominio público.
+      </p>
     </div>
   )
 }
