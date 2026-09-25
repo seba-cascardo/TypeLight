@@ -375,6 +375,9 @@ export function Home() {
             <Link to="/texto" className="inline-block text-sm font-bold text-mod-edge underline" data-testid="own-text-link">
               Tipear un texto propio →
             </Link>
+            <Link to="/lectura" className="inline-block text-sm font-bold text-mod-edge underline" data-testid="reading-link">
+              Modo lectura: Quiroga y Arlt →
+            </Link>
           </div>
         </div>
       </section>

@@ -84,6 +84,8 @@ test('own text: paste, type in text mode, recorded without reference', async ({ 
 })
 
 test('the Reto of the day keeps its text on retry; only the first round counts and is shareable', async ({ page }) => {
+  // Types the whole Reto text twice: on a loaded machine that is close to the 60 s default.
+  test.slow()
   await page.goto('/')
   await seed(page)
   await page.goto('/practica/reto')
