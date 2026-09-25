@@ -172,6 +172,9 @@ test('a saved progress that cannot be read is never overwritten', async ({ page 
   await expect(page.getByTestId('load-failed')).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('typelight.v1'))).toBe('{nope')
   expect(await page.evaluate(() => localStorage.getItem('typelight.v1.rescate'))).toBe('{nope')
+  // No onboarding until the person decides: nothing done meanwhile would be saved.
+  await expect(page.getByPlaceholder('Tu nombre')).toBeHidden()
   await page.getByRole('button', { name: 'Empezar de cero' }).click()
   await expect(page.getByTestId('load-failed')).toBeHidden()
+  await expect(page.getByPlaceholder('Tu nombre')).toBeVisible()
 })

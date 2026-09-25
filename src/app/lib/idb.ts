@@ -14,8 +14,15 @@ function open(): Promise<IDBDatabase> {
 async function run<T>(mode: IDBTransactionMode, op: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const db = await open()
   return new Promise<T>((resolve, reject) => {
-    const tx = db.transaction(STORE, mode)
-    const req = op(tx.objectStore(STORE))
+    let tx: IDBTransaction
+    let req: IDBRequest<T>
+    try {
+      tx = db.transaction(STORE, mode)
+      req = op(tx.objectStore(STORE))
+    } catch (e) {
+      db.close()
+      return reject(e)
+    }
     tx.oncomplete = () => {
       db.close()
       resolve(req.result)

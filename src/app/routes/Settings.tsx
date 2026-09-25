@@ -45,9 +45,14 @@ function autoLine(auto: AutoBackupStatus, now: number): string {
     case 'on':
       return `Se guarda sola en «${auto.folder}»${auto.lastAt ? ` · última: ${sinceLabel(auto.lastAt, now)}` : ''}.`
     case 'paused':
-      return auto.why === 'missing'
-        ? `La copia automática está en pausa: no encuentro la carpeta «${auto.folder}».`
-        : `La copia automática en «${auto.folder}» está en pausa: el navegador pide permiso de nuevo. Elegí «Permitir en cada visita» para que no vuelva a preguntar.`
+      switch (auto.why) {
+        case 'missing':
+          return `La copia automática está en pausa: no encuentro la carpeta «${auto.folder}».`
+        case 'denied':
+          return `La copia automática en «${auto.folder}» está en pausa: el navegador no tiene permiso para escribir ahí.`
+        case 'permission':
+          return `La copia automática en «${auto.folder}» está en pausa: el navegador pide permiso de nuevo. Elegí «Permitir en cada visita» para que no vuelva a preguntar.`
+      }
   }
 }
 

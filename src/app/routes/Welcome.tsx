@@ -4,6 +4,7 @@ import { LAYOUT_LIST, LAYOUTS, type LayoutId } from '@/engine/layouts'
 import { Keyboard } from '../components/Keyboard'
 import { Keycap } from '../components/Keycap'
 import { ImportFileButton, RestorePrompt, useRestore } from '../components/BackupRestore'
+import { useAutoBackup } from '../lib/autoBackup'
 import { useStore } from '../store'
 import { isWriteBlocked, subscribeWriteBlocked, unblockWrites } from '../store/storage'
 
@@ -49,6 +50,7 @@ export function Welcome() {
   const [layoutId, setLayoutId] = useState<LayoutId | null>(null)
   const [pressed, setPressed] = useState<Pressed | null>(null)
   const blocked = useSyncExternalStore(subscribeWriteBlocked, isWriteBlocked)
+  const auto = useAutoBackup()
   const restore = useRestore((state) => {
     if (state.settings.onboarded) navigate('/')
   })
@@ -110,6 +112,7 @@ export function Welcome() {
           <section className="card mb-8 p-4" data-testid="load-failed">
             <p className="font-bold">No pudimos leer tu progreso guardado. No lo borramos.</p>
             <p className="text-sm text-ink-soft">Restaurá una copia, o empezá de cero: lo que no se pudo leer queda aparte en este navegador.</p>
+            {auto.state === 'on' && <p className="text-sm text-ink-soft">Si tenías una carpeta de copias, elegí ahí el archivo más nuevo.</p>}
             <div className="mt-3 flex flex-wrap gap-2">
               <ImportFileButton restore={restore} label="Restaurar desde una copia…" testId="rescue-file" />
               <Keycap variant="ghost" size="sm" onClick={unblockWrites}>
@@ -120,7 +123,8 @@ export function Welcome() {
           </section>
         )}
 
-        {step === 'name' && (
+        {/* No steps until the person decides: nothing done while writes are blocked would be saved. */}
+        {!blocked && step === 'name' && (
           <section className="animate-rise">
             <h1 className="mb-3 text-5xl md:text-6xl">
               Diez dedos,
@@ -151,17 +155,15 @@ export function Welcome() {
                 Seguir →
               </Keycap>
             </form>
-            {!blocked && (
-              <div className="mt-8 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-                ¿Ya tenías progreso?
-                <ImportFileButton restore={restore} label="Restaurar desde una copia…" testId="welcome-backup-file" />
-              </div>
-            )}
-            {!blocked && <RestorePrompt restore={restore} />}
+            <div className="mt-8 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+              ¿Ya tenías progreso?
+              <ImportFileButton restore={restore} label="Restaurar desde una copia…" testId="welcome-backup-file" />
+            </div>
+            <RestorePrompt restore={restore} />
           </section>
         )}
 
-        {detecting && (
+        {!blocked && detecting && (
           <section className="animate-rise" key={step}>
             <div className="eyebrow mb-2">Tu teclado · paso {step === 'detect-l' ? 1 : 2} de 2</div>
             <h1 className="mb-3 text-4xl md:text-5xl">
@@ -192,7 +194,7 @@ export function Welcome() {
           </section>
         )}
 
-        {step === 'confirm' && (
+        {!blocked && step === 'confirm' && (
           <section className="animate-rise">
             <div className="eyebrow mb-2">Tu teclado</div>
             <h1 className="mb-3 text-4xl md:text-5xl">

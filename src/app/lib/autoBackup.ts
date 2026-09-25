@@ -12,7 +12,10 @@ export type AutoBackupStatus =
   | { state: 'loading' }
   | { state: 'off' }
   | { state: 'on'; folder: string; lastAt: number | null }
-  | { state: 'paused'; folder: string; why: 'permission' | 'missing' }
+  | { state: 'paused'; folder: string; why: PauseReason }
+
+/** `permission`: Reconnect can ask again. `denied` and `missing`: only another folder helps. */
+export type PauseReason = 'permission' | 'denied' | 'missing'
 
 export interface AutoBackupDeps {
   supported: boolean
@@ -45,11 +48,22 @@ export interface AutoBackup {
 
 const errorName = (e: unknown) => (typeof e === 'object' && e !== null && 'name' in e ? String(e.name) : '')
 
+/** Only a folder that is gone or not ours to write pauses the copy; anything else (a full disk, a file locked by
+ * OneDrive or an antivirus) is left for the next change to retry. */
+function pauseReason(e: unknown): PauseReason | null {
+  const name = errorName(e)
+  if (name === 'NotFoundError') return 'missing'
+  if (name === 'NotAllowedError' || name === 'SecurityError') return 'permission'
+  return null
+}
+
 export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
   let status: AutoBackupStatus = deps.supported ? { state: 'loading' } : { state: 'unsupported' }
   let dir: BackupDir | null = null
   let dirty = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  // Every write (and its rotation) runs here, one at a time: two at once could leave the older state in the day file.
+  let queue: Promise<unknown> = Promise.resolve()
   const listeners = new Set<() => void>()
 
   const setStatus = (s: AutoBackupStatus) => {
@@ -57,26 +71,47 @@ export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
     listeners.forEach((l) => l())
   }
 
-  const pause = (d: BackupDir, e: unknown) => setStatus({ state: 'paused', folder: d.name, why: errorName(e) === 'NotFoundError' ? 'missing' : 'permission' })
+  const enqueue = <T>(job: () => Promise<T>): Promise<T> => {
+    const run = queue.then(job, job)
+    queue = run.catch(() => {})
+    return run
+  }
 
   async function newest(d: BackupDir): Promise<number | null> {
     const [first] = listBackups(deps.prefix, await d.list())
-    return first ? d.modified(first.name) : null
+    if (!first) return null
+    try {
+      return await d.modified(first.name)
+    } catch {
+      return null // another tab rotated it away meanwhile
+    }
   }
 
   // `permission(request)` stays the first await: requestPermission needs the click that called it.
+  // After each await, `dir !== d` means a stop() or another choose() came meanwhile: the old folder says nothing.
   async function connect(request: boolean): Promise<void> {
     const d = dir
     if (!d) return setStatus({ state: 'off' })
+    let lastAt: number | null = null
     try {
-      if ((await d.permission(request)) !== 'granted') return setStatus({ state: 'paused', folder: d.name, why: 'permission' })
-      setStatus({ state: 'on', folder: d.name, lastAt: await newest(d) })
+      const perm = await d.permission(request)
+      if (dir !== d) return
+      if (perm !== 'granted') return setStatus({ state: 'paused', folder: d.name, why: perm === 'denied' ? 'denied' : 'permission' })
+      lastAt = await newest(d)
     } catch (e) {
-      return pause(d, e)
+      const why = pauseReason(e)
+      if (why) {
+        if (dir === d) setStatus({ state: 'paused', folder: d.name, why })
+        return
+      }
+      // Anything else: stay on, the next write tells what the folder really does.
     }
+    if (dir !== d) return
+    setStatus({ state: 'on', folder: d.name, lastAt })
     if (dirty) await flush()
   }
 
+  // Runs only inside the queue.
   async function write(reason?: SnapshotReason): Promise<boolean> {
     const d = dir
     if (!d || status.state !== 'on' || deps.isBlocked()) return false
@@ -84,7 +119,8 @@ export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
     try {
       await d.write(autoBackupName(deps.prefix, dayKey(now), reason), serializeBackup(deps.getState(), now))
     } catch (e) {
-      pause(d, e)
+      const why = pauseReason(e)
+      if (why && dir === d) setStatus({ state: 'paused', folder: d.name, why })
       return false
     }
     // A rotation failure (a file locked by OneDrive/antivirus, one already gone) must not undo a copy that
@@ -98,18 +134,21 @@ export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
     return true
   }
 
-  async function flush(): Promise<void> {
+  function flush(): Promise<void> {
     clearTimeout(timer)
-    if (!dirty || status.state !== 'on') return
-    dirty = false
-    if (!(await write())) dirty = true
+    return enqueue(async () => {
+      if (!dirty || status.state !== 'on') return
+      dirty = false
+      if (!(await write())) dirty = true
+    })
   }
 
-  deps.subscribe(() => {
-    dirty = true
-    clearTimeout(timer)
-    timer = setTimeout(() => void flush(), deps.delayMs)
-  })
+  if (deps.supported)
+    deps.subscribe(() => {
+      dirty = true
+      clearTimeout(timer)
+      timer = setTimeout(() => void flush(), deps.delayMs)
+    })
 
   return {
     getStatus: () => status,
@@ -151,7 +190,7 @@ export function createAutoBackup(deps: AutoBackupDeps): AutoBackup {
       if (!dir) throw new Error('No folder')
       return dir.read(name)
     },
-    snapshot: (reason) => write(reason),
+    snapshot: (reason) => enqueue(() => write(reason)),
     flush,
   }
 }

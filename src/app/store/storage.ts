@@ -32,6 +32,7 @@ export function guardedStorage<S>(): PersistStorage<S> {
       if (blocked) return
       localStorage.setItem(name, JSON.stringify(value))
     },
+    // Also a no-op while blocked: any "start over" flow must call unblockWrites() first.
     removeItem: (name) => {
       if (blocked) return
       localStorage.removeItem(name)

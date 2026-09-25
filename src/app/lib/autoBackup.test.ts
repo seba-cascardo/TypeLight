@@ -14,6 +14,10 @@ function memoryDir(permission: PermissionState = 'granted') {
   const files = new Map<string, { text: string; at: number }>()
   let perm = permission
   let gone = false
+  let delayMs = 0
+  let failing: string | null = null
+  let active = 0
+  let maxActive = 0
   const dir: BackupDir = {
     name: 'Copias',
     async permission(request) {
@@ -30,15 +34,37 @@ function memoryDir(permission: PermissionState = 'granted') {
       return files.get(n)!.text
     },
     async write(n, text) {
-      if (gone) throw fail('NotFoundError')
-      if (perm !== 'granted') throw fail('NotAllowedError')
-      files.set(n, { text, at: NOW.getTime() })
+      active++
+      maxActive = Math.max(maxActive, active)
+      try {
+        if (delayMs) await new Promise((r) => setTimeout(r, delayMs))
+        if (failing) {
+          const e = fail(failing)
+          failing = null
+          throw e
+        }
+        if (gone) throw fail('NotFoundError')
+        if (perm !== 'granted') throw fail('NotAllowedError')
+        files.set(n, { text, at: NOW.getTime() })
+      } finally {
+        active--
+      }
     },
     async remove(n) {
       files.delete(n)
     },
   }
-  return { dir, files, vanish: () => (gone = true) }
+  return {
+    dir,
+    files,
+    vanish: () => (gone = true),
+    /** Every write takes this long (fake time). */
+    slow: (ms: number) => (delayMs = ms),
+    /** The next write throws an error with this name. */
+    failNext: (name: string) => (failing = name),
+    /** The most writes that were running at the same time. */
+    maxActive: () => maxActive,
+  }
 }
 
 function setup(opts: { supported?: boolean; saved?: BackupDir | null; pick?: BackupDir } = {}) {
@@ -54,10 +80,10 @@ function setup(opts: { supported?: boolean; saved?: BackupDir | null; pick?: Bac
     loadSaved: async () => opts.saved ?? null,
     forget: vi.fn(async () => {}),
     getState: () => state,
-    subscribe: (cb) => {
+    subscribe: vi.fn((cb: () => void) => {
       onChange = cb
       return () => {}
-    },
+    }),
     isBlocked: () => blocked,
     now: () => NOW,
     prefix: P,
@@ -82,9 +108,10 @@ afterEach(() => vi.useRealTimers())
 
 describe('automatic backup', () => {
   it('a browser without the API stays unsupported', async () => {
-    const { ab } = setup({ supported: false })
+    const { ab, deps } = setup({ supported: false })
     await ab.init()
     expect(ab.getStatus()).toEqual({ state: 'unsupported' })
+    expect(deps.subscribe).not.toHaveBeenCalled()
   })
 
   it('without a saved folder it is off; choosing one writes the copy of the day at once', async () => {
@@ -189,6 +216,108 @@ describe('automatic backup', () => {
     change({ g: 1 })
     await vi.advanceTimersByTimeAsync(3000)
     expect(ab.getStatus()).toEqual({ state: 'paused', folder: 'Copias', why: 'missing' })
+  })
+
+  it('writes never overlap: a snapshot waits for the write in flight, and both land', async () => {
+    const m = memoryDir()
+    m.slow(100)
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    change({ i: 1 })
+    await vi.advanceTimersByTimeAsync(3000) // the debounced write starts and is still running
+    const snap = ab.snapshot('antes-de-reiniciar')
+    const flush = ab.flush()
+    await vi.advanceTimersByTimeAsync(1000)
+    await expect(snap).resolves.toBe(true)
+    await flush
+    expect(m.maxActive()).toBe(1)
+    expect(saved(m.files.get(TODAY)!.text)).toEqual({ lessons: { i: 1 } })
+    expect(saved(m.files.get(autoBackupName(P, '2026-09-25', 'antes-de-reiniciar'))!.text)).toEqual({ lessons: { i: 1 } })
+  })
+
+  it('a queued write reads the state when it runs, not when it was asked for', async () => {
+    const m = memoryDir()
+    m.slow(100)
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    change({ j: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    const snap = ab.snapshot('antes-de-importar')
+    change({ k: 1 })
+    await vi.advanceTimersByTimeAsync(1000)
+    await snap
+    expect(saved(m.files.get(autoBackupName(P, '2026-09-25', 'antes-de-importar'))!.text)).toEqual({ lessons: { k: 1 } })
+  })
+
+  it('a write that fails for any other reason (a full disk, a locked file) stays on and retries on the next change', async () => {
+    const m = memoryDir()
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    m.failNext('QuotaExceededError')
+    change({ l: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(ab.getStatus()).toEqual({ state: 'on', folder: 'Copias', lastAt: null })
+    expect(m.files.has(TODAY)).toBe(false)
+    change({ m: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(ab.getStatus()).toEqual({ state: 'on', folder: 'Copias', lastAt: NOW.getTime() })
+    expect(saved(m.files.get(TODAY)!.text)).toEqual({ lessons: { m: 1 } })
+  })
+
+  it.each(['NotAllowedError', 'SecurityError'])('a write refused with %s pauses asking for permission', async (name) => {
+    const m = memoryDir()
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    m.failNext(name)
+    change({ n: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(ab.getStatus()).toEqual({ state: 'paused', folder: 'Copias', why: 'permission' })
+  })
+
+  it('a saved folder the browser denies is paused as denied, and reconnecting does not turn it on', async () => {
+    const m = memoryDir('denied')
+    const { ab } = setup({ saved: m.dir })
+    await ab.init()
+    expect(ab.getStatus()).toEqual({ state: 'paused', folder: 'Copias', why: 'denied' })
+    await ab.reconnect()
+    expect(ab.getStatus()).toEqual({ state: 'paused', folder: 'Copias', why: 'denied' })
+    expect(m.files.size).toBe(0)
+  })
+
+  it('a newest copy that vanishes while connecting just leaves the last time unknown', async () => {
+    const m = memoryDir()
+    m.files.set(TODAY, { text: '{}', at: 0 })
+    m.dir.modified = async () => {
+      throw fail('NotFoundError')
+    }
+    const { ab } = setup({ saved: m.dir })
+    await ab.init()
+    expect(ab.getStatus()).toEqual({ state: 'on', folder: 'Copias', lastAt: null })
+  })
+
+  it('stop during a write in flight ends off, not paused for the forgotten folder', async () => {
+    const m = memoryDir()
+    m.slow(100)
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    change({ o: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    m.vanish()
+    await ab.stop()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(ab.getStatus()).toEqual({ state: 'off' })
+  })
+
+  it('a change after stop writes nothing', async () => {
+    const m = memoryDir()
+    const { ab, change } = setup({ saved: m.dir })
+    await ab.init()
+    await ab.stop()
+    change({ p: 1 })
+    await vi.advanceTimersByTimeAsync(3000)
+    await ab.flush()
+    expect(m.files.size).toBe(0)
+    expect(ab.getStatus()).toEqual({ state: 'off' })
   })
 
   it('stop forgets the folder', async () => {
