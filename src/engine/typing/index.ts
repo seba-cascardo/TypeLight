@@ -9,8 +9,14 @@
  * - `free` (the daily Reto): the error passes and is repaired with Backspace, like real text.
  *   Extra letters hang at the end of the word, a space in the middle of a word skips to the next
  *   one, and the final text — not the keystrokes — is what counts as correct.
+ * - `word` (the reading mode, "stop on word"): like `free`, but the space does not move on while the
+ *   word has an error (or an extra letter), a mid-word space is an error that passes instead of a
+ *   skip, and the text does not finish with its last word wrong.
  */
-export type TypingMode = 'stop' | 'free'
+export type TypingMode = 'stop' | 'free' | 'word'
+
+/** Modes where the error passes and Backspace repairs it. */
+export const repairs = (mode: TypingMode): boolean => mode !== 'stop'
 
 export interface Keystroke {
   pos: number
@@ -22,6 +28,8 @@ export interface Keystroke {
   latency?: number
   /** A Backspace in free mode: neither an attempt nor an error. */
   backspace?: true
+  /** Word mode: a space refused because the word still has an error. The error was already counted. */
+  blocked?: true
 }
 
 export interface TypingState {
@@ -78,6 +86,13 @@ export function wordStart(target: string, pos: number): number {
   return i === -1 ? 0 : i + 1
 }
 
+/** The word typed so far (up to `end`) matches the target and has no extra letters hanging at `end`. */
+function wordClean(target: string, typed: readonly (string | null)[], extras: Record<number, string>, end: number): boolean {
+  if (extras[end]) return false
+  for (let i = wordStart(target, end); i < end; i++) if (typed[i] !== target[i]) return false
+  return true
+}
+
 /** Feed one character (may be a multi-char string; processed sequentially). `afterPause` caps the first latency. */
 export function typeText(s: TypingState, text: string, t: number, afterPause = false): TypingState {
   let next = s
@@ -100,8 +115,13 @@ export function typeChar(s: TypingState, ch: string, t: number, afterPause = fal
   if (s.finishedAt !== null || s.pos >= s.target.length) return s
   const expected = s.target[s.pos]
   const correct = ch === expected
-  const keystrokes = [...s.keystrokes, stroke(s, s.pos, expected, ch, correct, t, afterPause)]
   const startedAt = s.startedAt ?? t
+  if (s.mode === 'word' && ch === ' ' && correct && !wordClean(s.target, s.typed, s.extras, s.pos)) {
+    // Stop on word: the space waits until the word is right. The error was counted when it was typed.
+    const keystrokes = [...s.keystrokes, { ...stroke(s, s.pos, expected, ch, false, t, afterPause), blocked: true as const }]
+    return { ...s, keystrokes, startedAt, lastWrong: true }
+  }
+  const keystrokes = [...s.keystrokes, stroke(s, s.pos, expected, ch, correct, t, afterPause)]
   if (s.mode === 'stop') {
     if (!correct) {
       const erred = s.erred.slice()
@@ -116,12 +136,14 @@ export function typeChar(s: TypingState, ch: string, t: number, afterPause = fal
 }
 
 function typeFree(s: TypingState, ch: string, expected: string, correct: boolean, keystrokes: Keystroke[], startedAt: number, t: number): TypingState {
+  const word = s.mode === 'word'
   const advance = (typed: (string | null)[], erred: boolean[], pos: number) => {
-    const finishedAt = pos >= s.target.length ? t : null
-    return { ...s, keystrokes, startedAt, typed, erred, pos, finishedAt, lastWrong: !correct }
+    // Word mode does not finish with the last word wrong: the typist repairs it first.
+    const end = pos >= s.target.length && (!word || wordClean(s.target, typed, s.extras, pos))
+    return { ...s, keystrokes, startedAt, typed, erred, pos, finishedAt: end ? t : null, lastWrong: !correct }
   }
   if (correct) return advance([...s.typed, ch], s.erred, s.pos + 1)
-  if (ch === ' ') {
+  if (ch === ' ' && (!word || s.pos === wordStart(s.target, s.pos))) {
     // Mid-word space: skip the rest of the word. At a word start it is just a stray key.
     if (s.pos === wordStart(s.target, s.pos)) return { ...s, keystrokes, startedAt, lastWrong: true }
     const nextSpace = s.target.indexOf(' ', s.pos)
@@ -146,9 +168,9 @@ function typeFree(s: TypingState, ch: string, expected: string, correct: boolean
   return advance([...s.typed, ch], erred, s.pos + 1)
 }
 
-/** Free mode: remove the last extra letter, or step back one position. */
+/** Free and word modes: remove the last extra letter, or step back one position. */
 export function backspace(s: TypingState, t: number): TypingState {
-  if (s.mode !== 'free' || s.finishedAt !== null) return s
+  if (!repairs(s.mode) || s.finishedAt !== null) return s
   const have = s.extras[s.pos]
   if (!have && s.pos === 0) return s
   const keystrokes = [...s.keystrokes, { ...stroke(s, s.pos, '', '\b', false, t, false), backspace: true as const }]
@@ -162,7 +184,7 @@ export function backspace(s: TypingState, t: number): TypingState {
 }
 
 function attempts(s: TypingState): Keystroke[] {
-  return s.keystrokes.filter((k) => !k.backspace)
+  return s.keystrokes.filter((k) => !k.backspace && !k.blocked)
 }
 
 export function metrics(s: TypingState, now?: number): Metrics {
@@ -172,7 +194,7 @@ export function metrics(s: TypingState, now?: number): Metrics {
   const right = keys.filter((k) => k.correct).length
   const errors = keys.length - right
   // Free mode: the final text is what counts (repaired = correct, left wrong = not). Stop mode: every correct key.
-  const correct = s.mode === 'free' ? s.typed.filter((c, i) => c === s.target[i]).length : right
+  const correct = repairs(s.mode) ? s.typed.filter((c, i) => c === s.target[i]).length : right
   const accuracy = keys.length === 0 ? 1 : right / keys.length
   // Gross WPM over correctly typed characters; the first keystroke starts the clock.
   const wpm = seconds > 0 ? Math.round((correct / 5) / (seconds / 60)) : 0
@@ -190,9 +212,9 @@ export interface RepairMetrics {
   repairMs: number | null
 }
 
-/** Free-mode only: how the errors were handled. */
+/** Free and word modes only: how the errors were handled. */
 export function repairMetrics(s: TypingState): RepairMetrics | null {
-  if (s.mode !== 'free') return null
+  if (!repairs(s.mode)) return null
   const keys = attempts(s)
   const firstTryErrors = keys.filter((k) => !k.correct).length
   const kspc = s.keystrokes.length / Math.max(1, s.pos)

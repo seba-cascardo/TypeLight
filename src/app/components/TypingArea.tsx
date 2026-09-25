@@ -1,5 +1,5 @@
 import { useCallback, useState, type RefObject } from 'react'
-import type { TypingState } from '@/engine/typing'
+import { repairs, type TypingState } from '@/engine/typing'
 import { trackKeyDown, trackKeyUp, type RolloverCounter } from '@/engine/stats'
 import { useHiddenInput } from '../hooks/useHiddenInput'
 import { numpadVerdict, type PadVerdict } from '../lib/numpad'
@@ -40,14 +40,14 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, n
   const { inputProps, focused, focus } = useHiddenInput({
     onText: onInput,
     onEscape: onRestart,
-    onBackspace: state.mode === 'free' ? onBackspace : undefined,
+    onBackspace: repairs(state.mode) ? onBackspace : undefined,
     onKeyDown: rollover ? (key) => trackKeyDown(rollover.current, key) : undefined,
     onKeyUp: rollover ? (key) => trackKeyUp(rollover.current, key) : undefined,
     guard: numpad ? guard : undefined,
     autoFocus,
     focusKey: state.target,
   })
-  const free = state.mode === 'free'
+  const free = repairs(state.mode)
 
   return (
     <div

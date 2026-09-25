@@ -32,3 +32,7 @@ e2e/screens
 scripts/spa_sentences.tsv*
 scripts/dict.json
 scripts/es_50k.txt
+
+# Cached Wikisource pages for scripts/build-books.py
+scripts/.books-cache
+__pycache__/

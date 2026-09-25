@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { backspace as backspaceChar, createSession, endSession, isFinished, metrics, typeText, type Metrics, type TypingMode, type TypingState } from '@/engine/typing'
+import { backspace as backspaceChar, createSession, endSession, isFinished, metrics, repairs, typeText, type Metrics, type TypingMode, type TypingState } from '@/engine/typing'
 import { chime, click, thud } from '../lib/sound'
 
 interface Options {
@@ -105,7 +105,7 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
 
   const backspace = useCallback(() => {
     const s = stateRef.current
-    if (s.mode !== 'free' || isFinished(s)) return
+    if (!repairs(s.mode) || isFinished(s)) return
     setState(backspaceChar(s, clock()))
   }, [setState, clock])
 
