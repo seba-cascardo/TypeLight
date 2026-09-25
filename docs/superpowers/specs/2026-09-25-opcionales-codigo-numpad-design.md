@@ -2,7 +2,7 @@
 
 Fecha 2026-09-25 · sesión nocturna 2: Seba pidió «de lo que queda avanzá e implementá lo que te parezca correcto» (punto 36 del roadmap, `docs/research/2026-09-17-auditoria-y-roadmap.md` §5 Ola 5: «Teclado numérico y símbolos de código como unidades opcionales al final (M)»). Las decisiones son del agente y llevan su porqué; Seba las revisa al volver.
 
-**Estado:** en implementación (rama `opcionales`).
+**Estado:** implementado completo (rama `opcionales`, mergeada fast-forward a `master` el 2026-09-25). Desvíos: en la Ruta, las prácticas por par de símbolos se leen «práctica» y las de lenguaje llevan su sigla (JS, Py, $_, </>, +=); en el e2e, Playwright emula el numérico con Bloq Num apagado, así que la tecla del numérico se simula con su `keydown` + el carácter.
 
 ## 0. Qué es
 

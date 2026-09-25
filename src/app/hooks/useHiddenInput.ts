@@ -8,6 +8,8 @@ interface Options {
   /** Printable key down (no auto-repeat) / up, for the rollover count. */
   onKeyDown?: (key: string) => void
   onKeyUp?: (key: string) => void
+  /** Refuses a key before it types anything (number pad lessons): return false to swallow it. */
+  guard?: (e: { key: string; code: string }) => boolean
   /** Focus the input when mounted and whenever `focusKey` changes. */
   autoFocus?: boolean
   focusKey?: unknown
@@ -24,7 +26,7 @@ export interface HiddenInput {
  * text field. Listens to input/compositionend, not keydown; keydown only handles Escape, Backspace (repair or
  * swallow) and the printable key down/up trackers, and blocks Enter.
  */
-export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: trackDown, onKeyUp: trackUp, autoFocus = true, focusKey }: Options): HiddenInput {
+export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: trackDown, onKeyUp: trackUp, guard, autoFocus = true, focusKey }: Options): HiddenInput {
   const inputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(false)
   const composing = useRef(false)
@@ -64,6 +66,10 @@ export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: track
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      if (guard && !guard({ key: e.key, code: e.code })) {
+        e.preventDefault()
+        return
+      }
       if (e.key === 'Escape') {
         e.preventDefault()
         onEscape?.()
@@ -75,7 +81,7 @@ export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: track
       if (e.key === 'Enter') e.preventDefault()
       if (e.key.length === 1 && !e.repeat) trackDown?.(e.key)
     },
-    [onEscape, onBackspace, trackDown],
+    [onEscape, onBackspace, trackDown, guard],
   )
 
   const onKeyUp = useCallback(

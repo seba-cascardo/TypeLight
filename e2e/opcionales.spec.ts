@@ -74,3 +74,48 @@ test('a code lesson teaches [ and ] and is completed like any lesson', async ({ 
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!).state)
   expect(stored.lessons['codigo-5b-5d-keys'].stars).toBeGreaterThan(0)
 })
+
+const PAD_CODE: Record<string, string> = { '+': 'NumpadAdd', '-': 'NumpadSubtract', '*': 'NumpadMultiply', '/': 'NumpadDivide' }
+// Playwright's pad behaves as with Num Lock off (Numpad4 sends ArrowLeft, and inserts nothing even with Shift).
+// A pad key with Num Lock on is its keydown (what the lesson checks) followed by the character.
+async function typeOnPad(page: Page, text: string) {
+  for (const ch of text) {
+    if (ch === ' ') {
+      await page.keyboard.press('Space')
+      continue
+    }
+    const code = PAD_CODE[ch] ?? `Numpad${ch}`
+    await page.evaluate(([key, code]) => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, code, bubbles: true })), [ch, code])
+    await page.keyboard.insertText(ch)
+  }
+}
+
+test('a number pad lesson shows the pad, refuses the number row and keeps the key model clean', async ({ page }) => {
+  await page.goto('/bienvenida')
+  await seed(page, [...MAIN, 'numpad-tip-numpad'])
+  await page.goto('/leccion/numpad-n456-keys')
+  await expect(page.getByTestId('numpad')).toBeVisible()
+  await page.getByRole('button', { name: 'Siguiente →' }).click()
+  await page.getByRole('button', { name: 'Empezar el ejercicio →' }).click()
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  await expect(page.getByTestId('numpad').locator('.kb-key.is-next')).toHaveCount(1)
+  const first = await remaining(page)
+  // the 4 of the number row does not type here
+  await page.keyboard.press('Digit4')
+  await expect(page.getByTestId('pad-hint')).toHaveAttribute('data-hint', 'use-pad')
+  await expect(page.locator('.type-char.is-done')).toHaveCount(0)
+  // a pad key sending navigation means Num Lock is off
+  await page.keyboard.press('Numpad4')
+  await expect(page.getByTestId('pad-hint')).toHaveAttribute('data-hint', 'numlock')
+  await expect(page.locator('.type-char.is-done')).toHaveCount(0)
+  await typeOnPad(page, first)
+  await expect(page.getByTestId('pad-hint')).toHaveCount(0)
+  await page.keyboard.press('Enter')
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  await typeOnPad(page, await remaining(page))
+  await expect(page.getByText('Lección terminada')).toBeVisible()
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!).state)
+  expect(stored.lessons['numpad-n456-keys'].stars).toBeGreaterThan(0)
+  expect(stored.sessions).toHaveLength(2)
+  expect(stored.keys).toEqual({})
+})

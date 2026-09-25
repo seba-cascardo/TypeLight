@@ -1,7 +1,8 @@
-import type { RefObject } from 'react'
+import { useCallback, useState, type RefObject } from 'react'
 import type { TypingState } from '@/engine/typing'
 import { trackKeyDown, trackKeyUp, type RolloverCounter } from '@/engine/stats'
 import { useHiddenInput } from '../hooks/useHiddenInput'
+import { numpadVerdict, type PadVerdict } from '../lib/numpad'
 
 interface Props {
   state: TypingState
@@ -11,6 +12,8 @@ interface Props {
   onBackspace?: () => void
   /** Counts key overlaps (rollover) while typing; the parent reads it when the session ends. */
   rollover?: RefObject<RolloverCounter>
+  /** Number pad lessons: digits and operators from the main keyboard do not type; a hint says why. */
+  numpad?: boolean
   /** Focus the hidden input as soon as the component mounts. */
   autoFocus?: boolean
   className?: string
@@ -22,13 +25,25 @@ interface Props {
  * In free mode the letter you typed shows where you typed it, skipped letters are struck through
  * and extra letters hang after the word, all in coral, until a Backspace repairs them.
  */
-export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, autoFocus = true, className = '' }: Props) {
+const PAD_HINT: Record<Exclude<PadVerdict, 'ok'>, string> = {
+  'use-pad': 'Con el teclado numérico: los números de arriba no cuentan en esta lección.',
+  numlock: 'Activá Bloq Num: el teclado numérico está moviendo el cursor.',
+}
+
+export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, numpad = false, autoFocus = true, className = '' }: Props) {
+  const [padHint, setPadHint] = useState<Exclude<PadVerdict, 'ok'> | null>(null)
+  const guard = useCallback((e: { key: string; code: string }) => {
+    const v = numpadVerdict(e)
+    setPadHint(v === 'ok' ? null : v)
+    return v === 'ok'
+  }, [])
   const { inputProps, focused, focus } = useHiddenInput({
     onText: onInput,
     onEscape: onRestart,
     onBackspace: state.mode === 'free' ? onBackspace : undefined,
     onKeyDown: rollover ? (key) => trackKeyDown(rollover.current, key) : undefined,
     onKeyUp: rollover ? (key) => trackKeyUp(rollover.current, key) : undefined,
+    guard: numpad ? guard : undefined,
     autoFocus,
     focusKey: state.target,
   })
@@ -79,6 +94,11 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, a
           )
         })}
       </p>
+      {numpad && padHint && (
+        <p className="mt-2 text-sm font-bold text-esc-edge" data-testid="pad-hint" data-hint={padHint}>
+          {PAD_HINT[padHint]}
+        </p>
+      )}
       {!focused && !state.finishedAt && (
         <button
           type="button"

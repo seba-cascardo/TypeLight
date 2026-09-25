@@ -100,6 +100,8 @@ function Player({ lesson }: { lesson: Lesson }) {
       if (m.chars === 0) return
       const samples = keySamples(state)
       const dead = deadKeyStats(state)
+      // Number pad lessons do not feed the key model: the 4 of the pad is not the 4 of the number row.
+      const model = !lesson.numpad
       recordSession(
         {
           kind: 'lesson',
@@ -114,8 +116,8 @@ function Player({ lesson }: { lesson: Lesson }) {
           ...(lesson.kind === 'text' && { reference: true as const }),
           ...(dead && { dead }),
         },
-        samples.values(),
-        { bigrams: bigramSamples(state).values(), words: wordSamples(state).values() },
+        model ? samples.values() : undefined,
+        model ? { bigrams: bigramSamples(state).values(), words: wordSamples(state).values() } : undefined,
       )
       const prev = totalsRef.current
       const errorsByKey = { ...prev.errorsByKey }
@@ -132,7 +134,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       setStepDone(true)
       if (stepRef.current + 1 >= texts.length) finishLesson(t)
     },
-    [lesson.id, lesson.kind, recordSession, texts.length, finishLesson],
+    [lesson.id, lesson.kind, lesson.numpad, recordSession, texts.length, finishLesson],
   )
 
   const nextStep = useCallback(() => {
@@ -268,7 +270,8 @@ function Player({ lesson }: { lesson: Lesson }) {
               nextChar={c.highlight.length === 1 ? c.highlight[0] : null}
               highlight={c.highlight}
               showHands={showHands}
-              handsOpacity={handsOpacityFor(keyStats, c.highlight.length === 1 ? c.highlight[0] : null, lesson.goalWpm)}
+              handsOpacity={lesson.numpad ? 1 : handsOpacityFor(keyStats, c.highlight.length === 1 ? c.highlight[0] : null, lesson.goalWpm)}
+              pad={lesson.numpad}
             />
           </div>
         </div>
@@ -377,6 +380,7 @@ function Player({ lesson }: { lesson: Lesson }) {
         showHands={showHands}
         goalWpm={lesson.goalWpm}
         metronome={metronomeOn && lesson.kind === 'practice'}
+        numpad={lesson.numpad}
       />
     </div>
   )
@@ -393,9 +397,11 @@ interface ExerciseProps {
   goalWpm: number
   /** A beat at 90 % of the goal while typing (practice lessons, when enabled in Ajustes). */
   metronome?: boolean
+  /** Number pad lesson: the pad on screen, and the main row digits refused. */
+  numpad?: boolean
 }
 
-export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm, metronome = false }: ExerciseProps) {
+export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalWpm, metronome = false, numpad = false }: ExerciseProps) {
   const { layout } = useProgress()
   const keyStats = useStore((s) => s.keys)
   const rollover = useRef(newRollover())
@@ -418,7 +424,7 @@ export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalW
   return (
     <div className="grid gap-4">
       <div className="card relative p-6 md:p-8">
-        <TypingArea state={session.state} onInput={session.input} onRestart={() => session.restart()} rollover={rollover} />
+        <TypingArea state={session.state} onInput={session.input} onRestart={() => session.restart()} rollover={rollover} numpad={numpad} />
         {done && (
           <div className="animate-pop mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-enter-soft px-4 py-3">
             <span className="font-bold text-enter-edge">
@@ -444,7 +450,7 @@ export function Exercise({ text, sound, onFinish, done, onNext, showHands, goalW
         <span>meta {goalWpm} PPM · Esc reinicia</span>
       </div>
       <div className="card p-4 md:p-5">
-        <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} handsOpacity={handsOpacityFor(keyStats, nextChar, goalWpm)} />
+        <KeyGuide layout={layout} nextChar={nextChar} showHands={showHands} handsOpacity={numpad ? 1 : handsOpacityFor(keyStats, nextChar, goalWpm)} pad={numpad} />
       </div>
     </div>
   )
