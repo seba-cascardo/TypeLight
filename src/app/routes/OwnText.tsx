@@ -7,6 +7,7 @@ import { TypingArea } from '../components/TypingArea'
 import { Stat } from '../components/ui'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
+import { repairFields } from '../lib/sessionFields'
 import { useStore } from '../store'
 
 /**
@@ -86,7 +87,7 @@ function OwnTextRun({ text, onAnother }: { text: string; onAnother: () => void }
           rollover: rolloverRatio(rollover.current),
           cleanRun: cleanRun(state),
           blind: true,
-          ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
+          ...repairFields(repair, 'free'),
           ...(dead && { dead }),
         },
         keySamples(state).values(),
@@ -131,7 +132,7 @@ function OwnTextRun({ text, onAnother }: { text: string; onAnother: () => void }
                   value={
                     <>
                       {result.repair.repaired}
-                      <span className="ml-1 text-base font-bold text-ink-mute">de {result.repair.firstTryErrors}</span>
+                      <span className="ml-1 text-base font-bold text-ink-mute">de {result.repair.erred}</span>
                     </>
                   }
                 />

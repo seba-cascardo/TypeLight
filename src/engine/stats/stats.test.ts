@@ -129,3 +129,10 @@ describe('streak', () => {
     expect(streakAlive(emptyStreak(), '2026-10-01')).toBe(false)
   })
 })
+
+describe('streak with a clock that went back', () => {
+  it('a day before the last active day (clock or timezone moved back) changes nothing', () => {
+    const s = { count: 4, lastDay: '2026-09-25', best: 4, freezes: 1, activeDays: 9 }
+    expect(bumpStreak(s, '2026-09-24')).toBe(s)
+  })
+})

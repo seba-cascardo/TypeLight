@@ -112,7 +112,13 @@ function stroke(s: TypingState, pos: number, expected: string, actual: string, c
 }
 
 export function typeChar(s: TypingState, ch: string, t: number, afterPause = false): TypingState {
-  if (s.finishedAt !== null || s.pos >= s.target.length) return s
+  if (s.finishedAt !== null) return s
+  if (s.pos >= s.target.length) {
+    // Word mode at the end with the last word wrong: the key is refused visibly, so the typist sees Backspace is due.
+    if (s.mode !== 'word') return s
+    const keystrokes = [...s.keystrokes, { ...stroke(s, s.pos, '', ch, false, t, afterPause), blocked: true as const }]
+    return { ...s, keystrokes, lastWrong: true }
+  }
   const expected = s.target[s.pos]
   const correct = ch === expected
   const startedAt = s.startedAt ?? t
@@ -206,6 +212,8 @@ export interface RepairMetrics {
   firstTryErrors: number
   /** Keystrokes per character of final text, Backspace included. 1.00 is perfect. */
   kspc: number
+  /** Positions typed wrong at least once (one position missed twice counts once). */
+  erred: number
   /** Erred positions that ended up right. */
   repaired: number
   /** Median ms from a wrong keystroke to the Backspace that started its repair; null without repairs. */
@@ -218,18 +226,20 @@ export function repairMetrics(s: TypingState): RepairMetrics | null {
   const keys = attempts(s)
   const firstTryErrors = keys.filter((k) => !k.correct).length
   const kspc = s.keystrokes.length / Math.max(1, s.pos)
+  const erred = s.erred.filter((e, i) => e && i < s.pos).length
   const repaired = s.erred.filter((e, i) => e && i < s.pos && s.typed[i] === s.target[i]).length
   // Reaction time: from each wrong keystroke to the first Backspace after it (errors never followed by one are left out).
   const lat: number[] = []
   for (let i = 0; i < s.keystrokes.length; i++) {
     const k = s.keystrokes[i]
-    if (k.correct || k.backspace) continue
+    // A refused space is not a new error: its word's error already counts.
+    if (k.correct || k.backspace || k.blocked) continue
     const next = s.keystrokes.slice(i + 1).find((x) => x.backspace)
     if (next) lat.push(next.t - k.t)
   }
   lat.sort((a, b) => a - b)
   const repairMs = lat.length === 0 ? null : lat.length % 2 ? lat[lat.length >> 1] : Math.round((lat[(lat.length >> 1) - 1] + lat[lat.length >> 1]) / 2)
-  return { firstTryErrors, kspc, repaired, repairMs }
+  return { firstTryErrors, kspc, erred, repaired, repairMs }
 }
 
 export interface KeySample {

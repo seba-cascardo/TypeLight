@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BOOKS, type Book } from '../corpus/books'
 import { LATAM, US } from '../layouts'
-import { bookProgress, lastRead, nextSpot, readingText } from './index'
+import { bookProgress, lastRead, nextSpot, readingText, resolveSpot } from './index'
 
 const book: Book = {
   id: 'b',
@@ -31,6 +31,23 @@ describe('reading position', () => {
   it('the last book read is the one read most recently', () => {
     expect(lastRead({})).toBeNull()
     expect(lastRead({ a: { chapter: 0, page: 1, at: '2026-09-24T10:00:00Z' }, b: { chapter: 2, page: 0, at: '2026-09-25T09:00:00Z' } })).toBe('b')
+  })
+})
+
+describe('resolving a saved place', () => {
+  it('finds the chapter by title when the library was rebuilt and indices moved', () => {
+    expect(resolveSpot(book, { chapter: 0, page: 1, title: 'Dos' })).toEqual({ chapter: 1, page: 1 })
+  })
+
+  it('never points outside the book: a missing chapter restarts it, a page past the end goes to the last one', () => {
+    expect(resolveSpot(book, { chapter: 7, page: 0 })).toBeUndefined()
+    expect(resolveSpot(book, { chapter: 0, page: 9 })).toEqual({ chapter: 0, page: 2 })
+    expect(resolveSpot(book, { chapter: 5, page: 0, title: 'Tres' })).toBeUndefined()
+  })
+
+  it('keeps not-started and finished apart', () => {
+    expect(resolveSpot(book, undefined)).toBeUndefined()
+    expect(resolveSpot(book, { chapter: 1, page: 1, done: true })).toBeNull()
   })
 })
 

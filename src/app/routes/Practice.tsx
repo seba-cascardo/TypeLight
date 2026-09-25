@@ -34,6 +34,7 @@ import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
 import { handsOpacityFor } from '../lib/fingers'
 import { gameExtra, gameSession } from '../lib/gameSession'
+import { repairFields } from '../lib/sessionFields'
 import { useStore, type RoutineBlock, type SessionKind } from '../store'
 
 type Kind = 'calentamiento' | 'repaso' | 'reto' | 'examen' | 'antes' | 'palabras'
@@ -319,7 +320,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
           cleanRun: cleanRun(state),
           ...(reference && { reference: true as const }),
           ...(meta.blind && { blind: true as const }),
-          ...(repair && { mode: 'free' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
+          ...repairFields(repair, 'free'),
           ...(dead && { dead }),
         },
         keySamples(state).values(),
@@ -419,7 +420,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
                   value={
                     <>
                       {result.repair.repaired}
-                      <span className="ml-1 text-base font-bold text-ink-mute">de {result.repair.firstTryErrors}</span>
+                      <span className="ml-1 text-base font-bold text-ink-mute">de {result.repair.erred}</span>
                     </>
                   }
                   tone={result.repair.firstTryErrors === 0 ? 'enter' : 'ink'}

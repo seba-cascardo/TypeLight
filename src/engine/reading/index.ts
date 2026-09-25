@@ -21,6 +21,28 @@ export function readingText(page: string, layout: Layout): string {
   return prepareOwnText(plain, layout)
 }
 
+/** A place as the store keeps it: indices, the chapter's title (indices move when the library is rebuilt), finished. */
+export interface SavedSpot {
+  chapter: number
+  page: number
+  title?: string
+  done?: boolean
+}
+
+/**
+ * The saved place, made safe for this build of the library: the chapter is found by title first, a chapter
+ * that no longer exists restarts the book (undefined), a page past the end goes to the chapter's last page.
+ * `undefined` = not started, `null` = finished.
+ */
+export function resolveSpot(book: Book, saved: SavedSpot | undefined): Spot | null | undefined {
+  if (!saved) return undefined
+  if (saved.done) return null
+  const byTitle = saved.title === undefined ? -1 : book.chapters.findIndex((c) => c.title === saved.title)
+  const chapter = byTitle >= 0 ? byTitle : saved.title === undefined && saved.chapter < book.chapters.length ? saved.chapter : -1
+  if (chapter < 0) return undefined
+  return { chapter, page: Math.max(0, Math.min(saved.page, book.chapters[chapter].pages.length - 1)) }
+}
+
 /** The page after `spot`: the next one in the chapter, the first of the next chapter, or null at the end of the book. */
 export function nextSpot(book: Book, spot: Spot): Spot | null {
   if (spot.page + 1 < book.chapters[spot.chapter].pages.length) return { chapter: spot.chapter, page: spot.page + 1 }

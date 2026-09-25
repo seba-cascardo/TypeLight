@@ -96,3 +96,21 @@ test('the chapter picker jumps and keeps the new place', async ({ page }) => {
   expect(stored.reading['arlt-aguafuertes'].page).toBe(0)
   expect(stored.reading['arlt-aguafuertes'].chapter).toBeGreaterThan(0)
 })
+
+test('a saved place the library no longer has, or a finished book, opens at the start without breaking', async ({ page }) => {
+  await page.goto('/bienvenida')
+  await seed(page, {
+    'arlt-aguafuertes': { chapter: 99, page: 7, title: 'Un aguafuerte que ya no está', at: '2026-09-24T10:00:00Z' },
+    'quiroga-selva': { chapter: 4, page: 3, at: '2026-09-23T10:00:00Z', done: true },
+  })
+  await page.goto('/lectura')
+  await expect(page.getByTestId('book-quiroga-selva')).toContainText('terminado')
+  await page.goto('/lectura/arlt-aguafuertes')
+  await expect(page.getByTestId('page-of')).toContainText('página 1 de')
+  await expect(page.getByRole('heading', { level: 1, name: 'Yo no tengo la culpa' })).toBeVisible()
+  await page.goto('/lectura/quiroga-selva')
+  await expect(page.getByTestId('page-of')).toContainText('página 1 de')
+  await page.goto('/lectura')
+  await expect(page.getByTestId('book-quiroga-selva')).not.toContainText('terminado')
+  await expect(page.getByTestId('book-quiroga-selva').getByRole('link', { name: 'Seguir leyendo →' })).toBeVisible()
+})

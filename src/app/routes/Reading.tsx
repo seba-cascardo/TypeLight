@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
-import { BOOKS, bookProgress, lastRead, nextSpot, readingText, type Book, type Spot } from '@/engine/reading'
+import { BOOKS, bookProgress, lastRead, nextSpot, readingText, resolveSpot, type Book, type Spot } from '@/engine/reading'
 import { newRollover, rolloverRatio } from '@/engine/stats'
 import { bigramSamples, cleanRun, deadKeyStats, keySamples, metrics, repairMetrics, rhythm, wordSamples, type RepairMetrics, type TypingState } from '@/engine/typing'
 import { Keycap } from '../components/Keycap'
 import { TypingArea } from '../components/TypingArea'
 import { useProgress } from '../hooks/useCurriculum'
 import { useTypingSession } from '../hooks/useTypingSession'
-import { useStore, type ReadingSpot } from '../store'
+import { repairFields } from '../lib/sessionFields'
+import { useStore } from '../store'
 
 /** What each book's chapters are called on its card. */
 const CHAPTERS: Record<string, [string, string]> = {
   'quiroga-selva': ['cuento', 'cuentos'],
   'arlt-aguafuertes': ['aguafuerte', 'aguafuertes'],
 }
-
-const spotOf = (r: ReadingSpot | undefined): Spot | null | undefined => (r === undefined ? undefined : r.done ? null : { chapter: r.chapter, page: r.page })
 
 /**
  * The reading mode's library: public-domain Rioplatense books, typed page by page with the place kept.
@@ -37,7 +36,7 @@ export function Library() {
       </header>
       <div className="grid gap-4 md:grid-cols-2">
         {BOOKS.map((b) => {
-          const spot = spotOf(reading[b.id])
+          const spot = resolveSpot(b, reading[b.id])
           const p = bookProgress(b, spot)
           const [one, many] = CHAPTERS[b.id] ?? ['capítulo', 'capítulos']
           const done = spot === null
@@ -62,7 +61,7 @@ export function Library() {
                   {p.done} de {p.total} páginas
                 </span>
                 {done ? (
-                  <Keycap variant="ghost" size="sm" onClick={() => setReadingSpot(b.id, { chapter: 0, page: 0 })}>
+                  <Keycap variant="ghost" size="sm" onClick={() => setReadingSpot(b.id, { chapter: 0, page: 0, title: b.chapters[0].title })}>
                     Leer de nuevo
                   </Keycap>
                 ) : (
@@ -96,15 +95,23 @@ export function Reader() {
 
 function ReaderRun({ book }: { book: Book }) {
   const { layout } = useProgress()
-  const saved = useStore((s) => s.reading[book.id])
   const setReadingSpot = useStore((s) => s.setReadingSpot)
-  const [spot, setSpot] = useState<Spot>(() => (saved && !saved.done ? { chapter: saved.chapter, page: saved.page } : { chapter: 0, page: 0 }))
+  // Where to start: the saved place made safe for this build of the library, or the beginning.
+  const [spot, setSpot] = useState<Spot>(() => resolveSpot(book, useStore.getState().reading[book.id]) ?? { chapter: 0, page: 0 })
+  // Opening a finished (or lost) book starts it again: its card must stop saying «terminado».
+  useEffect(() => {
+    const saved = useStore.getState().reading[book.id]
+    if (saved && resolveSpot(book, saved) == null) setReadingSpot(book.id, { chapter: 0, page: 0, title: book.chapters[0].title })
+  }, [book, setReadingSpot])
   const [ended, setEnded] = useState(false)
   const chapter = book.chapters[spot.chapter]
   const text = useMemo(() => readingText(chapter.pages[spot.page], layout), [chapter, spot.page, layout])
 
   // The place is saved as soon as a page is typed: leaving after it does not repeat it.
-  const onPageDone = useCallback(() => setReadingSpot(book.id, nextSpot(book, spot)), [book, spot, setReadingSpot])
+  const onPageDone = useCallback(() => {
+    const next = nextSpot(book, spot)
+    setReadingSpot(book.id, next && { ...next, title: book.chapters[next.chapter].title })
+  }, [book, spot, setReadingSpot])
   const onNext = useCallback(() => {
     const next = nextSpot(book, spot)
     if (next) setSpot(next)
@@ -114,7 +121,7 @@ function ReaderRun({ book }: { book: Book }) {
   const jump = (i: number) => {
     const to = { chapter: i, page: 0 }
     setSpot(to)
-    setReadingSpot(book.id, to)
+    setReadingSpot(book.id, { ...to, title: book.chapters[i].title })
   }
 
   if (ended) {
@@ -206,7 +213,7 @@ function ReadingPage({ text, onDone, onNext }: { text: string; onDone: () => voi
           rollover: rolloverRatio(rollover.current),
           cleanRun: cleanRun(state),
           blind: true,
-          ...(repair && { mode: 'word' as const, firstTryErrors: repair.firstTryErrors, kspc: repair.kspc, repaired: repair.repaired, repairMs: repair.repairMs }),
+          ...repairFields(repair, 'word'),
           ...(dead && { dead }),
         },
         keySamples(state).values(),
@@ -240,7 +247,7 @@ function ReadingPage({ text, onDone, onNext }: { text: string; onDone: () => voi
           <div className="animate-pop mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-lav-soft px-4 py-3" data-testid="page-done">
             <span className="font-bold text-ink">
               ✓ {result.m.wpm} PPM · {Math.round(result.m.accuracy * 100)} % al primer intento
-              {result.repair && result.repair.firstTryErrors > 0 ? ` · ${result.repair.repaired} de ${result.repair.firstTryErrors} reparados` : ''}
+              {result.repair && result.repair.firstTryErrors > 0 ? ` · ${result.repair.repaired} de ${result.repair.erred} reparados` : ''}
             </span>
             <Keycap variant="primary" size="sm" onClick={onNext} autoFocus>
               Seguir (Enter) →

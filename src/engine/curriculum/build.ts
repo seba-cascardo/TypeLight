@@ -410,19 +410,19 @@ function optionalUnits(b: Builder, layout: Layout) {
     { kind: 'symbols', pool: [...b.pool], symbols: operators, tokens: 14 },
     { kind: 'code', pool: [...b.pool], focus: operators, count: 4 },
     { kind: 'code', pool: [...b.pool], focus: operators, count: 4 },
-  ])
-  const byLanguage: [string, string, CodeLang[]][] = [
-    ['javascript', 'Código: JavaScript', ['js']],
-    ['python', 'Código: Python', ['py']],
-    ['terminal', 'Código: terminal y SQL', ['sh', 'sql']],
-    ['web', 'Código: HTML y CSS', ['web']],
+  ]).short = '+='
+  const byLanguage: [string, string, CodeLang[], string][] = [
+    ['javascript', 'Código: JavaScript', ['js'], 'JS'],
+    ['python', 'Código: Python', ['py'], 'Py'],
+    ['terminal', 'Código: terminal y SQL', ['sh', 'sql'], '$_'],
+    ['web', 'Código: HTML y CSS', ['web'], '</>'],
   ]
-  for (const [slug, title, langs] of byLanguage) {
+  for (const [slug, title, langs, short] of byLanguage) {
     add(b, cod, slug, title, 'practice', [], [], [
       { kind: 'code', pool: [...b.pool], langs, count: 4 },
       { kind: 'code', pool: [...b.pool], langs, count: 4 },
       { kind: 'code', pool: [...b.pool], langs, count: 5 },
-    ])
+    ]).short = short
   }
   unitReview(b, cod, 'Repaso: código', (pool) => [
     { kind: 'code', pool, count: 4 },

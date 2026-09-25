@@ -79,7 +79,7 @@ test('the weekly summary shows once for last week, with a concrete win, and clos
   expect(stored.state.lastWeeklySummaryWeek).toBe(lastMonday)
 })
 
-test('a milestone and the weekly summary never share Inicio: the milestone goes first', async ({ page }) => {
+test('a milestone and the weekly summary never share Inicio: the summary goes first, the milestone waits', async ({ page }) => {
   const today = localDay()
   const lastMonday = shift(monday(today), -7)
   const days: Record<string, unknown> = {}
@@ -87,10 +87,11 @@ test('a milestone and the weekly summary never share Inicio: the milestone goes 
   await page.goto('/')
   await seed(page, { days, streak: { count: 3, lastDay: shift(lastMonday, 2), best: 3, freezes: 0, activeDays: 7 } })
   await page.goto('/')
-  await expect(page.getByTestId('milestone')).toBeVisible()
-  await expect(page.getByTestId('weekly-summary')).toHaveCount(0)
-  await page.getByTestId('milestone').getByRole('button', { name: 'Cerrar' }).click()
+  // the summary belongs to a week and expires with it; the milestone keeps
   await expect(page.getByTestId('weekly-summary')).toBeVisible()
+  await expect(page.getByTestId('milestone')).toHaveCount(0)
+  await page.getByTestId('weekly-summary').getByRole('button', { name: 'Cerrar' }).click()
+  await expect(page.getByTestId('milestone')).toBeVisible()
 })
 
 test('milestone at 7 active days shows once; the streak forgives one day and the return line says so', async ({ page }) => {

@@ -6,9 +6,6 @@ import { useProgress } from '../hooks/useCurriculum'
 import { accentVars, unitAccentClass } from '../lib/accents'
 import { useStore } from '../store'
 
-/** Short legends for the language lessons of the code unit (the per-symbol practices read «práctica»). */
-const CODE_LEGEND: Record<string, string> = { operadores: '+=', javascript: 'JS', python: 'Py', terminal: '$_', web: '</>' }
-
 function legend(l: Lesson): { main: string; sub: string } {
   switch (l.kind) {
     case 'keys':
@@ -18,10 +15,7 @@ function legend(l: Lesson): { main: string; sub: string } {
     case 'practice':
       if (l.exercises[0]?.kind === 'ngram') return { main: 'ab', sub: 'n-gramas' }
       if (l.numpad) return { main: '0-9', sub: 'numérico' }
-      if (l.exercises.some((e) => e.kind === 'code')) {
-        const lang = CODE_LEGEND[l.id.slice(l.unitId.length + 1)]
-        return lang ? { main: lang, sub: 'código' } : { main: '✎', sub: 'práctica' }
-      }
+      if (l.short) return { main: l.short, sub: 'código' }
       return l.id.includes('-patron-') ? { main: l.title.replace('Patrón: ', ''), sub: 'patrón' } : { main: '✎', sub: 'práctica' }
     case 'tip':
       return { main: 'tip', sub: 'consejo' }

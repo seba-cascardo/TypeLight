@@ -144,7 +144,7 @@ interface State {
   commitments: Record<string, 'si' | 'no'>
   /** Reading mode: the next page to type per book, and when it was saved; `done` once the book is finished. */
   reading: Record<string, ReadingSpot>
-  setReadingSpot: (bookId: string, spot: { chapter: number; page: number } | null) => void
+  setReadingSpot: (bookId: string, spot: { chapter: number; page: number; title?: string } | null) => void
   setSettings: (patch: Partial<Settings>) => void
   answerCommitment: (week: string, answer: 'si' | 'no') => void
   /** Records the session and returns its timestamp, so it can be annotated afterwards. */
@@ -163,6 +163,8 @@ interface State {
 export interface ReadingSpot {
   chapter: number
   page: number
+  /** The chapter's title: indices move when the library is rebuilt. */
+  title?: string
   at: string
   done?: true
 }

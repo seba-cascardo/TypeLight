@@ -135,9 +135,10 @@ export function Home() {
   const alive = streakAlive(streak, today)
   const weekDays = weekActiveDays(days, today)
   const summary = weeklySummary(days, sessions, today, weeklyGoal)
-  const milestone = milestoneReached(streak.activeDays, milestonesSeen)
-  // One closable card at a time: a new milestone goes first, the weekly summary waits until it is closed.
-  const showSummary = summary !== null && summary.week !== lastWeeklySummaryWeek && milestone === null
+  // One closable card at a time. The weekly summary goes first: it belongs to a week and expires with it,
+  // while a milestone keeps until it is closed.
+  const showSummary = summary !== null && summary.week !== lastWeeklySummaryWeek
+  const milestone = showSummary ? null : milestoneReached(streak.activeDays, milestonesSeen)
   const best = records(days, sessions)
   const mascotCtx: MascotContext = {
     recordToday: best.bestReference?.day === today && (days[today]?.reference.length ?? 0) > 0,

@@ -165,6 +165,8 @@ export function streakGap(streak: Streak, today: string): number | null {
 export function bumpStreak(streak: Streak, today: string): Streak {
   if (streak.lastDay === today) return streak
   const gap = streakGap(streak, today)
+  // A day before the last active one (the clock or the timezone moved back) is not new activity.
+  if (gap !== null && gap < 0) return streak
   let count: number
   let freezes = streak.freezes
   if (gap === null) count = 1

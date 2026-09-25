@@ -56,6 +56,8 @@ export interface Lesson {
   game?: GameId
   /** Set on the Patrones game: only words containing one of these count. */
   patterns?: string[]
+  /** A short legend for its key in the Ruta (the language lessons of the code unit: JS, Py…). */
+  short?: string
   /** Lessons of an optional unit (see `Unit.optional`). */
   optional?: boolean
   /** Typed on the number pad: the guide shows the pad and the main row digits are refused. */
