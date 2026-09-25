@@ -1,6 +1,7 @@
 import { canType, keyByCode, type Layout } from '../layouts'
 import { explainChar } from './explain'
-import { TIP_ACCENTS, TIP_BREAK, TIP_IDEAS, TIP_INTRO, TIP_NUMBERS, TIP_POSTURE, TIP_SHIFT, TIP_SPEED, type Tip } from './tips'
+import type { CodeLang } from '../corpus/code'
+import { TIP_ACCENTS, TIP_BREAK, TIP_CODE, TIP_IDEAS, TIP_INTRO, TIP_NUMBERS, TIP_NUMPAD, TIP_POSTURE, TIP_SHIFT, TIP_SPEED, type Tip } from './tips'
 import type { Curriculum, ExerciseSpec, GameId, IntroCard, Lesson, LessonKind, Unit, UnitAccent } from './types'
 
 const LOWER = 'abcdefghijklmnopqrstuvwxyzñ'
@@ -335,6 +336,129 @@ export function buildCurriculum(layout: Layout): Curriculum {
     }
   })
 
+  optionalUnits(b, layout)
+
   const byId = new Map(b.lessons.map((l) => [l.id, l]))
   return { units: b.units, lessons: b.lessons, byId }
+}
+
+const PAD_STEPS: { slug: string; title: string; keys: string[]; card: IntroCard }[] = [
+  {
+    slug: 'n456',
+    title: 'Numérico: 4, 5 y 6',
+    keys: ['4', '5', '6'],
+    card: {
+      title: 'La fila guía del numérico',
+      body: 'El 5 tiene una marca, como la F y la J. Apoyá ahí el dedo medio de la mano derecha: el índice queda en el 4 y el anular en el 6. El meñique descansa junto al + y el pulgar sobre el 0.',
+      highlight: ['4', '5', '6'],
+    },
+  },
+  {
+    slug: 'n789',
+    title: 'Numérico: 7, 8 y 9',
+    keys: ['7', '8', '9'],
+    card: { title: 'Una fila arriba', body: 'El índice sube al 7, el medio al 8 y el anular al 9. Después de cada número, los dedos vuelven al 4, 5 y 6.', highlight: ['7', '8', '9'] },
+  },
+  {
+    slug: 'n123',
+    title: 'Numérico: 1, 2 y 3',
+    keys: ['1', '2', '3'],
+    card: { title: 'Una fila abajo', body: 'El índice baja al 1, el medio al 2 y el anular al 3. La marca del 5 te dice adónde volver sin mirar.', highlight: ['1', '2', '3'] },
+  },
+  {
+    slug: 'n0',
+    title: 'Numérico: el 0',
+    keys: ['0'],
+    card: { title: 'El 0, con el pulgar', body: 'El 0 es la tecla ancha de abajo y la toca el pulgar derecho, sin mover el resto de la mano.', highlight: ['0'] },
+  },
+  {
+    slug: 'operadores',
+    title: 'Numérico: + − * /',
+    keys: ['+', '-', '*', '/'],
+    card: {
+      title: 'Los operadores',
+      body: 'El meñique toma el − de arriba y el + de la tecla alta. El medio sube a la / y el anular al *. Son las teclas de las cuentas.',
+      highlight: ['+', '-', '*', '/'],
+    },
+  },
+]
+
+const PAD_PRACTICE: IntroCard = {
+  title: 'A practicar',
+  body: 'Bloq Num encendido y la mano derecha en 4 5 6. El espacio entre números lo da el pulgar izquierdo. Los números del teclado principal no cuentan acá.',
+  highlight: ['4', '5', '6'],
+}
+
+/**
+ * The optional units, after Velocidad and outside the main path: the code symbols this layout's Signos unit
+ * left out, with real lines of code, and the number pad. `learned`, the counters and `nextLesson` ignore them.
+ */
+function optionalUnits(b: Builder, layout: Layout) {
+  const cod = unit(b, 'codigo', 'Símbolos de código', 'Llaves, corchetes, barras, operadores y líneas de código real. Después de Signos, cuando quieras.', 20, 'lavender')
+  tip(b, cod, TIP_CODE)
+  const codePairs = [['[', ']'], ['{', '}'], ['<', '>'], ['\\', '|'], ['`', '~'], ['^']]
+  for (const pair of codePairs) {
+    const fresh = pair.filter((c) => canType(layout, c) && !b.pool.includes(c))
+    if (!fresh.length) continue
+    keyTrio(b, layout, cod, fresh, (pool) => [
+      { kind: 'code', pool, focus: fresh, count: 3 },
+      { kind: 'code', pool, focus: fresh, count: 4 },
+    ], 2)
+  }
+  const operators = ['=', '+', '-', '*', '/', '%', '<', '>', '!', '&', '|'].filter((c) => b.pool.includes(c))
+  add(b, cod, 'operadores', 'Código: operadores', 'practice', [], [], [
+    { kind: 'symbols', pool: [...b.pool], symbols: operators, tokens: 14 },
+    { kind: 'code', pool: [...b.pool], focus: operators, count: 4 },
+    { kind: 'code', pool: [...b.pool], focus: operators, count: 4 },
+  ])
+  const byLanguage: [string, string, CodeLang[]][] = [
+    ['javascript', 'Código: JavaScript', ['js']],
+    ['python', 'Código: Python', ['py']],
+    ['terminal', 'Código: terminal y SQL', ['sh', 'sql']],
+    ['web', 'Código: HTML y CSS', ['web']],
+  ]
+  for (const [slug, title, langs] of byLanguage) {
+    add(b, cod, slug, title, 'practice', [], [], [
+      { kind: 'code', pool: [...b.pool], langs, count: 4 },
+      { kind: 'code', pool: [...b.pool], langs, count: 4 },
+      { kind: 'code', pool: [...b.pool], langs, count: 5 },
+    ])
+  }
+  unitReview(b, cod, 'Repaso: código', (pool) => [
+    { kind: 'code', pool, count: 4 },
+    { kind: 'code', pool, count: 5 },
+    { kind: 'code', pool, count: 5 },
+  ])
+
+  const pad = unit(b, 'numpad', 'Teclado numérico', 'La mano derecha sola, con el 5 como fila guía. Para cargar números rápido; si tu teclado no tiene numérico, salteala.', 20, 'mint')
+  tip(b, pad, TIP_NUMPAD)
+  const padLearned: string[] = []
+  for (const step of PAD_STEPS) {
+    padLearned.push(...step.keys)
+    const first = [...new Set([...step.keys, '4', '5', '6'])]
+    add(b, pad, `${step.slug}-keys`, step.title, 'keys', step.keys, [step.card, { ...PAD_PRACTICE, highlight: step.keys }], [
+      { kind: 'numpad', chars: first, tokens: 12 },
+      { kind: 'numpad', chars: [...padLearned], tokens: 14 },
+    ])
+  }
+  const digits = padLearned.filter((c) => /[0-9]/.test(c))
+  add(b, pad, 'montos', 'Práctica: montos', 'practice', [], [], [
+    { kind: 'numpad', chars: digits, tokens: 16 },
+    { kind: 'numpad', chars: digits, tokens: 18 },
+  ])
+  add(b, pad, 'cuentas', 'Práctica: cuentas', 'practice', [], [], [
+    { kind: 'numpad', chars: [...padLearned], tokens: 14 },
+    { kind: 'numpad', chars: [...padLearned], tokens: 16 },
+  ])
+  add(b, pad, 'unit-review', 'Repaso: teclado numérico', 'unit-review', [], [], [
+    { kind: 'numpad', chars: digits, tokens: 18 },
+    { kind: 'numpad', chars: [...padLearned], tokens: 16 },
+    { kind: 'numpad', chars: [...padLearned], tokens: 18 },
+  ])
+  for (const l of pad.lessons) l.numpad = true
+
+  for (const u of [cod, pad]) {
+    u.optional = true
+    for (const l of u.lessons) l.optional = true
+  }
 }

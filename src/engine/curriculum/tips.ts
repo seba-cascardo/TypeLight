@@ -149,3 +149,41 @@ export const TIP_SPEED: Tip = {
     },
   ],
 }
+
+export const TIP_CODE: Tip = {
+  id: 'codigo',
+  title: 'Código sin mirar',
+  cards: [
+    {
+      title: 'Los símbolos también son teclas',
+      body:
+        'En el código, las llaves, los corchetes y las barras aparecen en cada línea. Se aprenden como cualquier letra: siempre el mismo dedo y sin mirar. Si un símbolo lleva Alt Gr, lo sostiene el pulgar derecho.',
+      highlight: ['{', '}', '[', ']'],
+    },
+    {
+      title: 'La precisión vale doble',
+      body:
+        'Un error en la prosa se lee igual; en el código rompe todo. Estas lecciones paran en el error como siempre: cada línea terminada es una línea limpia.',
+      highlight: [],
+    },
+  ],
+}
+
+export const TIP_NUMPAD: Tip = {
+  id: 'numpad',
+  title: 'El teclado numérico',
+  cards: [
+    {
+      title: 'Una mano, todos los números',
+      body:
+        'El teclado numérico es la calculadora de la derecha y se usa con la mano derecha sola: índice, medio y anular cubren tres columnas, el pulgar toca el 0 y el meñique los operadores.',
+      highlight: ['4', '5', '6'],
+    },
+    {
+      title: 'Bloq Num encendido',
+      body:
+        'Si al tocar el 4 se mueve el cursor en vez de escribir, está apagado: tocá Bloq Num, arriba a la izquierda del numérico. Si tu teclado no tiene numérico, salteá esta unidad: es opcional.',
+      highlight: [],
+    },
+  ],
+}

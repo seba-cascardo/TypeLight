@@ -1,3 +1,4 @@
+import type { CodeLang } from '../corpus/code'
 import type { SentenceCorpus } from '../generator'
 
 export type UnitAccent = 'green' | 'blue' | 'coral' | 'sun' | 'lavender' | 'mint'
@@ -9,6 +10,8 @@ export interface Unit {
   goalWpm: number
   accent: UnitAccent
   lessons: Lesson[]
+  /** Outside the main path (Símbolos de código, Teclado numérico): open anytime, never counted as progress. */
+  optional?: boolean
 }
 
 export type LessonKind = 'keys' | 'review' | 'practice' | 'tip' | 'text' | 'unit-review' | 'game'
@@ -32,6 +35,8 @@ export type ExerciseSpec =
   | { kind: 'pattern'; pool: string[]; pattern: string; count?: number }
   | { kind: 'adaptive'; pool: string[]; count?: number }
   | { kind: 'ngram'; pool: string[]; n: 2 | 3; combination?: number; repetition?: number; tokens?: number }
+  | { kind: 'code'; pool: string[]; langs?: CodeLang[]; focus?: string[]; count?: number }
+  | { kind: 'numpad'; chars: string[]; tokens?: number }
 
 export interface Lesson {
   id: string
@@ -51,6 +56,10 @@ export interface Lesson {
   game?: GameId
   /** Set on the Patrones game: only words containing one of these count. */
   patterns?: string[]
+  /** Lessons of an optional unit (see `Unit.optional`). */
+  optional?: boolean
+  /** Typed on the number pad: the guide shows the pad and the main row digits are refused. */
+  numpad?: boolean
 }
 
 export interface Curriculum {

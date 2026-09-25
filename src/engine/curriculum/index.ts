@@ -1,9 +1,11 @@
 import {
   adaptiveText,
+  codeText,
   drillText,
   makeRng,
   ngramText,
   numbersText,
+  numpadText,
   patternText,
   poolOf,
   reviewText,
@@ -57,17 +59,27 @@ export function generateExercise(spec: ExerciseSpec, rng: Rng = makeRng()): stri
       return adaptiveText(poolOf(spec.pool), [], spec.count, { rng })
     case 'ngram':
       return ngramText(poolOf(spec.pool), spec.n, { rng, combination: spec.combination, repetition: spec.repetition, tokens: spec.tokens })
+    case 'code':
+      return codeText(poolOf(spec.pool), spec.count, { rng, langs: spec.langs, focus: spec.focus })
+    case 'numpad':
+      return numpadText(spec.chars, spec.tokens, { rng })
   }
 }
 
 /**
  * The lesson to open next: the first pending one after the last completed lesson, so inserting a lesson
  * earlier in the path never sends the learner back; only when nothing is pending ahead, the first pending one.
+ * The main path comes first: optional units are suggested only once it is complete.
  */
 export function nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | undefined {
+  const main = c.lessons.filter((l) => !l.optional)
   let lastIndex = -1
-  for (const l of c.lessons) if (completedIds.has(l.id)) lastIndex = l.index
-  return c.lessons.find((l) => l.index > lastIndex && !completedIds.has(l.id)) ?? c.lessons.find((l) => !completedIds.has(l.id))
+  for (const l of main) if (completedIds.has(l.id)) lastIndex = l.index
+  return (
+    main.find((l) => l.index > lastIndex && !completedIds.has(l.id)) ??
+    main.find((l) => !completedIds.has(l.id)) ??
+    c.lessons.find((l) => l.optional && !completedIds.has(l.id))
+  )
 }
 
 export function lessonAfter(c: Curriculum, id: string): Lesson | undefined {

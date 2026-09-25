@@ -1,3 +1,4 @@
+import { CODE, type CodeLang } from '../corpus/code'
 import { BIGRAMS, TRIGRAMS } from '../corpus/ngrams'
 import { ONE_LETTER, WORDS } from '../corpus/words'
 import { NUMBER_SENTENCES, SENTENCES, SYMBOL_SENTENCES } from '../corpus/sentences'
@@ -437,6 +438,60 @@ export function symbolsText(
     else if (s === '$' || s === '#' || s === '%') out.push(s === '%' ? `${number()}%` : `${s}${number()}`)
     else if ('=+*&<>|\\'.includes(s)) out.push(`${number()} ${s} ${number()}`)
     else out.push(`${word()}${s}`)
+  }
+  return out.join(' ')
+}
+
+/**
+ * Real lines of code for the optional "Símbolos de código" unit: only lines the pool can type entirely,
+ * preferring (7 in 10) the ones with a focus symbol, never the same line twice while others are left.
+ * Without a fitting line, a symbols drill.
+ */
+export function codeText(
+  pool: ReadonlySet<string>,
+  count = 4,
+  opts: GenOpts & { langs?: readonly CodeLang[]; focus?: readonly string[] } = {},
+): string {
+  const rng = opts.rng ?? makeRng()
+  const fit = CODE.filter((l) => (!opts.langs || opts.langs.includes(l.lang)) && usesOnly(l.text, pool)).map((l) => l.text)
+  if (!fit.length) {
+    const symbols = opts.focus?.length ? opts.focus : [...pool].filter((c) => !/[\p{L}0-9 ]/u.test(c))
+    return symbolsText(pool, symbols, 14, { rng })
+  }
+  const focused = opts.focus?.length ? fit.filter((t) => opts.focus!.some((f) => t.includes(f))) : []
+  const out: string[] = []
+  for (let i = 0; i < count; i++) {
+    const from = focused.length && rng.chance(0.7) ? focused : fit
+    const fresh = from.filter((t) => !out.includes(t))
+    out.push(rng.pick(fresh.length ? fresh : from))
+  }
+  return out.join(' ')
+}
+
+const PAD_OPS = new Set(['+', '-', '*', '/'])
+
+/**
+ * Number pad drill: groups of 2 to 4 digits and, once operators are taught, short sums like 45+6 or 7*8-2.
+ * Tokens always start and end with a digit.
+ */
+export function numpadText(chars: readonly string[], tokens = 14, opts: GenOpts = {}): string {
+  const rng = opts.rng ?? makeRng()
+  const digits = chars.filter((c) => /[0-9]/.test(c))
+  const ops = chars.filter((c) => PAD_OPS.has(c))
+  if (!digits.length) return ''
+  const num = (min: number, max: number) => {
+    const len = min + rng.int(max - min + 1)
+    let n = ''
+    for (let j = 0; j < len; j++) n += rng.pick(digits)
+    return n
+  }
+  const out: string[] = []
+  for (let i = 0; i < tokens; i++) {
+    if (ops.length && rng.chance(0.5)) {
+      let t = num(1, 3) + rng.pick(ops) + num(1, 2)
+      if (rng.chance(0.3)) t += rng.pick(ops) + num(1, 2)
+      out.push(t)
+    } else out.push(num(2, 4))
   }
   return out.join(' ')
 }
