@@ -4,7 +4,7 @@ Pendientes acordados con Seba, en orden de llegada. Los "hechos" se borran de ac
 
 ## Pendientes
 
-- **Revisión con Seba de la sesión nocturna 2** (2026-09-25): modo lectura (Quiroga y Arlt, «stop on word»), unidades opcionales «Símbolos de código» y «Teclado numérico», Al compás con palabras, las ideas sueltas que se hicieron y los arreglos de la revisión integral. Las decisiones del agente están en `docs/superpowers/handoffs/HANDOFF.md` (tabla `## Decisiones`, filas «llamada del agente»).
+Ninguno. La sesión nocturna 2 la revisó Seba el 2026-09-25 y aprobó los cinco ítems sin cambios.
 
 ## Ideas sueltas (sin compromiso)
 

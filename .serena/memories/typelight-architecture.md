@@ -62,11 +62,10 @@ App web local (Vite + React 19 + TS + Tailwind v4 + zustand persist) para aprend
 
 ## Trampas
 - **Python en Windows escribe CRLF** con `Path.write_text`: en los patches usar `write_bytes(s.encode('utf-8'))` (o `newline='\n'`). Git normaliza al commitear, pero la copia de trabajo queda sucia.
-- **Heredocs del tool Bash con código Python que lleva `\n` o `\s`**: el `\n` dentro de un string puede volverse un salto de línea real; los patches con regex van en un `.py` escrito con Write.
 - **Playwright emula el teclado numérico con Bloq Num apagado** (`Numpad4` manda `ArrowLeft`, y con Shift no inserta nada): en el e2e, una tecla del numérico = `keydown` con su `code` + `keyboard.insertText`.
 - **Con la máquina cargada** (renders de Blender, CPU al 100 %) los tests de tipeo largo pasan los límites: Vitest tiene `testTimeout: 20_000`, el examen y el doble Reto están en `test.slow()`, y conviene reintentar con `--workers=1` antes de sospechar del código. Las aserciones sobre el DOM después de tipear van con `toHaveCount`/`expect` que reintenta, nunca con `.count()` inmediato.
 - **`git add docs/superpowers`** mete también el `HANDOFF.md` de trabajo: agregar los archivos por nombre.
-- Los patches con Python desde el tool Bash: escribir el script `.py` con el tool Write y correrlo (`python script.py`); un heredoc con comillas simples dentro también se rompe.
+- **Heredocs y escapes**: un heredoc con comillas simples funciona (el 2026-09-25 corrió bien muchas veces seguidas). Lo que rompe es anidar escapes: un `\n` o un `\s` escrito dentro de un string de Python que a su vez va en un heredoc termina en el archivo como salto real o como escape inválido. Los patches con regex o escapes van en un `.py` escrito con Write y se corren con `python script.py`.
 - En Git Bash, un argumento que empieza con `/` (p. ej. `/estadisticas`) se convierte en ruta de Windows (`C:/Program Files/Git/estadisticas`): pasar rutas de la app sin la barra inicial o con `MSYS_NO_PATHCONV=1`.
 - `getByRole('heading', { name })` en los juegos choca con el h2 de instrucciones: usar `{ level: 1 }`.
 - `page.clock.setFixedTime` fija `Date`/`new Date()` pero deja correr `performance.now()` y los timers: sirve para forzar el "día de juego" sin congelar los juegos.
