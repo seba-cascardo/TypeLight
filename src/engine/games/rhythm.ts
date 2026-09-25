@@ -66,15 +66,33 @@ export function startRound(beat: number, floor = MIN_BEAT_MS): Round {
   return { notes: [], beat, floor, minBeat: beat, wrong: 0, combo: 0, bestCombo: 0, score: 0, nextId: 1, nextAt: beat * 2, stretchStart: 0, stretchJudged: 0, stretchOnTime: 0 }
 }
 
-/** Schedule notes up to `now + lookaheadMs`, one per beat. Returns the same round when nothing is due. */
-export function schedule(r: Round, now: number, lookaheadMs: number, letters: readonly string[], weak: readonly string[], rng: Rng): Round {
+/**
+ * Al compás with words: the letters of real words one after another, a space (a note for the thumb) between
+ * them, never the same word twice in a row. Each call returns the next note.
+ */
+export function wordStream(words: readonly string[], rng: Rng): () => string {
+  const queue: string[] = []
+  let last = ''
+  return () => {
+    if (queue.length === 0) {
+      let w = rng.pick(words)
+      for (let i = 0; w === last && words.length > 1 && i < 8; i++) w = rng.pick(words)
+      last = w
+      queue.push(...w, ' ')
+    }
+    return queue.shift()!
+  }
+}
+
+/** Schedule notes up to `now + lookaheadMs`, one per beat, from `next` when given (words). Returns the same round when nothing is due. */
+export function schedule(r: Round, now: number, lookaheadMs: number, letters: readonly string[], weak: readonly string[], rng: Rng, next?: () => string): Round {
   if (r.nextAt > now + lookaheadMs) return r
   const notes = [...r.notes]
   let nextAt = r.nextAt
   let nextId = r.nextId
   let prev = notes.length ? notes[notes.length - 1].ch : null
   while (nextAt <= now + lookaheadMs) {
-    const ch = pickNote(letters, weak, prev, rng)
+    const ch = next ? next() : pickNote(letters, weak, prev, rng)
     notes.push({ id: nextId++, ch, at: nextAt, result: null, hit: false })
     prev = ch
     nextAt += r.beat

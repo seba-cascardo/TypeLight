@@ -322,6 +322,8 @@ export function buildCurriculum(layout: Layout): Curriculum {
     { kind: 'ngram', pool: velPool, n: 3, tokens: 15 },
     { kind: 'words', pool: velPool, count: 16 },
   ])
+  // Words at a steady beat, letter by letter: rhythm under the goal keeps the new fingering in charge.
+  game(b, vel, 'compas-palabras', 'Juego: al compás con palabras', 'rhythm').words = true
   goals.forEach((goal, i) => {
     const pool = [...b.pool]
     const l = add(b, vel, `texto-${i + 1}`, `Texto ${i + 1} · meta ${goal} PPM`, 'text', [], [], [

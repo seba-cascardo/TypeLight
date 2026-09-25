@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRng } from '@/engine/generator'
-import { advance, beatMs, currentNote, pickLetters, press, schedule, startRound, tally, type Judgement, type Round } from '@/engine/games'
+import { advance, beatMs, currentNote, pickLetters, press, rhythmWords, schedule, startRound, tally, wordStream, type Judgement, type Round } from '@/engine/games'
 import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
@@ -42,11 +42,14 @@ const FEEDBACK_BAR: Record<Feedback, string> = {
  * Al compás: a metronome at the unit's goal speed; keys slide into the hit zone and each press is
  * judged justo / bien / fuera. The round state lives in the engine; this component only draws it.
  */
-export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, durationMs = 45_000, maxWpm, onFinish }: GameProps) {
+export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, durationMs = 45_000, maxWpm, words = false, onFinish }: GameProps) {
   const floorMs = maxWpm ? beatMs(maxWpm) : undefined
   const letters = useMemo(() => pickLetters(layout, pool), [layout, pool])
+  // With words, the notes are real words letter by letter (only when the pool has enough of them).
+  const wordList = useMemo(() => (words ? rhythmWords(layout, pool) : []), [words, layout, pool])
+  const stream = useRef<(() => string) | undefined>(undefined)
   const colorOf = useMemo(() => {
-    const map: Record<string, string> = {}
+    const map: Record<string, string> = { ' ': FINGER_COLOR.thumb }
     for (const ch of letters) map[ch] = FINGER_COLOR[fingerGroup(resolveChar(layout, ch)![0].finger)]
     return map
   }, [layout, letters])
@@ -122,7 +125,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         finish()
         return
       }
-      let r = schedule(round.current, now, lookahead, letters, weak, rng.current)
+      let r = schedule(round.current, now, lookahead, letters, weak, rng.current, stream.current)
       const step = advance(r, now)
       r = step.round
       for (let i = 0; i < step.expired.length; i++) {
@@ -175,6 +178,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const start = () => {
     round.current = startRound(beatMs(goalWpm), floorMs)
     rng.current = makeRng()
+    stream.current = wordList.length ? wordStream(wordList, rng.current) : undefined
     floating.current = []
     recent.current = []
     mood.current = { mood: 'idle', at: 0 }
@@ -260,7 +264,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
               data-ch={isCurrent ? n.ch : undefined}
               data-offset={isCurrent ? Math.round(n.at - now) : undefined}
             >
-              {n.ch}
+              {n.ch === ' ' ? '␣' : n.ch}
             </div>
           )
         })}
@@ -296,7 +300,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
             <div className="max-w-md text-center">
               <h2 className="text-3xl">Al compás</h2>
               <p className="mt-2 text-ink-soft">
-                Un metrónomo marca el pulso a tu meta ({goalWpm} PPM). Las teclas llegan a la zona: tocá cada una justo cuando entra. Si venís bien, el pulso se acelera. {Math.round(durationMs / 1000)} segundos.
+                Un metrónomo marca el pulso a tu meta ({goalWpm} PPM). {wordList.length ? 'Llegan palabras, letra por letra, y el espacio entre ellas: tocá cada una justo cuando entra.' : 'Las teclas llegan a la zona: tocá cada una justo cuando entra.'} Si venís bien, el pulso se acelera. {Math.round(durationMs / 1000)} segundos.
               </p>
               <Keycap variant="primary" size="lg" className="mt-5" onClick={start} autoFocus>
                 Empezar (Enter) →

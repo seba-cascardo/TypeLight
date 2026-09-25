@@ -103,9 +103,12 @@ describe('curriculum', () => {
       ['mayusculas-juego-mayusculas', 'race'],
       ['numeros-juego-numeros', 'rhythm'],
       ['signos-juego-signos', 'rain'],
+      ['velocidad-juego-compas-palabras', 'rhythm'],
       ['velocidad-juego-carrera-1', 'race'],
       ['velocidad-juego-carrera-2', 'race'],
     ])
+    // Al compás in Velocidad plays real words, letter by letter
+    expect(c.byId.get('velocidad-juego-compas-palabras')!.words).toBe(true)
     const patrones = c.byId.get('patrones-juego-patrones')!
     expect(patrones.patterns).toEqual(['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente'])
     expect(c.byId.get('velocidad-juego-carrera-1')!.goalWpm).toBe(34)

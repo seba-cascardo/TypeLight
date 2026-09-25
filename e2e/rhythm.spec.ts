@@ -52,3 +52,42 @@ test('rhythm game: hit the notes on the beat, finish, get stars and a game sessi
   expect(typeof last.rhythm).toBe('number')
   await page.screenshot({ path: 'e2e/screens/rhythm-results.png' })
 })
+
+test('Al compás with words in Velocidad: the notes spell real words with a space between them', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => {
+    const done = { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }
+    localStorage.setItem(
+      'typelight.v1',
+      JSON.stringify({
+        state: {
+          settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto' },
+          lessons: { 'velocidad-trigramas': done },
+          keys: {},
+          sessions: [],
+          days: {},
+          streak: { count: 0, lastDay: null },
+          routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false },
+        },
+        version: 2,
+      }),
+    )
+  })
+  await page.goto('/leccion/velocidad-juego-compas-palabras?dur=6000')
+  await expect(page.getByText('Llegan palabras, letra por letra', { exact: false })).toBeVisible()
+  await page.keyboard.press('Enter')
+  // Walk the notes as they come: letters of a word, then the space.
+  const played: string[] = []
+  const deadline = Date.now() + 5000
+  while (played.length < 16 && Date.now() < deadline) {
+    const ch = await page.evaluate(() => document.querySelector<HTMLElement>('[data-current="1"]')?.dataset.ch ?? null)
+    if (ch !== null) {
+      played.push(ch)
+      await page.keyboard.press(ch === ' ' ? 'Space' : ch)
+    }
+    await page.waitForTimeout(20)
+  }
+  const text = played.join('')
+  expect(text).toContain(' ')
+  for (const w of text.trim().split(' ').slice(0, -1)) expect(w.length).toBeGreaterThanOrEqual(3)
+})

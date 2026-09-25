@@ -288,6 +288,7 @@ function Player({ lesson }: { lesson: Lesson }) {
       ghostWpm: ghostWpm(sessions, dayKey(), lesson.goalWpm),
       ghostWpm30: ghostWpm30(days, dayKey()),
       patterns: lesson.patterns,
+      words: lesson.words,
       sound,
       onFinish: onGameFinish,
       durationMs: Number(new URLSearchParams(window.location.search).get('dur')) || undefined,
