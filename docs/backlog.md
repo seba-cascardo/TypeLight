@@ -4,7 +4,7 @@ Pendientes acordados con Seba, en orden de llegada. Los "hechos" se borran de ac
 
 ## Pendientes
 
-- **Guardado menos frágil** (pedido 2026-09-25, al cerrar la review de la sesión nocturna 2): «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». Hoy el progreso vive solo en el `localStorage` del navegador y la copia es un JSON que se baja a mano desde Ajustes. Seba eligió la copia automática en una carpeta (opción B, carpeta elegida por cada persona porque se la va a pasar a amigos). Implementada en la rama `guardado` el 2026-09-25 (spec `docs/superpowers/specs/2026-09-25-guardado-design.md`); falta su prueba en Chrome con una carpeta real antes del merge.
+- **Guardado menos frágil** (pedido 2026-09-25, al cerrar la review de la sesión nocturna 2): «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». Hoy el progreso vive solo en el `localStorage` del navegador y la copia es un JSON que se baja a mano desde Ajustes. Seba eligió la copia automática en una carpeta (opción B, carpeta elegida por cada persona porque se la va a pasar a amigos). Implementada y mergeada a `master` el 2026-09-26 (spec `docs/superpowers/specs/2026-09-25-guardado-design.md`); falta su prueba en Chrome con una carpeta real: elegir carpeta, practicar, cerrar todas las pestañas y volver («Reconectar» → «Permitir en cada visita»), Restaurar.
 
 ## Ideas sueltas (sin compromiso)
 
