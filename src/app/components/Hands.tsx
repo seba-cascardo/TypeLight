@@ -1,5 +1,10 @@
 import type { Finger } from '@/engine/layouts'
 import { DORSUM_H, DORSUM_INK, DORSUM_W } from '../assets/handDorsum'
+import fingerI from '../assets/finger-I.png'
+import fingerM from '../assets/finger-M.png'
+import fingerP from '../assets/finger-P.png'
+import fingerR from '../assets/finger-R.png'
+import fingerT from '../assets/finger-T.png'
 import handMask from '../assets/hand-mask.png'
 import { FINGER_COLOR, fingerGroup } from '../lib/fingers'
 
@@ -18,19 +23,19 @@ interface Props {
  * of the back of a right hand (see assets/handDorsum.ts). Under the ink goes
  * the hand's silhouette filled with skin — a mask derived from the drawing
  * itself by scripts/build-hand-mask.py, so it hugs the ink exactly — and the
- * active finger gets a colour tint clipped to that silhouette plus a marker on
- * the fingertip. The left hand is the mirror image.
+ * active finger gets a colour tint through its own mask (that silhouette cut at
+ * the knuckles by scripts/build-finger-masks.py) plus a marker on the fingertip. The left hand is the mirror image.
  */
 
 type FingerId = 'P' | 'R' | 'M' | 'I' | 'T'
 
-/** Finger axes on the same grid: tip → base, plus the tint width. */
-const FINGERS: Record<FingerId, { tip: [number, number]; base: [number, number]; w: number }> = {
-  T: { tip: [48, 132], base: [74, 198], w: 30 },
-  I: { tip: [104, 30], base: [95, 144], w: 30 },
-  M: { tip: [150, 18], base: [147, 144], w: 30 },
-  R: { tip: [195, 32], base: [187, 150], w: 28 },
-  P: { tip: [236, 76], base: [224, 164], w: 26 },
+/** Fingertips on the drawing's grid (marker and label anchor) and each finger's tint mask. */
+const FINGERS: Record<FingerId, { tip: [number, number]; mask: string }> = {
+  T: { tip: [48, 132], mask: fingerT },
+  I: { tip: [104, 30], mask: fingerI },
+  M: { tip: [150, 18], mask: fingerM },
+  R: { tip: [195, 32], mask: fingerR },
+  P: { tip: [236, 76], mask: fingerP },
 }
 
 const IDS = Object.keys(FINGERS) as FingerId[]
@@ -51,26 +56,27 @@ function Hand({ side, active, tints }: { side: 'L' | 'R'; active: Set<Finger>; t
       </defs>
       {/* skin under the ink, cut to the silhouette */}
       <rect x="0" y="0" width={DORSUM_W} height={DORSUM_H} fill="url(#skinGrad)" mask={`url(#${mask})`} />
-      {/* active finger tint, cut to the hand */}
-      <g mask={`url(#${mask})`}>
-        {lit.map((id) => {
-          const f = FINGERS[id]
-          return (
-            <line
-              key={id}
-              x1={f.tip[0]}
-              y1={f.tip[1]}
-              x2={f.base[0]}
-              y2={f.base[1]}
-              stroke={FINGER_COLOR[fingerGroup(fingerId(id, side))]}
-              strokeWidth={f.w}
-              strokeLinecap="round"
-              opacity={tints ? tints[fingerId(id, side)] : 0.75}
+      {/* active finger tint, cut to that finger */}
+      {lit.map((id) => {
+        const fid = fingerId(id, side)
+        return (
+          <g key={id}>
+            <mask id={`${mask}-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={DORSUM_W} height={DORSUM_H}>
+              <image href={FINGERS[id].mask} x="0" y="0" width={DORSUM_W} height={DORSUM_H} />
+            </mask>
+            <rect
+              x="0"
+              y="0"
+              width={DORSUM_W}
+              height={DORSUM_H}
+              fill={FINGER_COLOR[fingerGroup(fid)]}
+              mask={`url(#${mask}-${id})`}
+              opacity={tints ? tints[fid] : 0.75}
               style={{ mixBlendMode: 'multiply' }}
             />
-          )
-        })}
-      </g>
+          </g>
+        )
+      })}
       {/* the drawing itself */}
       <path d={DORSUM_INK} fill="var(--skin-line)" />
       {/* glowing fingertip on the active finger */}
