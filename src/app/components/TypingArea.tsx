@@ -107,7 +107,9 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, n
               .filter(Boolean)
               .join(' ')
             const extras = free ? state.extras[i] : undefined
-            const shown = mistyped ? typed : ch === ' ' && current ? '' : ch
+            const missedSpace = ch === ' ' && done && state.erred[i] && !skipped
+            // The cursor's space and a missed one are drawn as ␣ by CSS: a bare space shows no colour.
+            const shown = mistyped ? typed : ch === ' ' && (current || missedSpace) ? '' : ch
             return {
               space: ch === ' ',
               nodes: [

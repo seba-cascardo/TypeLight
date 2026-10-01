@@ -20,6 +20,20 @@ describe('TypingArea', () => {
     expect(first.querySelector('.type-extra')?.textContent).toBe('s')
   })
 
+  it('a missed space stays marked after it is passed, drawn as ␣ like a missed letter', () => {
+    const s = typeText(createSession('fff jjj'), 'fffk j', 1000)
+    const { container } = render(<TypingArea state={s} onInput={() => {}} autoFocus={false} />)
+    const space = container.querySelector('.type-char.is-space')!
+    expect(space.className).toContain('is-done')
+    expect(space.className).toContain('was-error')
+    // drawn empty: the ␣ comes from CSS, in the error colour
+    expect(space.textContent).toBe('')
+    // a space typed right stays a plain space
+    const clean = typeText(createSession('fff jjj'), 'fff j', 1000)
+    const ok = render(<TypingArea state={clean} onInput={() => {}} autoFocus={false} />).container.querySelector('.type-char.is-space')!
+    expect(ok.textContent).toBe(' ')
+  })
+
   it('a run with no spaces (the first f j drills) is not held together: it wraps on a narrow screen', () => {
     const { container } = render(<TypingArea state={createSession('fjfjjffjfjjfjffjfjjf ok')} onInput={() => {}} autoFocus={false} />)
     const words = [...container.querySelectorAll('.type-word')].map((w) => w.textContent)
