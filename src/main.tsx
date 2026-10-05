@@ -56,7 +56,7 @@ const router = createBrowserRouter([
       },
     ],
   },
-])
+], { basename: import.meta.env.BASE_URL })
 
 if (useStore.getState().settings.onboarded) requestPersistence()
 startAutoBackup()

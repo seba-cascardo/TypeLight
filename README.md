@@ -2,7 +2,11 @@
 
 Mecanografía con diez dedos, en español, tecla por tecla. Una app local que combina la progresividad de TypingClub (posición de los dedos, una tecla a la vez, explicaciones visuales) con la adaptatividad de keybr (repasos sobre tus teclas más flojas), más una rutina diaria de diez minutos.
 
-## Correr
+## Usarla
+
+Abrí **<https://seba-cascardo.github.io/TypeLight/>** en Chrome o Edge de escritorio. No hace falta instalar nada ni crear una cuenta: el progreso de cada persona queda en su propio navegador. Para no perderlo, en **Ajustes** elegí una carpeta tuya y la app guarda ahí una copia sola cada vez que practicás (en otros navegadores, descargá la copia a mano desde el mismo lugar).
+
+## Correr en tu máquina
 
 ```bash
 npm install
@@ -71,3 +75,13 @@ python scripts/build-ngrams.py      # sin inputs, lee words.ts -> src/engine/cor
 
 - `spa_sentences.tsv.bz2`: [descarga de Tatoeba](https://downloads.tatoeba.org/exports/per_language/spa/spa_sentences.tsv.bz2) (CC BY 2.0 FR), filtrado contra `dict.json` y contra formas de tuteo/vosotros y vocabulario peninsular (`scripts/corpus_common.py`).
 - `build-ngrams.py` no necesita descargar nada: arma la tabla de bigramas y trigramas a partir de `words.ts`, ya en el repo.
+
+## Licencia y créditos
+
+El código es [MIT](LICENSE). El contenido de terceros conserva su licencia, con el crédito en el encabezado de cada archivo:
+
+- Palabras por frecuencia (`src/engine/corpus/words.ts`): OpenSubtitles 2018 vía [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords), CC BY-SA 4.0.
+- Frases (`src/engine/corpus/sentences.generated.ts`): [Tatoeba](https://tatoeba.org), CC BY 2.0 FR.
+- Textos del modo lectura: Horacio Quiroga y Roberto Arlt, dominio público, desde [es.wikisource.org](https://es.wikisource.org).
+- Mascota: «Toon Head» de [Johan Melin](https://www.johanmelin.com), CC BY 4.0.
+- Manos: «Hand external anatomy, dorsum» de [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hand_external_anatomy,_dorsum.svg), dominio público.
