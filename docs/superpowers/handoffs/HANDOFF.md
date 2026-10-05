@@ -1,48 +1,38 @@
-# Handoff — TypeLight: sesión nocturna 2 aprobada entera; próxima = contarle a Seba qué quedó abierto y proponer un guardado menos frágil
+# Handoff — TypeLight: guardado menos frágil mergeado; próxima = la prueba de Seba en Chrome
 
-Fecha 2026-09-25 · rama `master` · preparado sobre `b4ca674`
+Fecha 2026-09-26 · rama `master` · preparado sobre `bd910e1`
 
 ## Alcance
 
-**Sí (en `master`, pusheado hasta `b4ca674`):**
+**Sí (en `master`, pusheado hasta `bd910e1`):**
 
-- **Review de la sesión nocturna 2 con Seba** (2026-09-25), ítem por ítem: ideas sueltas → Al compás con palabras → unidades opcionales (código y numérico) → modo lectura → revisión integral. **Aprobó los cinco sin cambios**; de las unidades de código dijo «me encanta que añadas unidades avanzadas para scripts». `4f2e1d0` cierra la review (backlog, trampa «Heredocs y escapes»). `b4ca674` suma a `.serena/memories/typelight-architecture.md` la trampa de no editar el repo mientras corren los e2e: 9 fallos con «navigated to …» mientras el agente editaba este handoff; la misma corrida sin tocar nada, 42/42.
-- Lo que hizo la sesión nocturna 2 está en `git log e4481eb..e93dab8`, en los specs `docs/superpowers/specs/2026-09-25-*.md` (con su `**Estado:**`) y en `## Decisiones`.
-- **Pedido de Seba al cerrar, para esta sesión:** (1) que le digas si quedó algo abierto; (2) «vamos a ver cómo mejoramos el guardado para que no sea tan frágil a perder los datos». Quedó como pendiente en `docs/backlog.md`.
+- **Guardado menos frágil**, pedido de Seba al cerrar la sesión nocturna 2. De tres opciones renderizadas eligió la **B** (copia automática en una carpeta) con una condición suya: «se la voy a pasar a unos amigos a la app así que la elección de la carpeta debe ser personalizable». Spec `docs/superpowers/specs/2026-09-25-guardado-design.md` (`**Estado:**` lista los seis desvíos), plan `docs/superpowers/plans/2026-09-25-guardado.md`, commits `b89046c..0151bac`. Mergeado fast-forward a `master` el 2026-09-26 cuando Seba eligió «1» (merge local).
+- `3b8d1a9` (otra ventana, desde un chip de esta): el e2e «Al compás con palabras» fallaba 2 de 10 por `keyboard.press('ñ')` y por leer dos veces la misma nota; el arreglo está en el test.
 
-**No:** esta ventana no tocó código. Deploy, backend y PWA siguen fuera; el pedido del guardado puede reabrir alguno solo si Seba elige esa opción.
+**No:** Seba no confirmó haber hecho la prueba manual en Chrome antes del merge. Deploy, backend, cuenta, sync y PWA siguen fuera.
 
-Verificación sobre `4f2e1d0` (el código es el de `e93dab8`): `npx tsc -b` limpio · `npm run lint` con las 4 advertencias previas · `npm test` 270 · `npm run e2e` 42 (corrida limpia) · `npm run build` OK sobre `b4ca674`; `dist/.commit` = `b4ca674`.
+Verificación: sobre `f0834c5`, `npx tsc -b` limpio · `npm run lint` con las 4 advertencias previas · `npm test` 304 · `npm run e2e` 47. Sobre `bd910e1`, `npm test` 304 y `npm run build` OK; `dist/.commit` = `bd910e1`.
 
 ## Arrancá acá
 
-**Primera acción, en un mensaje a Seba:**
+**Primera acción:** preguntarle a Seba cómo le fue con la prueba en Chrome sobre `:5173` y, si no la hizo, pasarle los pasos: en Ajustes elegir una carpeta suya → practicar algo → que aparezca `typelight-progreso-AAAA-MM-DD.json` → cerrar todas las pestañas de la app y volver a abrirla → «Reconectar» → «Permitir en cada visita» → «Restaurar…». Ningún test automático cubre que la carpeta se recuerde ni los nombres de error reales de Chrome (`NotFoundError`, `NotAllowedError`). Con su OK, borrar el pendiente de `docs/backlog.md` (los hechos salen del backlog). Si algo falla: `superpowers:systematic-debugging`, rama nueva, merge ff solo con su aprobación.
 
-1. **Qué quedó abierto:** ningún trabajo comprometido salvo el guardado. Sin commitear, del agente en el cierre y para el commit siguiente: `HANDOFF.md` y `docs/backlog.md` (ver `## Estado`). `test-results/` (ignorada) tiene los restos del e2e roto y del experimento del cierre: descartable. El resto del backlog son ideas sueltas.
-2. **Guardado menos frágil:** `superpowers:brainstorming` y una propuesta con 2-3 opciones renderizadas (el flujo que funciona con él: propuesta → elige → spec → plan → rama → merge ff). Interpretación del agente, a confirmar en una línea dentro de esa propuesta: «el guardado» es el progreso de la app, no el handoff que se vació unos segundos en el cierre.
+Verificá con: `npm test` (304) · `npm run e2e` (47; no edites archivos del repo mientras corre, y leé el resumen, no el exit code de un pipe) · `npm run build` (solo en `master`: pisa `dist/` y borra `dist/.commit`; reescribilo con el SHA de `master`, como hace `scripts/TypeLight.bat`). Lint: 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`); no sumar ninguna.
 
-Lo que hay hoy (dicho en la conversación, sin re-verificar en el código):
-- zustand `persist` en `localStorage`, clave `typelight.v1`, store v8 con migraciones y backup v8: `src/app/store/index.ts`.
-- Copia = JSON que se baja a mano desde Ajustes; importar reemplaza todo. Es la fila «Copia de progreso» de `## Decisiones`: cuenta/backend y merge fueron rechazados, y la fila caduca «hasta que Seba pida sync o merge» — si elige una de esas, se elimina.
-- «Reiniciar progreso» borra todo salvo `legacy`. Tope de 1000 sesiones; la referencia se lee de `days`.
-- `:5173` y `:5175` son orígenes distintos, cada uno con su propio `localStorage` (inferencia del agente por la regla de origen del navegador; los scripts de capturas siembran `:5175` aparte).
-
-Verificá con: `npm test` (270) · `npm run e2e` (42; no edites archivos del repo mientras corre, y leé el resumen, no el exit code de un pipe) · `npm run build`. Lint: 4 advertencias previas (2 en `src/main.tsx`, 2 en `LessonPlayer.tsx`); no sumar ninguna.
-
-**Puertos:** `:5173` = build estable (`npm run serve` desde el `.bat`; ahí practica Seba); `:5175` = dev de rama (`.claude/launch.json` → `typelight-branch`); `:5174` = e2e. Buildear en rama pisa `dist/`: solo en `master`, justo antes de cerrar.
+**Puertos:** `:5173` = build estable (`npm run serve` desde el `.bat`; ahí practica Seba); `:5175` = dev de rama (`.claude/launch.json` → `typelight-branch`); `:5174` = e2e. Cada origen tiene su propio `localStorage` e IndexedDB, así que la carpeta se elige por separado en cada uno; en dev los archivos llevan el prefijo `typelight-dev-progreso-` y no tocan los del build.
 
 Leé:
-- `docs/backlog.md` — el pendiente del guardado y las ideas sueltas.
-- `src/app/store/index.ts` — dónde y cómo se persiste, las migraciones y el backup: es el punto de partida de cualquier opción.
-- `.serena/memories/typelight-architecture.md` — decisiones con porqué y trampas (CRLF de Python, heredocs y escapes, numérico en Playwright, máquina cargada, no editar el repo durante los e2e, `git add docs/superpowers`).
+- `docs/superpowers/specs/2026-09-25-guardado-design.md` — qué hace la copia y sus desvíos (motivo `denied`, errores que no pausan, cola de escrituras, Bienvenida bloqueada con la carga fallida, e2e con carpeta en memoria).
+- `src/app/lib/autoBackup.ts` — `createAutoBackup(deps)` puro + singleton del navegador; `src/app/store/storage.ts` — el bloqueo tras una carga fallida.
+- `.serena/memories/typelight-architecture.md` — la entrada «Guardado menos frágil» y las trampas nuevas (el clic de `showDirectoryPicker`, el OPFS de Playwright, `dist/.commit`).
 
 **Lo que `## Descartado y confirmado` da por muerto no se reintenta mientras su condición de caducidad no se haya cumplido, aunque un plan lo liste como pendiente: este handoff es más reciente que los planes. Si la condición se cumplió, la entrada ya no vale y el plan manda.**
 
-Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho (viewport ~2048 px). Responde con feedback concreto tras probar (capturas + una o dos frases) y no quiere que le pregunten de más. Su punto de partida (tipista no estándar) está en `docs/research/2026-09-17-auditoria-y-roadmap.md` §10. Para capturas de una rama: script Playwright que importe `file:///C:/Projects/TypeLight/node_modules/@playwright/test/index.mjs`, siembre `localStorage` en `:5175` (store `version: 8`) y use `reducedMotion: 'reduce'`.
+Contexto operativo: Seba usa Chrome a 125 % en un monitor 2560 de ancho (viewport ~2048 px). Responde con feedback concreto tras probar (capturas + una o dos frases) y no quiere que le pregunten de más; cuando elige, elige corto («elijo B», «1»). Su punto de partida (tipista no estándar) está en `docs/research/2026-09-17-auditoria-y-roadmap.md` §10. Para capturas de una rama: script Playwright que importe `file:///C:/Projects/TypeLight/node_modules/@playwright/test/index.mjs`, siembre `localStorage` en `:5175` (store `version: 8`) y use `reducedMotion: 'reduce'`; para la copia automática, el picker falso en memoria de `e2e/autobackup.spec.ts` (con `queryPermission` que devuelva `'prompt'` para ver la pausa).
 
 ## Estado
 
-Sobre `b4ca674` quedaron dos archivos sin commitear, los dos del agente en este cierre y los dos para el commit siguiente: `docs/superpowers/handoffs/HANDOFF.md` (este) y `docs/backlog.md` (el pendiente «Guardado menos frágil» reemplaza al «Ninguno»). Fuera de git: `dist/` construido desde `b4ca674` con `dist/.commit`; `test-results/` con los `error-context.md` del e2e roto y del experimento (ignorada, descartable); copias del handoff y scripts del cierre en el scratchpad de la sesión (descartables).
+Sobre `bd910e1` quedaron dos archivos sin commitear, los dos del agente en este cierre y para el commit siguiente: `docs/superpowers/handoffs/HANDOFF.md` (este) y `docs/superpowers/plans/2026-09-25-guardado.md` (pasos tildados; queda sin tildar el Step 5 de Task 7, la prueba de Seba). Fuera de git: `dist/` construido desde `bd910e1` con `dist/.commit`; `.superpowers/` ignorada vía `.git/info/exclude` (el espacio de los subagentes se borró); capturas y scripts en el scratchpad de la sesión (descartables).
 
 ## Descartado y confirmado
 
@@ -70,6 +60,7 @@ Sobre `b4ca674` quedaron dos archivos sin commitear, los dos del agente en este 
 - **Agrupar en `.type-word` cualquier tirada sin espacios**: los primeros drills de f j son una sola «palabra» de 20+ letras y en un celular (400 px) desbordaban la página. Las de más de 16 letras quedan sueltas. Caduca si `grep -c MAX_WORD src/app/components/TypingArea.tsx` —o `(Select-String -Path src/app/components/TypingArea.tsx -Pattern MAX_WORD).Count`— da 0.
 - **Diccionario del repo para detectar formas sin tilde**: `scripts/dict.json` está sin acentos (es la lista de `words/an-array-of-spanish-words` normalizada), así que «dia» y «día» valen lo mismo; la limpieza compara contra el propio corpus por frecuencia. Caduca si `python -c "import json;print('día' in set(json.load(open('scripts/dict.json',encoding='utf8'))))"` imprime `True`.
 
+
 ## Decisiones
 
 | Qué | Porqué | Alternativa rechazada | Quién | Estado | Caduca |
@@ -87,7 +78,12 @@ Sobre `b4ca674` quedaron dos archivos sin commitear, los dos del agente en este 
 | Tema oscuro automático + grano + rebote + brillo en keycaps | Seba aprobó los seis retoques | — | usuario | decidida | hasta que Seba desactive alguno |
 | Escala fluida de fuente (`clamp`) y contenedor `max-w-[86rem]` | Seba: "a 125 % se ve muy pequeño" | ancho fijo | usuario | decidida | hasta que Seba pida otro tamaño |
 | Build estable en :5173 (`vite preview` de `dist/`); dev de rama en :5175; el launcher reconstruye solo si `master` avanza | cada edición en una rama sobre el dev server le reseteaba una lección | seguir en el dev server | usuario | decidida | hasta que Seba pida un solo puerto |
-| Copia de progreso = JSON descargado a mano; importar reemplaza todo | el progreso vive en `localStorage`; reemplazar es predecible | cuenta/backend; merge al importar | usuario | decidida | hasta que Seba pida sync o merge |
+| Copia de progreso = JSON escrito solo en una carpeta que elige cada persona (Chrome/Edge de escritorio), más la descarga manual; importar reemplaza todo | sale del navegador sin backend; la carpeta es de cada uno porque Seba le va a pasar la app a amigos | red solo en el navegador (A); el servidor local guarda (C); cuenta/backend; merge al importar | usuario (B + carpeta personalizable) | decidida | hasta que Seba pida sync, merge o que guarde el servidor |
+| La pausa tiene tres motivos (`permission` → Reconectar; `denied` y `missing` → Elegir otra carpeta); cualquier otro error de escritura no pausa y reintenta con el próximo cambio | un disco lleno o un archivo trabado por OneDrive no son un permiso: pedir reconectar era un loop | todo error → «pide permiso de nuevo» | llamada del agente (revisión final) | decidida | hasta que Seba reporte una copia que dejó de escribirse sin aviso |
+| Escrituras de la copia en cola, una por vez; `showDirectoryPicker`/`requestPermission` fuera de la cola | «Elegir carpeta» y enseguida «Reiniciar» se pisaban | escrituras libres | llamada del agente (revisión final) | decidida | hasta que se mida que la cola traba un botón |
+| Con la carga fallida, Bienvenida oculta los pasos hasta «Restaurar desde una copia…» o «Empezar de cero» | si no, lo practicado después se perdía sin aviso | dejar seguir con el aviso visible | llamada del agente (revisión final) | decidida | hasta que Seba pida otro flujo de rescate |
+| En dev los archivos se llaman `typelight-dev-progreso-…` | una rama en `:5175` con la carpeta real de Seba no pisa ni rota las copias del build | mismo nombre en dev y build | llamada del agente | decidida | hasta que Seba pida un solo nombre |
+| Tres `eslint-disable-next-line` (`only-export-components` ×2 en `BackupRestore.tsx`, `purity` por `Date.now()` en Ajustes) | la forma de archivo del plan choca con el lint y el repo ya usa esos comentarios | partir `BackupRestore.tsx` en hook y componentes | llamada del agente | decidida | hasta que alguien toque `BackupRestore.tsx` por otra razón |
 | La referencia se lee de `days`, no de `sessions` | sobrevive al tope de 1000 sesiones | subir el tope | inferencia del agente | decidida | hasta que el resumen por día tampoco alcance |
 | Corpus de frases por etapa: Tatoeba filtrado + casa ×3 | las 85 frases de la casa se repetían; Tatoeba solo es translationese | solo casa ampliada | usuario | decidida | hasta que Seba pida bajar la cuota |
 | N-gramas pesados por rango en `words.ts` | evita depender de un archivo que no está en el repo | pesar por frecuencia cruda | inferencia del agente | decidida | hasta que se note en uso real |
