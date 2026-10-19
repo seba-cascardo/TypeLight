@@ -5,7 +5,9 @@ import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
 import { chime, click, metronome, thud } from '../../lib/sound'
+import { usePausableClock } from '../../hooks/usePausableClock'
 import { Mascot } from './Mascot'
+import { PauseOverlay } from './PauseOverlay'
 import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
@@ -61,6 +63,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const TRACK_TOP = Math.round((size.h - KEY - 24) / 2)
   const [phase, setPhase] = useState<'ready' | 'playing' | 'done'>('ready')
   const [, setFrame] = useState(0)
+  const { clock, paused, isPaused, resume } = usePausableClock(phase === 'playing')
 
   const round = useRef<Round>(startRound(beatMs(goalWpm), floorMs))
   const rng = useRef(makeRng())
@@ -111,18 +114,18 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
       misses: t.misses,
       wrong: r.wrong,
       bestCombo: r.bestCombo,
-      seconds: (performance.now() - startedAt.current) / 1000,
+      seconds: (clock() - startedAt.current) / 1000,
       accuracy: t.hits + r.wrong ? t.hits / (t.hits + r.wrong) : 0,
       detail: { onTime: t.onTime, justo: t.justo, bien: t.bien, fuera: t.fuera, maxTempo: Math.round(60000 / r.minBeat) },
     })
-  }, [onFinish, sound])
+  }, [onFinish, sound, clock])
 
-  // Main loop: schedule notes, expire the ones that ran out, tick the metronome, redraw.
+  // Main loop: schedule notes, expire the ones that ran out, tick the metronome, redraw. It stops while paused.
   useEffect(() => {
-    if (phase !== 'playing') return
+    if (phase !== 'playing' || paused) return
     let raf = 0
     const loop = () => {
-      const now = performance.now() - startedAt.current
+      const now = clock() - startedAt.current
       if (now >= durationMs) {
         finish()
         return
@@ -154,15 +157,15 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, durationMs, lookahead, letters, weak, finish, sound])
+  }, [phase, paused, durationMs, lookahead, letters, weak, finish, sound])
 
   // Keyboard input.
   useEffect(() => {
     if (phase !== 'playing') return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey || isPaused()) return
       e.preventDefault()
-      const now = performance.now() - startedAt.current
+      const now = clock() - startedAt.current
       const out = press(round.current, e.key, now)
       round.current = out.round
       feedback(out.judgement, now)
@@ -193,7 +196,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     nextTickAt.current = 0
     tickedId.current = 0
     finished.current = false
-    startedAt.current = performance.now()
+    startedAt.current = clock()
     setPhase('playing')
   }
 
@@ -210,7 +213,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
-  const now = phase === 'playing' ? performance.now() - startedAt.current : 0
+  const now = phase === 'playing' ? clock() - startedAt.current : 0
   const r = round.current
   const t = tally(r)
   const current = currentNote(r)
@@ -304,6 +307,8 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         <div className="absolute right-4 bottom-14">
           <Mascot mood={mood.current.mood} combo={r.combo} size={Math.round(KEY * 1.15)} />
         </div>
+
+        {phase === 'playing' && paused && <PauseOverlay onResume={resume} />}
 
         {phase === 'ready' && (
           <div className="absolute inset-0 grid place-items-center bg-paper/70 backdrop-blur-[2px]">

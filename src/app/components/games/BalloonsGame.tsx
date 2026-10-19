@@ -19,7 +19,9 @@ import {
 import { Keycap } from '../Keycap'
 import { useHiddenInput } from '../../hooks/useHiddenInput'
 import { chime, click, thud } from '../../lib/sound'
+import { usePausableClock } from '../../hooks/usePausableClock'
 import { Mascot } from './Mascot'
+import { PauseOverlay } from './PauseOverlay'
 import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
@@ -45,6 +47,7 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
   const [size, setSize] = useState({ w: 800, h: 420 })
   const [phase, setPhase] = useState<'ready' | 'playing' | 'done'>('ready')
   const [, setFrame] = useState(0)
+  const { clock, paused, isPaused, pause, resume } = usePausableClock(phase === 'playing')
 
   const round = useRef<BalloonRound>(startBalloons())
   const startedAt = useRef(0)
@@ -88,19 +91,19 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
       misses: r.escaped,
       wrong: r.wrong,
       bestCombo: r.bestCombo,
-      seconds: (performance.now() - startedAt.current) / 1000,
+      seconds: (clock() - startedAt.current) / 1000,
       accuracy: r.hits + r.wrong ? r.hits / (r.hits + r.wrong) : 0,
       detail: { popped: r.popped, escaped: r.escaped },
       typing: { wpm: 0, samples: samplesFrom(events.current) },
     })
-  }, [onFinish, sound])
+  }, [onFinish, sound, clock])
 
-  // Main loop: spawn, detect escapes, animate.
+  // Main loop: spawn, detect escapes, animate. It stops while paused.
   useEffect(() => {
-    if (phase !== 'playing') return
+    if (phase !== 'playing' || paused) return
     let raf = 0
     const loop = () => {
-      const now = performance.now() - startedAt.current
+      const now = clock() - startedAt.current
       if (now >= durationMs) {
         finish()
         return
@@ -136,12 +139,12 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, durationMs, words, weak, finish, sound, size.h, size.w])
+  }, [phase, paused, durationMs, words, weak, finish, sound, size.h, size.w])
 
   const onText = useCallback(
     (text: string) => {
-      if (phase !== 'playing') return
-      const now = performance.now() - startedAt.current
+      if (phase !== 'playing' || isPaused()) return
+      const now = clock() - startedAt.current
       for (const ch of text) {
         const before = round.current
         const out = typeChar(before, ch, now)
@@ -169,6 +172,16 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
     [phase, sound, size.h, size.w],
   )
   const { inputProps, focused, focus } = useHiddenInput({ onText, autoFocus: phase === 'playing', focusKey: phase })
+  // The keys go through the hidden input: when it loses the focus (a click elsewhere), the round pauses too.
+  const wasFocused = useRef(false)
+  useEffect(() => {
+    if (phase === 'playing' && wasFocused.current && !focused) pause()
+    wasFocused.current = focused
+  }, [phase, focused, pause])
+  const onResume = useCallback(() => {
+    resume()
+    focus()
+  }, [resume, focus])
 
   const start = () => {
     round.current = startBalloons()
@@ -179,7 +192,7 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
     mood.current = { mood: 'idle', at: 0 }
     missStreak.current = 0
     finished.current = false
-    startedAt.current = performance.now()
+    startedAt.current = clock()
     setPhase('playing')
   }
 
@@ -196,7 +209,7 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
-  const now = phase === 'playing' ? performance.now() - startedAt.current : 0
+  const now = phase === 'playing' ? clock() - startedAt.current : 0
   const r = round.current
   const remaining = phase === 'playing' ? Math.max(0, Math.ceil((durationMs - now) / 1000)) : Math.round(durationMs / 1000)
   const shaking = now - shake.current < 220
@@ -293,7 +306,8 @@ export function BalloonsGame({ pool, weak = [], patterns, sound = true, duration
           <Mascot mood={mood.current.mood} combo={r.combo} size={Math.round(64 * scale)} />
         </div>
 
-        {phase === 'playing' && !focused && (
+        {phase === 'playing' && paused && <PauseOverlay onResume={onResume} />}
+        {phase === 'playing' && !paused && !focused && (
           <button type="button" onClick={focus} className="absolute inset-0 grid place-items-center bg-paper/70 font-bold text-ink-soft backdrop-blur-[2px]">
             Hacé clic acá y seguí escribiendo
           </button>

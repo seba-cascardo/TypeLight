@@ -4,7 +4,9 @@ import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
 import { chime, click, thud } from '../../lib/sound'
+import { usePausableClock } from '../../hooks/usePausableClock'
 import { Mascot } from './Mascot'
+import { PauseOverlay } from './PauseOverlay'
 import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
@@ -44,6 +46,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
   const [size, setSize] = useState({ w: 800, h: 420 })
   const [phase, setPhase] = useState<'ready' | 'playing' | 'done'>('ready')
   const [, setFrame] = useState(0)
+  const { clock, paused, isPaused, resume } = usePausableClock(phase === 'playing')
 
   const drops = useRef<Drop[]>([])
   const effects = useRef<Effect[]>([])
@@ -89,11 +92,11 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
       misses: s.misses,
       wrong: s.wrong,
       bestCombo: s.bestCombo,
-      seconds: (performance.now() - startedAt.current) / 1000,
+      seconds: (clock() - startedAt.current) / 1000,
       accuracy: total ? s.hits / total : 0,
       detail: {},
     })
-  }, [onFinish, sound])
+  }, [onFinish, sound, clock])
 
   const spawn = useCallback(
     (now: number) => {
@@ -119,12 +122,12 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
     [letters, layout, size.h, KEY],
   )
 
-  // Main loop.
+  // Main loop. It stops while paused; the game clock stands still with it.
   useEffect(() => {
-    if (phase !== 'playing') return
+    if (phase !== 'playing' || paused) return
     let raf = 0
     const loop = () => {
-      const now = performance.now()
+      const now = clock()
       const elapsed = now - startedAt.current
       if (elapsed >= durationMs) {
         finish()
@@ -160,15 +163,15 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, durationMs, ground, spawn, finish, sound, laneX, KEY])
+  }, [phase, paused, durationMs, ground, spawn, finish, sound, laneX, KEY])
 
   // Keyboard input.
   useEffect(() => {
     if (phase !== 'playing') return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey || isPaused()) return
       e.preventDefault()
-      const now = performance.now()
+      const now = clock()
       const candidates = drops.current.filter((d) => !d.poppedAt && d.ch === e.key)
       if (!candidates.length) {
         stats.current.wrong++
@@ -203,7 +206,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
     stats.current = { hits: 0, misses: 0, wrong: 0, score: 0, combo: 0, bestCombo: 0, livesLeft: LIVES, missStreak: 0 }
     mood.current = { mood: 'idle', at: 0 }
     finished.current = false
-    startedAt.current = performance.now()
+    startedAt.current = clock()
     lastSpawn.current = startedAt.current - 900
     setPhase('playing')
   }
@@ -221,7 +224,7 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
-  const now = performance.now()
+  const now = clock()
   const s = stats.current
   const remaining = phase === 'playing' ? Math.max(0, Math.ceil((durationMs - (now - startedAt.current)) / 1000)) : Math.round(durationMs / 1000)
   const shaking = now - shake.current < 220
@@ -320,6 +323,8 @@ export function RainGame({ layout, pool, durationMs = 45_000, sound = true, onFi
         <div className="absolute right-4" style={{ bottom: WATER + 12 }}>
           <Mascot mood={mood.current.mood} combo={s.combo} size={Math.round(KEY * 1.15)} />
         </div>
+
+        {phase === 'playing' && paused && <PauseOverlay onResume={resume} />}
 
         {phase === 'ready' && (
           <div className="absolute inset-0 grid place-items-center bg-paper/70 backdrop-blur-[2px]">
