@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode, type RefObject } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { repairs, type TypingState } from '@/engine/typing'
 import { trackKeyDown, trackKeyUp, type RolloverCounter } from '@/engine/stats'
 import { useHiddenInput } from '../hooks/useHiddenInput'
@@ -73,9 +73,23 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, n
     focusKey: state.target,
   })
   const free = repairs(state.mode)
+  const box = useRef<HTMLDivElement>(null)
+  // In a long text the current letter must not leave the screen. The hidden input sits on it, because the browser
+  // scrolls the focused field into view on every key (pinned at the top, it pulled the page back up); and when the
+  // letter is not fully visible (the next line, or after scrolling away), it comes back with a margin of lines around.
+  useLayoutEffect(() => {
+    const input = inputProps.ref.current
+    const current = box.current?.querySelector<HTMLElement>('.type-char.is-current')
+    if (!input || !current) return
+    input.style.left = `${current.offsetLeft}px`
+    input.style.top = `${current.offsetTop}px`
+    const r = current.getBoundingClientRect()
+    if (r.top < 0 || r.bottom > window.innerHeight) current.scrollIntoView?.({ block: 'nearest' })
+  }, [inputProps.ref, state.pos, state.target])
 
   return (
     <div
+      ref={box}
       className={`relative ${className}`}
       onMouseDown={(e) => {
         e.preventDefault()

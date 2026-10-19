@@ -172,3 +172,26 @@ test('the race can run against the ghost of 30 days ago', async ({ page }) => {
   await expect(page.getByText('vos hace 30 días')).toBeVisible()
   await expect(page.getByText('Fantasma a 22')).toBeVisible()
 })
+
+test('in a long text on a laptop screen the current letter stays on screen, even after scrolling away', async ({ page }) => {
+  test.slow()
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.goto('/')
+  await seed(page)
+  await page.goto('/texto')
+  await page.getByTestId('own-text-input').fill('hola mundo esto es una prueba de texto propio. '.repeat(32))
+  await page.getByTestId('own-text-go').click()
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  const inView = () =>
+    page.evaluate(() => {
+      const r = document.querySelector('.type-char.is-current')!.getBoundingClientRect()
+      return r.top >= 0 && r.bottom <= window.innerHeight
+    })
+  const text = await remaining(page)
+  await page.keyboard.type(text.slice(0, 1100))
+  expect(await inView()).toBe(true)
+  // Scrolling back to the top and typing on brings the letter back.
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.keyboard.type(text.slice(1100, 1101))
+  expect(await inView()).toBe(true)
+})
