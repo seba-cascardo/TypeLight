@@ -25,3 +25,26 @@ test('a tip completes but does not fill the routine Lección card', async ({ pag
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
   expect(stored.state.lessons['guia-tip-intro'].stars).toBe(3)
 })
+
+test('with only the welcome tip done, every routine block still has f and j to type', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'typelight.v1',
+      JSON.stringify({
+        state: {
+          settings: { name: 'Ana', layoutId: 'es', sound: false, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null },
+          lessons: { 'guia-tip-intro': { stars: 3, bestWpm: 0, bestAcc: 1, attempts: 1 } }, keys: {}, sessions: [], streak: { count: 0, lastDay: null },
+          routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false }, days: {}, legacy: null,
+        },
+        version: 3,
+      }),
+    ),
+  )
+  for (const kind of ['calentamiento', 'repaso', 'reto']) {
+    await page.goto(`/practica/${kind}`)
+    await expect(page.locator('.type-char').first()).toBeVisible()
+    await expect(page.locator('.type-char')).not.toHaveCount(0)
+    expect(await page.locator('.type-char').allTextContents()).toEqual(expect.arrayContaining(['f']))
+  }
+})

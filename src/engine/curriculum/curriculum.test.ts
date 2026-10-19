@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { makeRng } from '../generator'
 import { ES, LATAM, US, canType } from '../layouts'
-import { buildCurriculum, explainChar, generateExercise, nextLesson } from './index'
+import { buildCurriculum, explainChar, generateExercise, learnedKeys, nextLesson } from './index'
 
 describe('curriculum', () => {
   it('builds a full path for each layout with unique ids', () => {
@@ -125,5 +125,15 @@ describe('curriculum', () => {
     const pool = new Set([...bi.pool, ' '])
     for (const spec of bi.exercises) expect([...generateExercise(spec, makeRng(3))].every((ch) => pool.has(ch))).toBe(true)
     expect(generateExercise(tri.exercises[0], makeRng(4)).split(' ')[0]).toHaveLength(3)
+  })
+
+  it('learned keys skip lessons that teach no keys: the welcome tip alone still means f and j', () => {
+    for (const layout of [US, ES, LATAM]) {
+      const c = buildCurriculum(layout)
+      expect(learnedKeys(c, new Set())).toEqual(['f', 'j'])
+      expect(learnedKeys(c, new Set(['guia-tip-intro']))).toEqual(['f', 'j'])
+      const space = c.lessons.find((l) => l.newChars.includes(' '))!
+      expect(learnedKeys(c, new Set(['guia-tip-intro', space.id]))).toEqual(space.pool)
+    }
   })
 })

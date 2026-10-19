@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { curriculumFor, mainLessons, nextLesson, type Curriculum, type Lesson } from '@/engine/curriculum'
+import { curriculumFor, learnedKeys, mainLessons, nextLesson, type Curriculum, type Lesson } from '@/engine/curriculum'
 import { LAYOUTS, type Layout } from '@/engine/layouts'
 import { useStore } from '../store'
 
@@ -29,7 +29,7 @@ export function useProgress(): Progress {
     // What is "learned" comes from the main path only: an optional lesson done early adds nothing to the Reto.
     let last: Lesson | undefined
     for (const l of mainLessons(curriculum)) if (completed.has(l.id)) last = l
-    const learned = last ? last.pool : curriculum.lessons[1]?.pool ?? []
+    const learned = learnedKeys(curriculum, completed)
     const isUnlocked = (lesson: Lesson) => {
       if (lesson.index === 0 || completed.has(lesson.id)) return true
       const prev = curriculum.lessons[lesson.index - 1]

@@ -87,6 +87,16 @@ export function nextLesson(c: Curriculum, completedIds: Set<string>): Lesson | u
   )
 }
 
+/**
+ * The keys learned so far: the pool of the last completed main-path lesson that teaches keys. Tips have an empty
+ * pool, so the welcome tip alone must not leave the routine with nothing to type; before any key lesson, f and j.
+ */
+export function learnedKeys(c: Curriculum, completedIds: Set<string>): string[] {
+  let last: Lesson | undefined
+  for (const l of mainLessons(c)) if (completedIds.has(l.id) && l.pool.length > 0) last = l
+  return last?.pool ?? c.lessons.find((l) => l.pool.length > 0)?.pool ?? []
+}
+
 export function lessonAfter(c: Curriculum, id: string): Lesson | undefined {
   const l = c.byId.get(id)
   return l ? c.lessons[l.index + 1] : undefined
