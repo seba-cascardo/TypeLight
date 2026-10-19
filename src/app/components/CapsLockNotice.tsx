@@ -10,7 +10,7 @@ export function CapsLockNotice() {
       data-testid="caps-lock"
       className="animate-pop pointer-events-none absolute -top-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-esc px-4 py-1 text-sm font-extrabold text-white"
     >
-      ⇪ Bloq Mayús está activado: apagalo para seguir
+      Bloq Mayús está activado: apagalo para seguir
     </div>
   )
 }

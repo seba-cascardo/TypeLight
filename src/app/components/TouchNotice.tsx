@@ -53,11 +53,11 @@ export function TouchNotice() {
           Los ejercicios se tipean con un teclado físico, con los diez dedos. En el celular no vas a poder hacerlos: abrí este link en la compu.
         </p>
         <p className="mt-4 break-all rounded-xl bg-paper-deep px-3 py-2 text-sm font-bold">{link}</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Keycap variant="primary" onClick={copy}>
+        <div className="mt-6 grid gap-3">
+          <Keycap variant="primary" className="w-full" onClick={copy}>
             {copied ? 'Link copiado' : 'Copiar el link'}
           </Keycap>
-          <Keycap variant="ghost" onClick={goOn}>
+          <Keycap variant="ghost" className="w-full" onClick={goOn}>
             Seguir igual
           </Keycap>
         </div>
