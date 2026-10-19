@@ -149,4 +149,18 @@ describe('store', () => {
       localStorage.clear()
     }
   })
+
+  it('a setting added later gets its default for someone whose saved settings predate it', async () => {
+    const saved = { ...persistedState(initialState), settings: { ...initialState.settings, name: 'Ana' } } as Record<string, unknown>
+    // A future field missing from the saved copy, without a migration: here, the weekly goal.
+    delete (saved.settings as Record<string, unknown>).weeklyGoal
+    localStorage.setItem('typelight.v1', JSON.stringify({ state: saved, version: 8 }))
+    try {
+      await useStore.persist.rehydrate()
+      expect(useStore.getState().settings.name).toBe('Ana')
+      expect(useStore.getState().settings.weeklyGoal).toBe(initialState.settings.weeklyGoal)
+    } finally {
+      localStorage.clear()
+    }
+  })
 })

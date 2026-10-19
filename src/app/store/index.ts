@@ -302,6 +302,12 @@ export const useStore = create<State>()(
         keepPreMigrationCopy()
         return migrateState(persisted, version) as State
       },
+      // Settings merge field by field: a setting added later (without its own migration) gets its default for
+      // someone whose saved settings predate it, instead of undefined. The rest keeps persist's shallow merge.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<State>
+        return { ...current, ...p, settings: { ...current.settings, ...p.settings } }
+      },
       // A failed load must not be overwritten by the empty state the app falls back to.
       onRehydrateStorage: () => (_state, error) => {
         if (error) blockWrites()
