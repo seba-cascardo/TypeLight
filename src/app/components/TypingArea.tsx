@@ -3,6 +3,7 @@ import { repairs, type TypingState } from '@/engine/typing'
 import { trackKeyDown, trackKeyUp, type RolloverCounter } from '@/engine/stats'
 import { useHiddenInput } from '../hooks/useHiddenInput'
 import { numpadVerdict, type PadVerdict } from '../lib/numpad'
+import { CapsLockNotice } from './CapsLockNotice'
 
 interface Props {
   state: TypingState
@@ -97,6 +98,7 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, n
       }}
     >
       <input {...inputProps} />
+      <CapsLockNotice />
       <p
         className="font-body text-[1.5rem] font-semibold leading-[2] tracking-[0.01em] whitespace-pre-wrap wrap-break-word md:text-[1.75rem]"
         aria-live="off"
