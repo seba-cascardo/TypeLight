@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makeRng } from '../generator'
-import { advance, beatMs, currentNote, judge, nextBeat, pickNote, press, schedule, startRound, tally } from './rhythm'
+import { advance, arrivedSince, beatMs, currentNote, heardBeat, judge, nextBeat, pickNote, press, schedule, startRound, tally } from './rhythm'
 
 describe('beat floor', () => {
   it('a round with a floor never tightens past it', () => {
@@ -116,5 +116,24 @@ describe('round', () => {
     r = press(r, 'f', 3120).round
     r = advance(r, 4200).round
     expect(tally(r)).toEqual({ justo: 1, bien: 1, fuera: 1, judged: 3, hits: 2, misses: 1, onTime: 2 / 3 })
+  })
+})
+
+describe('metronome on the notes', () => {
+  it('after a ramp the next notes keep the old beat, and the tick and the tempo follow them', () => {
+    // Notes every 1000 ms up to 6000, then the beat tightens to 900: the next note is still at 7000.
+    let r = schedule(startRound(1000), 0, 6000, ['f', 'j'], [], makeRng(1))
+    r = { ...r, beat: 900 }
+    r = schedule(r, 4000, 4000, ['f', 'j'], [], makeRng(1))
+    expect(r.notes.map((n) => n.at)).toEqual([2000, 3000, 4000, 5000, 6000, 7000, 7900])
+    expect(arrivedSince(r, 0, 1999)).toBeUndefined()
+    expect(arrivedSince(r, 0, 3500)?.at).toBe(3000)
+    const fifth = arrivedSince(r, 0, 6000)!
+    expect(arrivedSince(r, fifth.id, 6999)).toBeUndefined()
+    expect(arrivedSince(r, fifth.id, 7000)?.at).toBe(7000)
+    // The label still says 1000 ms while the notes on their way are 1000 ms apart.
+    expect(heardBeat(r, fifth.id)).toBe(1000)
+    expect(heardBeat(r, fifth.id + 1)).toBe(900)
+    expect(heardBeat(r, 0)).toBe(900)
   })
 })

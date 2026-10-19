@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRng } from '@/engine/generator'
-import { advance, beatMs, currentNote, pickLetters, press, rhythmWords, schedule, startRound, tally, wordStream, type Judgement, type Round } from '@/engine/games'
+import { advance, arrivedSince, beatMs, currentNote, heardBeat, pickLetters, press, rhythmWords, schedule, startRound, tally, wordStream, type Judgement, type Round } from '@/engine/games'
 import { resolveChar } from '@/engine/layouts'
 import { Keycap } from '../Keycap'
 import { FINGER_COLOR, fingerGroup } from '../../lib/fingers'
@@ -66,6 +66,8 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const rng = useRef(makeRng())
   const startedAt = useRef(0)
   const nextTickAt = useRef(0)
+  /** Last note the metronome ticked on (0: none yet, still counting in). */
+  const tickedId = useRef(0)
   const beatCount = useRef(0)
   const floating = useRef<Floating[]>([])
   const recent = useRef<Feedback[]>([])
@@ -134,9 +136,13 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         setMood(missMood(missStreak.current), now)
         if (sound) thud()
       }
-      if (now >= nextTickAt.current) {
+      // The metronome ticks as each note reaches the zone; before the first one, two count-in ticks on the beat.
+      const arrived = arrivedSince(r, tickedId.current, now)
+      const countIn = tickedId.current === 0 && !arrived && now >= nextTickAt.current
+      if (arrived) tickedId.current = arrived.id
+      if (countIn) nextTickAt.current += r.beat
+      if (arrived || countIn) {
         beatCount.current++
-        nextTickAt.current = now - nextTickAt.current > r.beat ? now + r.beat : nextTickAt.current + r.beat
         if (sound) metronome()
       }
       round.current = r
@@ -185,6 +191,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
     missStreak.current = 0
     beatCount.current = 0
     nextTickAt.current = 0
+    tickedId.current = 0
     finished.current = false
     startedAt.current = performance.now()
     setPhase('playing')
@@ -208,7 +215,9 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
   const t = tally(r)
   const current = currentNote(r)
   const remaining = phase === 'playing' ? Math.max(0, Math.ceil((durationMs - now) / 1000)) : Math.round(durationMs / 1000)
-  const perMinute = Math.round(60000 / r.beat)
+  // The tempo label follows the notes arriving, not the ones just scheduled a few seconds ahead.
+  const heard = heardBeat(r, tickedId.current)
+  const perMinute = Math.round(60000 / heard)
   const visible = r.notes.filter((n) => n.result === null && noteX(n.at, now) < width + KEY)
 
   return (
@@ -240,7 +249,7 @@ export function RhythmGame({ layout, pool, goalWpm, weak = [], sound = true, dur
         <div className="absolute top-4 right-5 text-right text-xs font-bold text-ink-mute">
           pulso
           <span className="block font-display text-2xl font-extrabold text-ink tabular-nums">{perMinute} / min</span>
-          {Math.round(perMinute / 5)} PPM{r.beat === beatMs(goalWpm) ? ', tu meta' : ''}
+          {Math.round(perMinute / 5)} PPM{heard === beatMs(goalWpm) ? ', tu meta' : ''}
         </div>
 
         {/* track and hit zone */}

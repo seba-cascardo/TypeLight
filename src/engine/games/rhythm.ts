@@ -105,6 +105,22 @@ export function currentNote(r: Round): Note | undefined {
   return r.notes.find((n) => n.result === null)
 }
 
+/**
+ * The newest note that reached the zone (its `at` passed) after note `afterId`, if any. The metronome ticks on
+ * it: notes already on their way keep the old beat after a ramp, so a separate clock would drift off them.
+ */
+export function arrivedSince(r: Round, afterId: number, now: number): Note | undefined {
+  let last: Note | undefined
+  for (const n of r.notes) if (n.id > afterId && n.at <= now) last = n
+  return last
+}
+
+/** The gap the player is hearing: from the note that last reached the zone to the one after it. */
+export function heardBeat(r: Round, lastId: number): number {
+  const i = r.notes.findIndex((n) => n.id === lastId)
+  return i >= 0 && i + 1 < r.notes.length ? r.notes[i + 1].at - r.notes[i].at : r.beat
+}
+
 const multiplier = (combo: number) => Math.min(5, 1 + Math.floor(combo / 5))
 
 /** A key press at `now`: hits the current note (judged by its offset) or counts as wrong. */
