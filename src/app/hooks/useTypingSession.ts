@@ -16,6 +16,8 @@ export interface TypingSession {
   live: Metrics
   elapsedMs: number
   finished: boolean
+  /** The session clock, ms: the wall clock minus the time the tab spent hidden. `startedAt` and `finishedAt` are on it. */
+  clock: () => number
   restart: (target?: string) => void
   /** Feed characters from an input event. */
   input: (text: string) => void
@@ -121,5 +123,5 @@ export function useTypingSession(target: string, opts: Options = {}): TypingSess
 
   const end = state.finishedAt ?? now ?? state.startedAt ?? 0
   const elapsedMs = state.startedAt === null ? 0 : Math.max(0, end - state.startedAt)
-  return { state, live: metrics(state, now), elapsedMs, finished: isFinished(state), restart, input, backspace }
+  return { state, live: metrics(state, now), elapsedMs, finished: isFinished(state), clock, restart, input, backspace }
 }

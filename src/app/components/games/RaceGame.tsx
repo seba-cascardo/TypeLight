@@ -48,21 +48,22 @@ export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWp
     [ghostWpm, length, onFinish],
   )
   const session = useTypingSession(text, { sound, onFinish: handleFinish })
-  const { state } = session
+  const { state, clock } = session
 
-  // Smooth ghost while the race is on; the mascot settles back to idle on the same clock.
+  // Smooth ghost while the race is on, on the session clock (startedAt is on it: a hidden tab doesn't move the
+  // ghost). The mascot settles back to idle on the same clock.
   useEffect(() => {
     if (state.startedAt === null || state.finishedAt !== null) return
     let raf = 0
     const loop = () => {
-      const t = performance.now()
+      const t = clock()
       setNow(t)
       setFace((f) => (f !== 'idle' && t - moodAt.current > MOOD_MS[f] ? 'idle' : f))
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [state.startedAt, state.finishedAt])
+  }, [state.startedAt, state.finishedAt, clock])
 
   // Mascot: each new keystroke either escalates the miss streak or calms it down.
   useEffect(() => {
@@ -81,10 +82,10 @@ export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWp
       }
     }
     if (next) {
-      moodAt.current = performance.now()
+      moodAt.current = clock()
       setFace(next)
     }
-  }, [state.keystrokes])
+  }, [state.keystrokes, clock])
 
   const elapsed = state.startedAt === null ? 0 : Math.max(0, (state.finishedAt ?? now) - state.startedAt)
   const ghost = ghostPos(elapsed, ghostWpm, length) / length
