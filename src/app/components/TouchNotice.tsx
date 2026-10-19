@@ -4,7 +4,7 @@ import { Keycap } from './Keycap'
 const KEY = 'typelight.touch-ok'
 
 /** A phone or tablet with no mouse or trackpad: no physical keyboard to learn on, most likely. */
-export function touchOnly(): boolean {
+function touchOnly(): boolean {
   if (typeof window.matchMedia !== 'function') return false
   return window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(any-pointer: fine)').matches
 }

@@ -79,14 +79,14 @@ export function TypingArea({ state, onInput, onRestart, onBackspace, rollover, n
   // scrolls the focused field into view on every key (pinned at the top, it pulled the page back up); and when the
   // letter is not fully visible (the next line, or after scrolling away), it comes back with a margin of lines around.
   useLayoutEffect(() => {
-    const input = inputProps.ref.current
+    const input = box.current?.querySelector('input')
     const current = box.current?.querySelector<HTMLElement>('.type-char.is-current')
     if (!input || !current) return
     input.style.left = `${current.offsetLeft}px`
     input.style.top = `${current.offsetTop}px`
     const r = current.getBoundingClientRect()
     if (r.top < 0 || r.bottom > window.innerHeight) current.scrollIntoView?.({ block: 'nearest' })
-  }, [inputProps.ref, state.pos, state.target])
+  }, [state.pos, state.target])
 
   return (
     <div
