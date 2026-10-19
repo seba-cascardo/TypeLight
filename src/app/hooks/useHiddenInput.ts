@@ -24,7 +24,7 @@ export interface HiddenInput {
 /**
  * Keystroke capture through a hidden <input>, so dead keys (´ + a → á) and IMEs compose like in any
  * text field. Listens to input/compositionend, not keydown; keydown only handles Escape, Backspace (repair or
- * swallow) and the printable key down/up trackers, and blocks Enter.
+ * swallow) and the printable key down/up trackers, and blocks Enter and Tab.
  */
 export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: trackDown, onKeyUp: trackUp, guard, autoFocus = true, focusKey }: Options): HiddenInput {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -78,7 +78,8 @@ export function useHiddenInput({ onText, onEscape, onBackspace, onKeyDown: track
         e.preventDefault()
         onBackspace?.()
       }
-      if (e.key === 'Enter') e.preventDefault()
+      // Enter would submit nothing useful; Tab would move the focus out of the exercise and lose the next keys.
+      if (e.key === 'Enter' || e.key === 'Tab') e.preventDefault()
       if (e.key.length === 1 && !e.repeat) trackDown?.(e.key)
     },
     [onEscape, onBackspace, trackDown, guard],

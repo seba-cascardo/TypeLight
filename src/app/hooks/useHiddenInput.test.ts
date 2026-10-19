@@ -39,4 +39,11 @@ describe('useHiddenInput', () => {
     expect(onKeyDown).toHaveBeenCalledWith('a')
     expect(onKeyUp).toHaveBeenCalledWith('a')
   })
+
+  it('Tab is swallowed: it would move the focus out of the exercise and lose the next keys', () => {
+    const { down } = handlers({ onText: () => {} })
+    const e = { key: 'Tab', preventDefault: vi.fn() }
+    down(e)
+    expect(e.preventDefault).toHaveBeenCalled()
+  })
 })
