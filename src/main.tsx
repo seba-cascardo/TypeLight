@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router'
 import './index.css'
 import { AppShell } from './app/components/AppShell'
+import { RouteError } from './app/components/RouteError'
 import { Home } from './app/routes/Home'
 import { Welcome } from './app/routes/Welcome'
 import { requestPersistence } from './app/store/storage'
@@ -32,26 +33,34 @@ function RequireOnboarding() {
 }
 
 const router = createBrowserRouter([
-  { path: '/bienvenida', element: <Welcome /> },
+  { path: '/bienvenida', element: <Welcome />, errorElement: <RouteError /> },
   {
     element: <RequireOnboarding />,
     // While a lazy screen loads on a direct visit, paint nothing (the page background shows) instead of warning.
     hydrateFallbackElement: <></>,
+    errorElement: <RouteError />,
     children: [
       {
         element: <AppShell />,
         children: [
-          { path: '/', element: <Home /> },
-          { path: '/ruta', lazy: lazy(() => import('./app/routes/Path'), 'Path') },
-          { path: '/leccion/:id', lazy: lazy(() => import('./app/routes/LessonPlayer'), 'LessonPlayer') },
-          { path: '/practica/:kind', lazy: lazy(() => import('./app/routes/Practice'), 'Practice') },
-          { path: '/jugar/:gameId', lazy: lazy(() => import('./app/routes/Play'), 'Play') },
-          { path: '/texto', lazy: lazy(() => import('./app/routes/OwnText'), 'OwnText') },
-          { path: '/lectura', lazy: lazy(() => import('./app/routes/Reading'), 'Library') },
-          { path: '/lectura/:bookId', lazy: lazy(() => import('./app/routes/Reading'), 'Reader') },
-          { path: '/estadisticas', lazy: lazy(() => import('./app/routes/Stats'), 'Stats') },
-          { path: '/ajustes', lazy: lazy(() => import('./app/routes/Settings'), 'Settings') },
-          { path: '*', element: <Navigate to="/" replace /> },
+          {
+            // A screen that fails to load or render shows its error inside the shell, with the nav still there. A chunk
+            // gone after a deploy lands here too, with the URL already on the new screen: RouteError reloads once into it.
+            errorElement: <RouteError />,
+            children: [
+              { path: '/', element: <Home /> },
+              { path: '/ruta', lazy: lazy(() => import('./app/routes/Path'), 'Path') },
+              { path: '/leccion/:id', lazy: lazy(() => import('./app/routes/LessonPlayer'), 'LessonPlayer') },
+              { path: '/practica/:kind', lazy: lazy(() => import('./app/routes/Practice'), 'Practice') },
+              { path: '/jugar/:gameId', lazy: lazy(() => import('./app/routes/Play'), 'Play') },
+              { path: '/texto', lazy: lazy(() => import('./app/routes/OwnText'), 'OwnText') },
+              { path: '/lectura', lazy: lazy(() => import('./app/routes/Reading'), 'Library') },
+              { path: '/lectura/:bookId', lazy: lazy(() => import('./app/routes/Reading'), 'Reader') },
+              { path: '/estadisticas', lazy: lazy(() => import('./app/routes/Stats'), 'Stats') },
+              { path: '/ajustes', lazy: lazy(() => import('./app/routes/Settings'), 'Settings') },
+              { path: '*', element: <Navigate to="/" replace /> },
+            ],
+          },
         ],
       },
     ],
