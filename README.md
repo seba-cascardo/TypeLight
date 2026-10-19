@@ -24,6 +24,7 @@ Otros comandos:
 | `npm run build`    | Build estático en `dist/` (se sirve desde cualquier host) |
 | `npm run lint`     | oxlint                                               |
 | `node scripts/shot.mjs <url> <out.png> [w h light|dark full selector]` | Captura de pantalla contra el dev server con progreso sembrado |
+| `node scripts/build-og.mjs` | Regenera la imagen de la vista previa del link (`public/og-image.png`) y el ícono de iOS |
 
 ## Cómo está armado
 
