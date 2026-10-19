@@ -21,7 +21,7 @@ import {
   type WordStats,
 } from '@/engine/stats'
 import type { BigramSample, DeadKeyStats, KeySample, WordSample } from '@/engine/typing'
-import { blockWrites, guardedStorage, keepPreMigrationCopy } from './storage'
+import { blockWrites, guardedStorage, isWriteBlocked, keepPreMigrationCopy } from './storage'
 import { migrateState } from './migrate'
 
 export type Theme = 'auto' | 'light' | 'dark'
@@ -309,6 +309,20 @@ export const useStore = create<State>()(
     },
   ),
 )
+
+/**
+ * Persist rewrites the whole state on every change, so a tab left open would overwrite what another tab saved since.
+ * The browser tells the other tabs when one saves: load that state here, so the next write here builds on it.
+ * Rehydrating only reads (it writes back only after a migration), so the tabs do not ping-pong.
+ */
+export function syncAcrossTabs(): () => void {
+  const onStorage = (e: StorageEvent) => {
+    if (e.storageArea !== localStorage || e.key !== 'typelight.v1' || e.newValue === null || isWriteBlocked()) return
+    void useStore.persist.rehydrate()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}
 
 /** Today's routine, resetting stale days without mutating the store. */
 export function useRoutine(): Routine {

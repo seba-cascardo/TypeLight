@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PERSISTED_KEYS, useStore } from './index'
+import { PERSISTED_KEYS, persistedState, syncAcrossTabs, useStore } from './index'
 
 const initialState = useStore.getState()
 
@@ -123,5 +123,30 @@ describe('store', () => {
     useStore.getState().resetProgress()
     expect(useStore.getState().lastExamDay).toBeNull()
     expect(useStore.getState().blindSince).toBeNull()
+  })
+
+  it('a save from another tab is loaded here, so the next write builds on it instead of overwriting it', async () => {
+    const stop = syncAcrossTabs()
+    try {
+      // This tab opened in the morning; the other one then recorded a session and passed a lesson.
+      const other = {
+        ...persistedState(useStore.getState()),
+        sessions: [{ kind: 'warmup' as const, wpm: 20, acc: 1, chars: 80, errors: 0, seconds: 30, at: '2026-10-19T08:00:00.000Z' }],
+        lessons: { 'guia-tip-intro': { stars: 3, bestWpm: 0, bestAcc: 1, attempts: 1, completedAt: '2026-10-19T08:00:00.000Z' } },
+      }
+      const newValue = JSON.stringify({ state: other, version: 8 })
+      localStorage.setItem('typelight.v1', newValue)
+      window.dispatchEvent(new StorageEvent('storage', { key: 'typelight.v1', newValue, storageArea: localStorage }))
+      await new Promise((r) => setTimeout(r, 0))
+
+      // Back in this tab, any change writes the whole state: the other tab's work must survive it.
+      useStore.getState().setSettings({ sound: false })
+      const saved = JSON.parse(localStorage.getItem('typelight.v1')!).state
+      expect(saved.sessions).toHaveLength(1)
+      expect(saved.lessons['guia-tip-intro'].stars).toBe(3)
+    } finally {
+      stop()
+      localStorage.clear()
+    }
   })
 })

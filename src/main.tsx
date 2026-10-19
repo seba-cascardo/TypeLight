@@ -8,7 +8,7 @@ import { Home } from './app/routes/Home'
 import { Welcome } from './app/routes/Welcome'
 import { requestPersistence } from './app/store/storage'
 import { startAutoBackup } from './app/lib/autoBackup'
-import { useStore } from './app/store'
+import { syncAcrossTabs, useStore } from './app/store'
 
 // Every screen past Inicio loads on demand: the daily routine paints from a small first chunk.
 const lazy = <T extends Record<string, unknown>>(load: () => Promise<T>, name: keyof T) => async () => ({ Component: (await load())[name] as ComponentType })
@@ -69,6 +69,7 @@ const router = createBrowserRouter([
 
 if (useStore.getState().settings.onboarded) requestPersistence()
 startAutoBackup()
+syncAcrossTabs()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
