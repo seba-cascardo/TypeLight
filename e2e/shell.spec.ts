@@ -55,16 +55,18 @@ test('opening a lazy screen directly logs no router warning', async ({ page }) =
 test('a screen of a previous deploy reloads once, then says the app was updated instead of the developer page', async ({ page }) => {
   await page.goto('/bienvenida')
   await seed(page)
+  // Every document load counts itself: Playwright's 'load' event sometimes misses a location.reload() under load.
+  await page.addInitScript(() => sessionStorage.setItem('loads', String(Number(sessionStorage.getItem('loads') ?? 0) + 1)))
   await page.goto('/')
   // The chunk is gone, as after a deploy: the import fails every time.
   await page.route('**/src/app/routes/Path.tsx*', (route) => route.abort())
-  let loads = 0
-  page.on('load', () => loads++)
   await page.getByRole('link', { name: 'Ruta', exact: true }).click()
   const card = page.getByTestId('route-error')
   await expect(card).toBeVisible()
   await expect(card).toContainText('TypeLight se actualizó')
-  expect(loads).toBe(1)
+  // Inicio, then exactly one reload into /ruta.
+  expect(await page.evaluate(() => sessionStorage.getItem('loads'))).toBe('2')
+  await expect(page).toHaveURL(/\/ruta$/)
   await expect(page.getByText('Hey developer')).toHaveCount(0)
   // The shell stays: the nav still works.
   await page.getByRole('link', { name: 'Hoy', exact: true }).click()
