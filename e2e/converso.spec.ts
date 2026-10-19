@@ -13,7 +13,7 @@ function monday(day: string): string {
   return localDay(t)
 }
 
-/** An onboarded state with f, j and the space bar learned. */
+/** An onboarded state with the home row and the space bar learned: enough real words for the exam and a reference Reto. */
 function seed(page: Page, extra: Record<string, unknown> = {}) {
   return page.evaluate((extra) => {
     const done = { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-09-15T00:00:00Z' }
@@ -22,7 +22,7 @@ function seed(page: Page, extra: Record<string, unknown> = {}) {
       JSON.stringify({
         state: {
           settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: true },
-          lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-space': done },
+          lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-space': done, 'guia-64-6b-keys': done, 'guia-73-6c-keys': done, 'guia-61-f1-keys': done },
           keys: {},
           sessions: [],
           streak: { count: 0, lastDay: null },
@@ -126,6 +126,28 @@ test('the coral card is the weekly exam until it is taken this week', async ({ p
   await seed(page, { lastExamDay: lastWeek })
   await page.goto('/')
   await expect(card).toContainText('Examen semanal')
+})
+
+test('on day one, before there are words to type, there is no exam and the Reto is no reference', async ({ page }) => {
+  await page.goto('/')
+  await seed(page, { lessons: {} })
+  await page.goto('/')
+  const card = page.getByTestId('routine-challenge')
+  await expect(card).toContainText('Reto')
+  await expect(card).not.toContainText('Examen')
+  await expect(page.getByText(/toca el examen/)).toHaveCount(0)
+  await page.goto('/practica/examen')
+  await expect(page).toHaveURL(/practica\/reto/)
+  await expect(page.locator('.type-char.is-current')).toBeVisible()
+  await page.keyboard.type(await remaining(page))
+  await expect(page.getByText('Reto de un minuto · listo')).toBeVisible()
+  await expect(page.getByTestId('record-chip')).toHaveCount(0)
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('typelight.v1')!))
+  const s = stored.state.sessions[0]
+  expect(s.kind).toBe('challenge')
+  expect(s.reference).toBeUndefined()
+  expect(stored.state.blindSince).toBeNull()
+  expect(stored.state.routine.challenge).toBe(true)
 })
 
 test('finishing the exam marks the week, the day and the routine', async ({ page }) => {

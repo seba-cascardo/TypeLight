@@ -127,8 +127,9 @@ export function Home() {
   const answerCommitment = useStore((s) => s.answerCommitment)
   const routine = useRoutine()
   const auto = useAutoBackup()
-  const examToday = examDue(lastExamDay, dayKey()) && !routine.challenge
   const { curriculum, next, completed, learned } = useProgress()
+  // The exam measures real text: until there are words to type (space + 8 letters) the coral card stays the Reto.
+  const examToday = wordsReady(learned) && examDue(lastExamDay, dayKey()) && !routine.challenge
   const game = warmupGame(dayOfYear(), learned, next?.game)
   const blocks = BLOCKS.map((b) => (b.id === 'challenge' && examToday ? EXAM_BLOCK : b.id === 'warmup' && game ? GAME_BLOCK[game] : b))
 

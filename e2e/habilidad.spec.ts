@@ -25,7 +25,7 @@ function seed(page: Page, extra: Record<string, unknown> = {}) {
         JSON.stringify({
           state: {
             settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto', lastBackupAt: null, anchor: '', conversoSeen: true, weeklyGoal: 5, mascot: false },
-            lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-space': done, 'guia-64-6b-keys': done, 'guia-unit-review': done },
+            lessons: { 'guia-tip-intro': done, 'guia-66-6a-keys': done, 'guia-space': done, 'guia-64-6b-keys': done, 'guia-73-6c-keys': done, 'guia-61-f1-keys': done, 'guia-unit-review': done },
             keys: {},
             sessions: [],
             streak: { count: 0, lastDay: null, best: 0, freezes: 0, activeDays: 0 },

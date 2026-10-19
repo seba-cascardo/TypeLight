@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
-import { mainLessons, warmupGame } from '@/engine/curriculum'
+import { mainLessons, warmupGame, wordsReady } from '@/engine/curriculum'
 import { adaptiveText, challengeText, drillText, examText, makeRng, ngramText, poolOf, wordsText } from '@/engine/generator'
 import { starsForGame, type GameResult } from '@/engine/games'
 import {
@@ -116,7 +116,10 @@ function wordsParam(search: string): string[] {
 export function Practice() {
   const { kind = '' } = useParams()
   const [search] = useSearchParams()
+  const { learned } = useProgress()
   if (!(kind in META)) return <Navigate to="/" replace />
+  // The exam waits for real words (see Home): before that, its card is the Reto, and so is a direct visit.
+  if (kind === 'examen' && !wordsReady(learned)) return <Navigate to="/practica/reto" replace />
   if (kind === 'calentamiento') return <WarmupOrGame />
   if (kind === 'palabras' && wordsParam(search.toString()).length === 0) return <Navigate to="/" replace />
   return <PracticeRun key={`${kind}-${search.get('w') ?? ''}`} kind={kind as Kind} />
@@ -302,7 +305,8 @@ function PracticeRun({ kind }: { kind: Kind }) {
       const dead = deadKeyStats(state)
       // Only the first Reto of the day is a reference: later rounds type a text already seen today.
       const counted = kind !== 'reto' || firstRetoOfDay(useStore.getState().sessions, dayKey())
-      const reference = meta.reference === true && counted
+      // A drill of a handful of keys is not a speed: the reference starts once there are real words to type.
+      const reference = meta.reference === true && counted && wordsReady(learned)
       // A personal best is judged against everything recorded before this session.
       const previousBest = reference ? records(useStore.getState().days, []).bestReference?.wpm ?? 0 : Infinity
       // The very first Reto is not a "record": there is nothing to beat yet.
@@ -330,7 +334,7 @@ function PracticeRun({ kind }: { kind: Kind }) {
       if (kind === 'examen') setLastExamDay(dayKey())
       setResult({ m, repair, at, record, resisted: meta.reference ? resistedWords(words.values()) : [], counted })
     },
-    [kind, meta, recordSession, markRoutine, setLegacy, setLastExamDay],
+    [kind, meta, learned, recordSession, markRoutine, setLegacy, setLastExamDay],
   )
 
   const session = useTypingSession(text, { sound, onFinish, timeLimitMs: meta.timed, mode: meta.mode })
