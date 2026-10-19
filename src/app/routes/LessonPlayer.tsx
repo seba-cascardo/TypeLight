@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { generateExercise, type Lesson } from '@/engine/curriculum'
 import { makeRng } from '@/engine/generator'
-import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
+import { raceGhost, starsForGame, type GameResult } from '@/engine/games'
 import { dayKey, ghostWpm30, newRollover, rolloverRatio, starsFor, weakestKeys, type Stars as StarCount } from '@/engine/stats'
 import { bigramSamples, deadKeyStats, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { KeyGuide } from '../components/KeyGuide'
@@ -280,13 +280,16 @@ function Player({ lesson }: { lesson: Lesson }) {
   }
 
   if (phase === 'game') {
+    // A race that names its speed runs at it, so the 30-days-ago ghost isn't offered there.
+    const ghost = raceGhost(sessions, dayKey(), lesson.goalWpm, lesson.ghostAtGoal)
     const gameProps = {
       layout,
       pool: lesson.pool,
       goalWpm: lesson.goalWpm,
       weak: weakestKeys(keyStats, lesson.pool, 3, dayKey()),
-      ghostWpm: ghostWpm(sessions, dayKey(), lesson.goalWpm),
-      ghostWpm30: ghostWpm30(days, dayKey()),
+      ghostWpm: ghost.wpm,
+      ghostSource: ghost.source,
+      ghostWpm30: lesson.ghostAtGoal ? null : ghostWpm30(days, dayKey()),
       patterns: lesson.patterns,
       words: lesson.words,
       sound,

@@ -53,3 +53,32 @@ test('race game: beat the ghost, record a reference session', async ({ page }) =
   await page.keyboard.press('Enter')
   await expect(page.getByText('Juego terminado')).toHaveCount(0)
 })
+
+test('«carrera a 34 PPM» runs the ghost at 34, even with a faster week', async ({ page }) => {
+  await page.goto('/')
+  await page.evaluate(() => {
+    const done = { stars: 3, bestWpm: 30, bestAcc: 1, attempts: 1, completedAt: '2026-01-01T00:00:00Z' }
+    const day = (d: number) => new Date(Date.now() - d * 86_400_000)
+    const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    localStorage.setItem(
+      'typelight.v1',
+      JSON.stringify({
+        state: {
+          settings: { name: 'Seba', layoutId: 'latam', sound: false, showHands: true, onboarded: true, theme: 'auto' },
+          lessons: { 'velocidad-texto-4': done },
+          keys: {},
+          sessions: [{ at: new Date().toISOString(), kind: 'challenge', wpm: 48, acc: 0.98, chars: 240, errors: 2, seconds: 60, reference: true }],
+          // a month-old reference too: the 30-days-ago ghost isn't offered in a race that names its speed
+          days: { [key(day(31))]: { seconds: 60, blocks: 4, learned: 8, mastered: 2, reference: [22], sessions: 1 } },
+          streak: { count: 0, lastDay: null },
+          routine: { day: '2000-01-01', warmup: false, lesson: false, review: false, challenge: false },
+        },
+        version: 2,
+      }),
+    )
+  })
+  await page.goto('/leccion/velocidad-juego-carrera-1')
+  await expect(page.getByText(/Fantasma a 34 PPM/)).toBeVisible()
+  await expect(page.getByText('la meta de esta lección')).toBeVisible()
+  await expect(page.getByTestId('ghost-pick')).toHaveCount(0)
+})

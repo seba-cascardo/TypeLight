@@ -1,4 +1,4 @@
-import type { GameResult } from '@/engine/games'
+import type { GameResult, GhostSource } from '@/engine/games'
 import type { Layout } from '@/engine/layouts'
 
 /** What every game receives; each one uses what it needs. */
@@ -11,8 +11,10 @@ export interface GameProps {
   weak?: string[]
   sound?: boolean
   durationMs?: number
-  /** Carrera: what the ghost runs at (best recent Reto, or the goal). */
+  /** Carrera: what the ghost runs at (the lesson's goal, your best of the week, or the unit goal)... */
   ghostWpm?: number
+  /** ...and where that came from, for the labels. */
+  ghostSource?: GhostSource
   /** Carrera: the ghost "you, 30 days ago" (median reference of 30–36 days back), when there is one. */
   ghostWpm30?: number | null
   /** Globos: only words containing one of these (Patrones). */

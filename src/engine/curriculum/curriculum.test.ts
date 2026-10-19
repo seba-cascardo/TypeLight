@@ -113,6 +113,10 @@ describe('curriculum', () => {
     expect(patrones.patterns).toEqual(['que', 'ent', 'ado', 'con', 'est', 'ien', 'mente'])
     expect(c.byId.get('velocidad-juego-carrera-1')!.goalWpm).toBe(34)
     expect(c.byId.get('velocidad-juego-carrera-2')!.goalWpm).toBe(50)
+    // The two races with a speed in the title run the ghost at it; the Mayúsculas one races your best.
+    expect(c.byId.get('velocidad-juego-carrera-1')!.ghostAtGoal).toBe(true)
+    expect(c.byId.get('velocidad-juego-carrera-2')!.ghostAtGoal).toBe(true)
+    expect(c.byId.get('mayusculas-juego-mayusculas')!.ghostAtGoal).toBeUndefined()
     expect(c.lessons.indexOf(c.byId.get('velocidad-juego-carrera-1')!)).toBe(c.lessons.indexOf(c.byId.get('velocidad-texto-4')!) + 1)
   })
 

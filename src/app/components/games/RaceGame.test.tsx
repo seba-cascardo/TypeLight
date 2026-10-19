@@ -48,4 +48,14 @@ describe('RaceGame', () => {
     expect(timer(container)).toBe('0:10')
     expect(ghostAt()).toBeCloseTo(at, 2)
   })
+
+  it('names where the ghost came from', () => {
+    fakeFrames()
+    render(<RaceGame layout={LATAM} pool={POOL} goalWpm={30} ghostWpm={30} ghostSource="lesson" onFinish={() => {}} />)
+    expect(screen.getByText(/la meta de esta lección/)).toBeInTheDocument()
+    cleanup()
+    render(<RaceGame layout={LATAM} pool={POOL} goalWpm={20} ghostWpm={30} ghostSource="week" onFinish={() => {}} />)
+    expect(screen.getByText(/tu mejor de la semana/)).toBeInTheDocument()
+    expect(screen.queryByText(/Reto/)).toBeNull()
+  })
 })

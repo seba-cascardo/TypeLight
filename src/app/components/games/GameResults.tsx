@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
 import type { Lesson } from '@/engine/curriculum'
-import type { GameResult } from '@/engine/games'
+import { GHOST_SOURCES, type GameResult } from '@/engine/games'
 import type { Stars as StarCount } from '@/engine/stats'
 import type { FormAnswer } from '../../store'
 import { FormCheck } from '../FormCheck'
 import { Keycap } from '../Keycap'
 import { Stars, Stat } from '../ui'
+import { GHOST_FROM } from './meta'
 
 type Tone = 'ink' | 'enter' | 'esc' | 'mod'
 
@@ -17,6 +18,13 @@ interface View {
 }
 
 const pct = (v: number) => `${Math.round(v * 100)} %`
+
+/** Who the ghost was; only the week's best moves up next time. */
+function raceFootnote(r: GameResult, won: boolean): string {
+  const source = GHOST_SOURCES[r.detail.ghostSource ?? -1]
+  const who = source ? `${GHOST_FROM[source]}: ` : ''
+  return `El fantasma corrió a ${who}${r.detail.ghostWpm ?? 0} PPM.${won && source === 'week' ? ' La próxima va más rápido.' : ''}`
+}
 
 function view(r: GameResult): View {
   switch (r.gameId) {
@@ -72,7 +80,7 @@ function view(r: GameResult): View {
           { label: 'Precisión', value: pct(r.accuracy), tone: r.accuracy >= 0.97 ? 'enter' : r.accuracy >= 0.95 ? 'ink' : 'esc' },
           { label: 'Errores', value: r.wrong, tone: r.wrong === 0 ? 'enter' : 'ink' },
         ],
-        footnote: won ? 'El fantasma corre a tu mejor Reto de la semana: la próxima va más rápido.' : 'El fantasma corre a tu mejor Reto de la semana (o a la meta de la unidad).',
+        footnote: raceFootnote(r, won),
       }
     }
     case 'sudden':

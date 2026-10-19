@@ -335,6 +335,7 @@ export function buildCurriculum(layout: Layout): Curriculum {
     if (i === 3 || i === 7) {
       const race = game(b, vel, `carrera-${i === 3 ? 1 : 2}`, `Juego: carrera a ${goal} PPM`, 'race')
       race.goalWpm = goal
+      race.ghostAtGoal = true
     }
   })
 

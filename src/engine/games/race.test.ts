@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makeRng, poolOf } from '../generator'
-import { ghostFinishMs, ghostPos, ghostWpm, raceOutcome, raceText } from './race'
+import { ghostFinishMs, ghostPos, ghostWpm, raceGhost, raceOutcome, raceText } from './race'
 
 const at = (day: string) => `${day}T12:00:00.000Z`
 
@@ -14,6 +14,13 @@ describe('ghost', () => {
     ]
     expect(ghostWpm(sessions, '2026-09-16', 18)).toBe(27)
     expect(ghostWpm([], '2026-09-16', 18)).toBe(18)
+  })
+
+  it('a race that names its speed runs at it, whatever your week; otherwise your best, or the goal', () => {
+    const fast = [{ at: at('2026-09-16'), wpm: 48, reference: true as const }]
+    expect(raceGhost(fast, '2026-09-16', 34, true)).toEqual({ wpm: 34, source: 'lesson' })
+    expect(raceGhost(fast, '2026-09-16', 34)).toEqual({ wpm: 48, source: 'week' })
+    expect(raceGhost([], '2026-09-16', 34)).toEqual({ wpm: 34, source: 'goal' })
   })
 
   it('covers chars at wpm × 5 per minute and finishes accordingly', () => {

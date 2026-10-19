@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import type { GameId } from '@/engine/curriculum'
-import { ghostWpm, starsForGame, type GameResult } from '@/engine/games'
+import { raceGhost, starsForGame, type GameResult } from '@/engine/games'
 import { dayKey, ghostWpm30, weakestKeys } from '@/engine/stats'
 import { Game } from '../components/games/Game'
 import { GameResults } from '../components/games/GameResults'
@@ -83,7 +83,8 @@ function PlayRun({ gameId }: { gameId: GameId }) {
           pool={learned}
           goalWpm={goalWpm}
           weak={weakestKeys(keyStats, learned, 3, dayKey())}
-          ghostWpm={ghostWpm(sessions, dayKey(), goalWpm)}
+          ghostWpm={raceGhost(sessions, dayKey(), goalWpm).wpm}
+          ghostSource={raceGhost(sessions, dayKey(), goalWpm).source}
           ghostWpm30={ghostWpm30(days, dayKey())}
           best={sessions.filter((s) => s.gameId === 'sudden').reduce((a, s) => Math.max(a, s.chars), 0)}
           sound={sound}

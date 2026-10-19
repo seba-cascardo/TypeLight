@@ -13,6 +13,20 @@ export function ghostWpm(sessions: readonly { at: string; wpm: number; reference
   return best > 0 ? best : fallback
 }
 
+/** Where the ghost's speed came from. A game result keeps it as its index in GHOST_SOURCES (details are numbers). */
+export type GhostSource = 'lesson' | 'week' | 'goal' | 'month'
+export const GHOST_SOURCES: readonly GhostSource[] = ['lesson', 'week', 'goal', 'month']
+
+/**
+ * The ghost of a race. A lesson that names its speed in the title (`atGoal`) runs at its goal: that's the
+ * promise. Otherwise the best reference of the week, or the goal when there is none.
+ */
+export function raceGhost(sessions: Parameters<typeof ghostWpm>[0], today: string, goalWpm: number, atGoal = false): { wpm: number; source: GhostSource } {
+  if (atGoal) return { wpm: goalWpm, source: 'lesson' }
+  const best = ghostWpm(sessions, today, 0)
+  return best > 0 ? { wpm: best, source: 'week' } : { wpm: goalWpm, source: 'goal' }
+}
+
 /** Three real sentences when the pool allows them, otherwise a run of real words. */
 export function raceText(pool: ReadonlySet<string>, rng: Rng): string {
   return sentencesText(pool, 3, { rng }) || wordsText(pool, 24, { rng })

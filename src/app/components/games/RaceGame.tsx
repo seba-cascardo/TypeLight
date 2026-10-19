@@ -1,21 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { makeRng, poolOf } from '@/engine/generator'
-import { ghostPos, raceOutcome, raceText } from '@/engine/games'
+import { GHOST_SOURCES, ghostPos, raceOutcome, raceText, type GhostSource } from '@/engine/games'
 import { newRollover, rolloverRatio } from '@/engine/stats'
 import { bigramSamples, keySamples, metrics, rhythm, wordSamples, type TypingState } from '@/engine/typing'
 import { TypingArea } from '../TypingArea'
 import { useTypingSession } from '../../hooks/useTypingSession'
 import { Mascot } from './Mascot'
+import { GHOST_FROM } from './meta'
 import { hitMood, missMood, MOOD_MS, type Mood } from './moods'
 import type { GameProps } from './types'
 
 /**
  * Carrera contra tu fantasma: three real sentences; your car moves with every correct character, the ghost
- * at a steady speed (your best Reto of the week, or the unit goal). Errors stop you, not the ghost.
+ * at a steady speed (the lesson's goal, your best of the week, or the unit goal). Errors stop you, not the ghost.
  */
-export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWpm30 = null, sound = true, onFinish }: GameProps) {
+export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostSource = 'goal', ghostWpm30 = null, sound = true, onFinish }: GameProps) {
   const [ghostPick, setGhostPick] = useState<'week' | 'month'>('week')
-  const ghostWpm = ghostPick === 'month' && ghostWpm30 ? ghostWpm30 : ghostWeek
+  const month = ghostPick === 'month' && ghostWpm30 !== null
+  const ghostWpm = month ? ghostWpm30 : ghostWeek
+  const source: GhostSource = month ? 'month' : ghostSource
   const text = useMemo(() => raceText(poolOf(pool), makeRng()), [pool])
   const length = text.length
   const [now, setNow] = useState(0)
@@ -41,11 +44,11 @@ export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWp
         bestCombo: 0,
         seconds: m.seconds,
         accuracy: m.accuracy,
-        detail: { won: outcome.won ? 1 : 0, marginSeconds: outcome.marginSeconds, wpm: m.wpm, ghostWpm },
+        detail: { won: outcome.won ? 1 : 0, marginSeconds: outcome.marginSeconds, wpm: m.wpm, ghostWpm, ghostSource: GHOST_SOURCES.indexOf(source) },
         typing: { wpm: m.wpm, rhythm: rhythm(state), rollover: rolloverRatio(rollover.current), samples: [...keySamples(state).values()], bigrams: [...bigramSamples(state).values()], words: [...wordSamples(state).values()] },
       })
     },
-    [ghostWpm, length, onFinish],
+    [ghostWpm, source, length, onFinish],
   )
   const session = useTypingSession(text, { sound, onFinish: handleFinish })
   const { state, clock } = session
@@ -103,7 +106,7 @@ export function RaceGame({ pool, goalWpm, ghostWpm: ghostWeek = goalWpm, ghostWp
         <span className="flex flex-wrap items-center gap-2">
           <span>
             Fantasma a <span className="font-display text-xl text-ink tabular-nums">{ghostWpm}</span> PPM ·{' '}
-            {ghostPick === 'month' && ghostWpm30 ? 'vos hace 30 días' : ghostWeek === goalWpm ? 'la meta de la unidad' : 'tu mejor Reto de la semana'}
+            {GHOST_FROM[source]}
           </span>
           {ghostWpm30 !== null && state.startedAt === null && (
             <span className="flex gap-1" data-testid="ghost-pick">
